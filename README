@@ -1,0 +1,9 @@
+To get the latest version of pydecode run 
+
+> pip install --upgrade pydecode
+
+To run notebooks 
+
+> cd notebooks
+> ipython notebook --port 9000
+

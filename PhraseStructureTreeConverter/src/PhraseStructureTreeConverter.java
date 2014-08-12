@@ -7,13 +7,69 @@ import java.io.FileReader;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import edu.stanford.nlp.trees.PennTreeReader;
 import edu.stanford.nlp.trees.Tree;
 
 public class PhraseStructureTreeConverter {
-	public static void readPennTree(String filePath) throws Exception {
+	public static void ExtractRules(String filePath) throws Exception{
 		PennTreeReader ptr = new PennTreeReader(new FileReader(filePath));
+		Tree t = ptr.readTree();
+		int index = 0;
+		HashSet<PTBRule> ruleSet = new HashSet<PTBRule>();
+		while (t != null) {
+			List<Tree> tlist = t.preOrderNodeList();
+			for (Tree st : tlist) {
+				if (st.isPhrasal()) {
+					List<Tree> childrenList = st.getChildrenAsList();
+					System.out.print(st.nodeString() + "\t-->\t");
+					Tree head = RuleChecker.findHeader(st);
+					PTBRule r = new PTBRule(st, head, index);
+					
+					if(!ruleSet.contains(r)){
+						ruleSet.add(r);
+						index++;
+					}
+					
+					for (Tree cst : childrenList) {
+						if(cst ==head){
+							System.out.print("*");
+						}
+						System.out.print(cst.nodeString() + "\t");
+					}
+					System.out.println();
+				}
+			}
+			t = ptr.readTree();
+		}
+		ptr.close();
+		LineWriter lw = new LineWriter("rules");
+		for(PTBRule r : ruleSet){
+			if(r.getRhs().size() > 2){
+				Set<PTBRule> rs = r.binRule();
+				for(PTBRule rr : rs){
+					lw.writeln(rr.toString());
+					System.out.println(rr.toString());
+				}
+			}else{
+				lw.writeln(r.toString());
+				System.out.println(r.toString());
+			}
+		}
+		
+		lw.closeAll();
+		lw = new LineWriter("orules");
+		for(PTBRule r : ruleSet){
+			lw.writeln(r.toString());
+				System.out.println(r.toString());
+		}
+		lw.closeAll();
+	}
+	
+	public static void ConvertPennTreeToDep(String filePath) throws Exception {
+		PennTreeReader ptr = new PennTreeReader(new FileReader(filePath));
+		LineWriter lw = new LineWriter("converted");
 
 		// BinaryGrammarExtractor bge = new BinaryGrammarExtractor();
 		Tree t = ptr.readTree();
@@ -48,7 +104,7 @@ public class PhraseStructureTreeConverter {
 				if (st.isPreTerminal()) {
 					// System.out.println(st.nodeString() + "\t" +
 					// st.firstChild().nodeString());
-					posMap.put(st.nodeString(), st.firstChild().nodeString());
+					posMap.put(st.firstChild().nodeString(), st.nodeString());
 				}
 			}
 
@@ -96,10 +152,24 @@ public class PhraseStructureTreeConverter {
 				}
 			}
 
+			for (Tree leaf : leaves) {
+				int index = getIndexFromString(leaf.nodeString());
+				int parent = 0;
+				if (depMap.containsKey(index)) {
+					parent = depMap.get(index);
+				} else {
+					// root in this case
+					parent = 0;
+				}
+				String pos = posMap.get(leaf.nodeString());
+				String wordForm = getWordFromString(leaf.nodeString());
+				lw.writeln(index + "\t" + wordForm + "\t_\t" + pos + "\t" + pos + "\t_\t" + parent + "\t_\t_" );
+			}
+			lw.writeln();
 			t = ptr.readTree();
 
 		}
-
+		lw.closeAll();
 		ptr.close();
 	}
 
@@ -130,10 +200,14 @@ public class PhraseStructureTreeConverter {
 	public static int getIndexFromString(String s) {
 		return Integer.parseInt(s.substring(s.lastIndexOf("-") + 1));
 	}
+	public static String getWordFromString(String s){
+		return s.substring(0, s.lastIndexOf("-"));
+	}
 
 	public static void main(String[] args) {
 		try {
-			readPennTree("dev.1.notraces");
+			//ConvertPennTreeToDep("dev.1.notraces");
+			ExtractRules("dev.1.notraces");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

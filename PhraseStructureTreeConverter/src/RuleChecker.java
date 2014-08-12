@@ -13,6 +13,9 @@ import edu.stanford.nlp.trees.Tree;
  * 
  * */
 public class RuleChecker {
+	public static final Set<String> PUNCTSET = new HashSet<String>(Arrays.asList(new String[] {
+			".", ",", ":", "``", "''" }));
+	
 	public static Tree findHeader(Tree t) {
 		// Leaf, something must go wrong
 		if (t.isLeaf()) {
@@ -39,8 +42,8 @@ public class RuleChecker {
 		// Rules for NPs
 		if (t.nodeString().equals("NP")) {
 			// If the last word is tagged POS return (last word)
-			if (t.lastChild().nodeString().equals("POS")) {
-				return t.lastChild();
+			if (lastNoPunctChild(t).nodeString().equals("POS")) {
+				return lastNoPunctChild(t);
 			}
 			// Else search from right to left for the first child which is an
 			// NN, NNP, NNPS, NNS, NX, POS or JJR
@@ -83,7 +86,7 @@ public class RuleChecker {
 				}
 			}
 			// Else return the last word.
-			return t.lastChild();
+			return lastNoPunctChild(t);
 		}
 		// ADJP -- Left -- NNS QP NN $ ADVP JJ VBN VBG ADJP JJR NP JJS DT FW RBR
 		// RBS SBAR RB
@@ -100,7 +103,7 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return leftmost
-			return t.firstChild();
+			return firstNoPunctChild(t);
 		}
 
 		// ADVP -- Right -- RB RBR RBS FW ADVP TO CD JJR JJ IN NP JJS NN
@@ -116,7 +119,7 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return rightmost
-			return t.lastChild();
+			return lastNoPunctChild(t);
 		}
 
 		// CONJP -- Right -- CC RB IN
@@ -131,17 +134,17 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return rightmost
-			return t.lastChild();
+			return lastNoPunctChild(t);
 		}
 
 		// FRAG -- Right
 		if (t.nodeString().equals("FRAG")) {
-			return t.lastChild();
+			return lastNoPunctChild(t);
 		}
 
 		// INTJ -- Left
 		if (t.nodeString().equals("INTJ")) {
-			return t.firstChild();
+			return firstNoPunctChild(t);
 		}
 
 		// LST -- Right -- LS :
@@ -155,7 +158,7 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return rightmost
-			return t.lastChild();
+			return lastNoPunctChild(t);
 		}
 		// NAC -- Left -- NN NNS NNP NNPS NP NAC EX $ CD QP PRP VBG JJ JJS JJR
 		// ADJP FW
@@ -171,7 +174,7 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return leftmost
-			return t.firstChild();
+			return firstNoPunctChild(t);
 		}
 		// PP -- Right -- IN TO VBG VBN RP FW
 		if (t.nodeString().equals("PP")) {
@@ -185,11 +188,11 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return rightmost
-			return t.lastChild();
+			return lastNoPunctChild(t);
 		}
 		// PRN -- Left
 		if (t.nodeString().equals("PRN")) {
-			return t.firstChild();
+			return firstNoPunctChild(t);
 		}
 		// PRT -- Right -- RP
 		if (t.nodeString().equals("PRT")) {
@@ -202,7 +205,7 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return rightmost
-			return t.lastChild();
+			return lastNoPunctChild(t);
 		}
 		// QP -- Left -- $ IN NNS NN JJ RB DT CD NCD QP JJR JJS
 		if (t.nodeString().equals("QP")) {
@@ -216,7 +219,7 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return leftmost
-			return t.firstChild();
+			return firstNoPunctChild(t);
 		}
 		// RRC -- Right -- VP NP ADVP ADJP PP
 		if (t.nodeString().equals("RRC")) {
@@ -229,7 +232,7 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return rightmost
-			return t.lastChild();
+			return lastNoPunctChild(t);
 		}
 		// S -- Left -- TO IN VP S SBAR ADJP UCP NP
 		if (t.nodeString().equals("S")) {
@@ -243,7 +246,7 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return leftmost
-			return t.firstChild();
+			return firstNoPunctChild(t);
 		}
 		// SBAR -- Left -- WHNP WHPP WHADVP WHADJP IN DT S SQ SINV SBAR FRAG
 		if (t.nodeString().equals("SBAR")) {
@@ -258,7 +261,7 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return leftmost
-			return t.firstChild();
+			return firstNoPunctChild(t);
 		}
 		// SBARQ -- Left -- SQ S SINV SBARQ FRAG
 		if (t.nodeString().equals("SBARQ")) {
@@ -271,7 +274,7 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return leftmost
-			return t.firstChild();
+			return firstNoPunctChild(t);
 		}
 		// SINV -- Left -- VBZ VBD VBP VB MD VP S SINV ADJP NP
 		if (t.nodeString().equals("SINV")) {
@@ -285,7 +288,7 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return leftmost
-			return t.firstChild();
+			return firstNoPunctChild(t);
 		}
 		// SQ -- Left -- VBZ VBD VBP VB MD VP SQ
 		if (t.nodeString().equals("SQ")) {
@@ -299,11 +302,11 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return leftmost
-			return t.firstChild();
+			return firstNoPunctChild(t);
 		}
 		// UCP -- Right
 		if (t.nodeString().equals("UCP")) {
-			return t.lastChild();
+			return lastNoPunctChild(t);
 		}
 		// VP -- Left -- TO VBD VBN MD VBZ VB VBG VBP VP ADJP NN NNS NP
 		if (t.nodeString().equals("VP")) {
@@ -318,7 +321,7 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return leftmost
-			return t.firstChild();
+			return firstNoPunctChild(t);
 		}
 		// WHADJP -- Left -- CC WRB JJ ADJP
 		if (t.nodeString().equals("WHADJP")) {
@@ -331,7 +334,7 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return leftmost
-			return t.firstChild();
+			return firstNoPunctChild(t);
 		}
 		// WHADVP -- Right -- CC WRB
 		if (t.nodeString().equals("WHADVP")) {
@@ -344,7 +347,7 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return rightmost
-			return t.lastChild();
+			return lastNoPunctChild(t);
 		}
 		// WHNP -- Left -- WDT WP WP$ WHADJP WHPP WHNP
 		if (t.nodeString().equals("WHNP")) {
@@ -358,7 +361,7 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return leftmost
-			return t.firstChild();
+			return firstNoPunctChild(t);
 		}
 		// WHPP -- Right -- IN TO FW
 		if (t.nodeString().equals("WHPP")) {
@@ -371,11 +374,11 @@ public class RuleChecker {
 				}
 			}
 			// Nothing found, return rightmost
-			return t.lastChild();
+			return lastNoPunctChild(t);
 		}
 		
 		// No rule found, return leftmost
-		return t.firstChild();
+		return firstNoPunctChild(t);
 	}
 
 	private static Tree findHeaderCoord(Tree t, Tree normalHead) {
@@ -393,15 +396,32 @@ public class RuleChecker {
 			if(tchildren.get(h-1).nodeString().equals("CC")){
 				// Y_h-2 Y_h-1 Y_h forms a triple of non-terminals in a coordinating relationship,
 				// the head is modified to be Y_h-2 in this case
-				Set<String> punctset = new HashSet<String>(Arrays.asList(new String[] {
-						".", ",", ":" }));
+
 				// Make sure punctuation not selected as the head
-				if(!punctset.contains(tchildren.get(h-2).nodeString())){
+				if(!PUNCTSET.contains(tchildren.get(h-2).nodeString())){
 					return tchildren.get(h-2);
 				}
 			}
 		}
 		return normalHead;
+	}
+	
+	private static Tree firstNoPunctChild(Tree t){
+		for(int i = 0; i < t.getChildrenAsList().size(); i++){
+			if(!PUNCTSET.contains(t.getChild(i).nodeString())){
+				return t.getChild(i);
+			}
+		}
+		return t.firstChild();
+	}
+	
+	private static Tree lastNoPunctChild(Tree t){
+		for(int i = t.getChildrenAsList().size()-1; i >= 0; i--){
+			if(!PUNCTSET.contains(t.getChild(i).nodeString())){
+				return t.getChild(i);
+			}
+		} 
+		return t.lastChild();
 	}
 
 	public static void main(String[] args) {

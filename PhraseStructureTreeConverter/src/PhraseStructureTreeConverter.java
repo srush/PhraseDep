@@ -4,10 +4,10 @@
  * */
 
 import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import edu.stanford.nlp.trees.PennTreeReader;
 import edu.stanford.nlp.trees.Tree;
@@ -47,13 +47,20 @@ public class PhraseStructureTreeConverter {
 		LineWriter lw = new LineWriter("rules");
 		for(PTBRule r : ruleSet){
 			if(r.getRhs().size() > 2){
-				Set<PTBRule> rs = r.binRule();
+				ArrayList<PTBRule> rs = r.binRule();
+				// As Sasha suggested, we will add the minimal number of left/right
+				// children the head must have in the rule
+				int leftMin = r.getHeadInd();
+				// Say X -> Y_1* Y_2 Y_3
+				// size is 3 here and head index is 0
+				// 3 - 0 - 1 = 2 is the rightMin
+				int rightMin = r.getRhs().size() - r.getHeadInd() - 1;
 				for(PTBRule rr : rs){
-					lw.writeln(rr.toString());
+					lw.writeln(rr.toString() + "\t" + leftMin + "\t" + rightMin);
 					System.out.println(rr.toString());
 				}
 			}else{
-				lw.writeln(r.toString());
+				lw.writeln(r.toString() + "\t0\t0");
 				System.out.println(r.toString());
 			}
 		}
@@ -65,7 +72,35 @@ public class PhraseStructureTreeConverter {
 				System.out.println(r.toString());
 		}
 		lw.closeAll();
+		
+		// Here we are going to look into the treebank again to modify the trees
+		// so that we get the binarized tree
+		
+//		ptr = new PennTreeReader(new FileReader(filePath));
+//		t = ptr.readTree();
+//		
+//		while (t != null) {
+//			
+//		}
+//		ptr.close();
 	}
+	// TODO: UNFINISHED
+	
+//	private static void binTree(Tree t, HashSet<PTBRule> ruleSet){
+//		if(t.isLeaf()){
+//			return;
+//		}
+//		List<Tree> tchildren = t.getChildrenAsList();
+//		if(tchildren.size() > 2){
+//			
+//		}
+//		for(Tree st : tchildren){
+//			binTree(st, ruleSet);
+//		}
+//	}
+	
+	
+	
 	
 	public static void ConvertPennTreeToDep(String filePath) throws Exception {
 		PennTreeReader ptr = new PennTreeReader(new FileReader(filePath));
@@ -139,6 +174,7 @@ public class PhraseStructureTreeConverter {
 				i++;
 			}
 
+			
 			for (String ss : depSet) {
 				System.out.println(ss);
 			}
@@ -184,6 +220,49 @@ public class PhraseStructureTreeConverter {
 			headMap.put(t, headMap.get(t.getChild(0)));
 		}
 	}
+	
+	public static void printLexicalizedTree(String filePath) throws Exception{
+		PennTreeReader ptr = new PennTreeReader(new FileReader(filePath));
+		LineWriter lw = new LineWriter("ltree");
+
+		Tree t = ptr.readTree();
+		while (t != null) {
+			Tree lt = getLexicalizedTree(t);
+			lw.writeln(lt.toString());
+			t = ptr.readTree();
+		}
+		lw.closeAll();
+		ptr.close();
+	}
+	
+	private static Tree getLexicalizedTree(Tree ct) {
+		// Tree ct = tt.deepCopy();
+		HashMap<Tree, String> headMap = new HashMap<Tree, String>();
+		System.out.println(ct.toString());
+		List<Tree> tlist = ct.preOrderNodeList();
+		
+		// Label the word with index
+		List<Tree> leaves = ct.getLeaves();
+		for (int k = 0; k < leaves.size(); k++) {
+			Tree leaf = leaves.get(k);
+			leaf.setValue(leaf.nodeString() + "-" + (k + 1));
+			System.out.println(leaf);
+		}
+
+		for (Tree st : tlist) {
+			labelNodeCollins(st, headMap);
+		}
+
+		for (Tree st : tlist) {
+			if(st.isLeaf()) {
+				st.setValue(getWordFromString(st.nodeString()) + "^" +getIndexFromString(st.nodeString()));
+				continue;
+			}
+			st.setValue(st.nodeString() + "^" + getIndexFromString(headMap.get(st)));
+		}
+		return ct;
+	}
+	
 
 	public static void labelNodeCollins(Tree t, HashMap<Tree, String> headMap) {
 		if (t.isLeaf()) {
@@ -206,8 +285,9 @@ public class PhraseStructureTreeConverter {
 
 	public static void main(String[] args) {
 		try {
-			//ConvertPennTreeToDep("dev.1.notraces");
-			ExtractRules("dev.1.notraces");
+			ConvertPennTreeToDep("train.1.notraces");
+			printLexicalizedTree("train.1.notraces");
+			ExtractRules("train.1.notraces");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

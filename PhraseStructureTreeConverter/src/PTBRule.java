@@ -1,8 +1,6 @@
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import edu.stanford.nlp.trees.Tree;
 
@@ -73,12 +71,12 @@ public class PTBRule {
 		return true;
 	}
 
-	public Set<PTBRule> binRule() {
+	public ArrayList<PTBRule> binRule() {
 		if(rhs.size()<=2){
 			System.err.println("Binarize a rule with length smaller than or equal to 2!");
 			return null;
 		}
-		Set<PTBRule> brules = new HashSet<PTBRule>();
+		ArrayList<PTBRule> brules = new ArrayList<PTBRule>();
 		String previousnnt = lhs;
 		for(int i = 0; i < headInd-1; i++){
 			// leave the left-most one outside
@@ -187,8 +185,8 @@ public class PTBRule {
 	}
 
 	public static void main(String[] args) {
-		PTBRule ptbr = new PTBRule("X",Arrays.asList(new String[] { "A", "B", "C", "D", "E" }),4,100);
-		Set<PTBRule> set = ptbr.binRule();
+		PTBRule ptbr = new PTBRule("NP",Arrays.asList(new String[] { "DT", "NNP", "NNP", "CC", "NNP", "NNP" }),3,100);
+		ArrayList<PTBRule> set = ptbr.binRule();
 		for(PTBRule r : set){
 			System.out.println(r.toString());
 		}

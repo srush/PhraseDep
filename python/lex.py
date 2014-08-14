@@ -65,7 +65,7 @@ class LexicalizedCFGEncoder(SparseEncoder):
            index, m is the modifier index, and r is the index of
            the rule used.
         """
-        print parse.pprint()
+
         stack = [(parse, 0, len(parse.leaves())-1)]
         parts = []
         while stack:
@@ -74,7 +74,7 @@ class LexicalizedCFGEncoder(SparseEncoder):
             X, h = node.label().split("^")
             h = int(h)
             if len(node) == 2:
-                print label(node[1])
+
                 Y, h_1 = label(node[0]).split("^")
                 Z, h_2 = label(node[1]).split("^")
                 h_1, h_2 = int(h_1), int(h_2)
@@ -146,7 +146,6 @@ class LexicalizedCFGEncoder(SparseEncoder):
                                    (parse[i, i],))
 
         parse =  parse[0, len(self.sentence)-1]
-        print "SYTEM", parse.pprint()
         return parse
 
 def pruning(n, dep_matrix):

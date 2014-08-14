@@ -1,0 +1,8 @@
+[default]
+training_dep : /home/srush/data/wsj/converted
+training_ps : /home/srush/data/wsj/ltree
+binarized_rules : /home/srush/data/wsj/rules.markov
+original_rules : /home/srush/data/wsj/orules
+store_hypergraph_dir : /home/srush/data/wsj_out/
+save_hypergraph : 1
+limit : 1000

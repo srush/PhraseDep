@@ -107,7 +107,11 @@ def read_data_set(dep_file, ps_file, limit):
        Binrarized phrase structures in bracket format with head annotations.
     """
     deps = pydecode.nlp.read_csv_records(dep_file, limit=limit)
-    pss = [nltk.Tree.fromstring(l) for l in open(ps_file)][:limit]
+    pss = []
+    for i, l in enumerate(open(ps_file)):
+        pss.append(nltk.Tree.fromstring(l))
+        if i > limit: break
+        #= [nltk.Tree.fromstring(l) for l in open(ps_file)][:limit]
 
     X = []
     Y = []

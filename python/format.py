@@ -8,7 +8,8 @@ class BinarizedNonTerm(namedtuple("BinarizedNonTerm", ["name"])):
 
 class BinarizedRule(namedtuple("BinarizedRule",
                                ["X", "Y", "Z",
-                                "original", "direction"])):
+                                "original", "direction",
+                                "mins"])):
     pass
 
 class UnaryRule(namedtuple("UnaryRule",
@@ -43,11 +44,13 @@ class RuleSet(object):
 
     def finish(self):
         self.rule_table = []
+        self.rule_limits = []
         self.unary_table = []
         self.unary_rev_indices = {}
         self.unary_indices = {}
         self.rule_indices = {}
         self.rule_rev_indices = {}
+
 
         for i, rule in enumerate(self.rules):
             X_n = self.nonterms[rule.X]
@@ -57,6 +60,7 @@ class RuleSet(object):
             self.rule_rev_indices[i] = (rule.X, rule.Y, rule.Z)
             self.rule_table.append([X_n, Y_n, Z_n,
                                     rule.direction])
+            self.rule_limits.append(rule.mins)
 
         # Start the enumeration at the end of rules.
         for i, rule in enumerate(self.unary_rules, len(self.rules)):
@@ -69,10 +73,11 @@ class RuleSet(object):
             self.rule_indices[rule.X, rule.Y, 0] = i
             self.rule_rev_indices[i] = (rule.X, rule.Y, 0)
             self.rule_table.append([X_n, Y_n, 0, 0])
-
+            self.rule_limits.append((0, 0))
 
         self.rule_table = np.array(self.rule_table)
         self.unary_table = np.array(self.unary_table)
+        self.rule_limits = np.array(self.rule_limits)
 
         # Build indices for the rules.
         self.rules_by_nonterm = defaultdict(lambda: [])
@@ -100,17 +105,13 @@ class RuleSet(object):
                 {rule[0]
                  for rule in self.rules_by_second[X]}
 
-
-
-
-
 def read_rule_set(handle):
     rules = RuleSet()
 
     for l in handle:
         if not l.strip(): continue
         t = l.split()
-        if len(t) == 4:
+        if len(t) == 6:
             X = t[0].strip()
             Y = t[2].strip()[:-1]
             rules.add_unary(UnaryRule(X, Y))
@@ -118,6 +119,7 @@ def read_rule_set(handle):
             X = t[0].strip()
             Y = t[2].strip()
             Z = t[3].strip()
+
             original = int(t[4])
             if Y[-1] == "*":
                 Y = Y[:-1]
@@ -127,6 +129,9 @@ def read_rule_set(handle):
                 direction = 1
             else:
                 assert False, "Need a head."
-            rules.add(BinarizedRule(X, Y, Z, original, direction))
+            min_l = int(t[5].strip())
+            min_r = int(t[6].strip())
+
+            rules.add(BinarizedRule(X, Y, Z, original, direction, (min_l, min_r)))
     rules.finish()
     return rules

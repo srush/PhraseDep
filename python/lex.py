@@ -6,93 +6,6 @@ import numpy as np
 import pydecode
 import cPickle as pickle
 
-def read_original_rules(file):
-    d = {}
-    for l in open(file):
-       t = l.split()
-       X = t[0]
-       rhs = t[2:-1]
-       head = -1
-       for i, nt in enumerate(rhs):
-           if nt[-1] == "*":
-               head = i
-       rhs = tuple([i.strip("*") for i in t[2:-1]])
-       rule_num = int(t[-1])
-       d[X, rhs] = (rule_num, head)
-    return d
-
-def un_z(tree):
-    if isinstance(tree, str): return [tree]
-    if label(tree)[:2] == "Z_":
-        return [flat
-                for node in tree
-                for flat in un_z(node)]
-    else:
-        return [unbinarize(tree)]
-
-def un_z_node(tree):
-    if isinstance(tree, str):
-        return tree
-    else:
-        return [flat
-                for node in tree
-                for flat in un_z(node)]
-
-def label(tree):
-    if isinstance(tree, str): return tree
-    return tree.label()
-
-def unbinarize(tree):
-    if isinstance(tree, str): return tree
-
-    if label(tree[0])[:2] == "Z_":
-        return Tree(label(tree), un_z_node(tree[0]) + [unbinarize(tree[1])])
-
-
-    if len(tree) > 1 and label(tree[1])[:2] == "Z_":
-        return Tree(label(tree), [unbinarize(tree[0])] + un_z_node(tree[1]))
-
-    return Tree(tree.label(), [unbinarize(node)
-                               for node in tree])
-
-
-def binarize(original_rules, tree, head=None):
-   if isinstance(tree, str): return tree
-   children = []
-   binarized_children = []
-   for node in tree:
-      binarized_children.append(binarize(original_rules, node))
-
-   if len(tree) <= 2:
-       return Tree(tree.label(), binarized_children)
-
-   if len(tree) >=3:
-       rule_num, new_head = original_rules[tree.label().split("^")[0],
-                                           tuple([label(node).split("^")[0]
-                                                  for node in tree])]
-       absolute_head = int(tree.label().split("^")[1])
-       if head is None:
-           head = new_head
-       cur = binarized_children[head]
-       for i, node in enumerate(tree[head+1:]):
-          node_label = "Z_(%d,r,%d)^%d"%(rule_num, len(tree) -2 -(head + 1 + i), absolute_head)
-          if head + i + 2 == len(tree):
-             if not tree[:head]:
-                node_label = tree.label()
-             else:
-                node_label = "Z_(%d,l,%d)^%d"%(rule_num, len(tree[:head])- 1, absolute_head)
-
-          cur = nltk.Tree(node_label, [cur, binarized_children[head + i + 1]])
-
-
-       for i, node in enumerate(reversed(tree[:head])):
-          node_label = "Z_(%d,l,%d)^%d"%(rule_num, head - i - 2, absolute_head)
-          if head - i - 2 == -1:
-             node_label = tree.label()
-          cur = nltk.Tree(node_label, [binarized_children[head - i - 1], cur])
-
-       return cur
-
 class auto:
     def __init__(self):
         self.id = 0
@@ -243,62 +156,15 @@ def pruning(n, dep_matrix):
                             heads[i,k].add(h2)
     return has_item, head_item
 
-
-                # # for h in range(i, k+1):
-                # #     for m in mod_of[h]:
-                #         if (has_item[i, j, h] and has_item[j+1, k, m]) or \
-                #                 (has_item[i, j, m] and has_item[j+1, k, h]):
-
-def nt_pruning(sentence, grammar, span_pruner):
-    N = len(grammar.nonterms)
-    n = len(sentence)
-    has_item = np.zeros((n, n, N), dtype=np.uint8)
-    in_cell = defaultdict(list)
-    cell_rules = defaultdict(list)
-    cell_rule_set = defaultdict(set)
-    for i in range(n):
-        has_item[i,i, sentence[i]] = 1
-        in_cell[i, i].append(sentence[i])
-        for r, (X, Y) in enumerate(grammar.unary_table):
-            if Y == sentence[i]:
-                has_item[i, i, X] = 1
-                in_cell[i, i].append(X)
-        cell_rule_set[i, i, 0].update(*[
-                grammar.rule_vec_first[X]
-                for X in in_cell[i,i]])
-        cell_rule_set[i, i, 1].update(*[
-                grammar.rule_vec_second[X]
-                for X in in_cell[i,i]])
-
-    for d in range(1, n):
-        for i in range(n):
-            k = i + d
-            if k >= n:
-                continue
-            for h, m, j in span_pruner[i, k]:
-                req_dir = 0 if h <= j else 1
-
-                for r in (cell_rule_set[i, j, 0] & cell_rule_set[j+1, k, 1]):
-                    # print r
-                    # print grammar.rule_table[r]
-                    X, Y, Z, dir = grammar.rule_table[r]
-                    if req_dir != dir: continue
-                    if not has_item[i, k, X]:
-                        has_item[i, k, X] = 1
-                        in_cell[i, k].append(X)
-                    if dir == 0:
-                        cell_rules[i, k, Y, 0].append((r, X, Z))
-                    else:
-                        cell_rules[i, k, Z, 1].append((r, X, Y))
-
-            cell_rule_set[i, k, 0].update(*[
-                grammar.rule_vec_first[X]
-                for X in in_cell[i,k]])
-            cell_rule_set[i, k, 1].update(*[
-                grammar.rule_vec_second[X]
-                for X in in_cell[i,k]])
-
-    return has_item, in_cell, cell_rules
+def count_mods(dep_matrix):
+    n = len(dep_matrix)
+    counts = np.zeros((n,2))
+    for h in range(n):
+        for m in range(n):
+            if dep_matrix[h][m]:
+                dir = 0 if m < h else 1
+                counts[h, dir] += 1
+    return counts
 
 def make_mod(sentence, dep_matrix):
     n = len(sentence)
@@ -309,6 +175,76 @@ def make_mod(sentence, dep_matrix):
                 mod_of[h].append(m)
     return mod_of
 
+def nt_pruning(sentence, grammar, span_pruner, dep_matrix):
+    mods = count_mods(dep_matrix)
+
+    N = len(grammar.nonterms)
+    n = len(sentence)
+    has_item = np.zeros((n, n, N), dtype=np.uint8)
+    in_cell = defaultdict(list)
+    cell_rules = defaultdict(list)
+
+    # All the rules that could use this.
+    cell_rule_set = defaultdict(set)
+
+    for i in range(n):
+        has_item[i,i, sentence[i]] = 1
+        in_cell[i, i].append(sentence[i])
+        for r, (X, Y) in enumerate(grammar.unary_table):
+            if Y == sentence[i]:
+                has_item[i, i, X] = 1
+                in_cell[i, i].append(X)
+        # cell_rule_set[i, i, 0].update(*[
+        #         grammar.rule_vec_first[X]
+        #         for X in in_cell[i,i]])
+        # cell_rule_set[i, i, 1].update(*[
+        #         grammar.rule_vec_second[X]
+        #         for X in in_cell[i,i]])
+
+    for d in range(1, n):
+        for i in range(n):
+            k = i + d
+            if k >= n:
+                continue
+            for h, m, j in span_pruner[i, k]:
+
+                req_dir = 0 if h <= j else 1
+                # for r in (cell_rule_set[i, j, 0] & cell_rule_set[j+1, k, 1]):
+
+                for Y in in_cell[i, j]:
+                    for r, X, Z, dir in grammar.rules_by_first[Y]:
+                        if dir != req_dir: continue
+
+                # #for r in (cell_rule_set[i, j, 0] & cell_rule_set[j+1, k, 1]):
+                # for r in (cell_rule_set[i, j, 0] & cell_rule_set[j+1, k, 1]):
+                    # X, Y, Z, dir = grammar.rule_table[r]
+                        # min_l, min_r = grammar.rule_limits[r]
+                        # if mods[h, 0] < min_l or mods[h, 1] < min_r:
+                        #     continue
+
+                    # print h, mods[h], min_l, min_r
+                        # if req_dir != dir: continue
+                        if not has_item[i, k, X]:
+                            has_item[i, k, X] = 1
+                            in_cell[i, k].append(X)
+                        if dir == 0:
+                            cell_rules[i, k, Y, 0].append((r, X, Z))
+                        else:
+                            cell_rules[i, k, Z, 1].append((r, X, Y))
+
+            # cell_rule_set[i, k, 0].update([
+            #         rule
+            #         for X in in_cell[i,k]
+            #         for rule in grammar.rule_vec_first[X]
+            #         ])
+            # cell_rule_set[i, k, 1].update([
+            #         rule
+            #         for X in in_cell[i,k]
+            #         for rule in grammar.rule_vec_second[X]])
+
+    return has_item, in_cell, cell_rules
+
+
 import time
 def cky(sentence, rules, dep_matrix):
     """
@@ -316,11 +252,11 @@ def cky(sentence, rules, dep_matrix):
     # Preprocessing.
     n = len(sentence)
 
-    # start = time.time()
+    start = time.time()
     pruning_chart, span_pruner = pruning(n, dep_matrix)
-    # print "A", time.time() - start
-    # start = time.time()
-    nt_pruning_chart, in_cell, cell_rules = nt_pruning(sentence, rules, span_pruner)
+    #print "A", time.time() - start
+    start = time.time()
+    nt_pruning_chart, in_cell, cell_rules = nt_pruning(sentence, rules, span_pruner, dep_matrix)
     seen_item = defaultdict(set)
 
     encoder = LexicalizedCFGEncoder(sentence, rules)
@@ -330,7 +266,7 @@ def cky(sentence, rules, dep_matrix):
     N = len(rules.nonterms)
 
     labels = encoder.encoder
-    temp = np.arange(100000)
+    temp = np.arange(1000000)
     chart = pydecode.ChartBuilder(temp, unstrict=True)
     has_item = defaultdict(lambda: 0) #np.zeros(n*n*n*N).reshape((n,n,n,N))
 
@@ -348,8 +284,8 @@ def cky(sentence, rules, dep_matrix):
                 seen_item[i, i, i].add(X)
 
 
-    # print "B", time.time() - start
-    # start = time.time()
+    #print "B", time.time() - start
+    start = time.time()
     # Main loop.
     for d in range(1, n):
         for i in range(n):
@@ -372,103 +308,105 @@ def cky(sentence, rules, dep_matrix):
                                 stash[X].append([r, Y, Z, j, h, m, 1])
 
                 for X in stash:
-                    label, edges  = zip(*[(labels[i, j, k, h, m, r],
-                                           [items[i, j, h if dir == 0 else m, Y],
-                                            items[j+1, k, m if dir == 0 else h, Z]])
-                                          for r, Y, Z, j, h, m, dir in stash[X]])
+                    label, edges  = zip(*[
+                            (labels[i, j, k, h, m, r],
+                             [items[i, j, h if dir == 0 else m, Y],
+                              items[j+1, k, m if dir == 0 else h, Z]])
+                            for r, Y, Z, j, h, m, dir in stash[X]])
 
                     chart.set(items[i, k, h, X], edges, labels=label)
                     has_item[i, k, h, X] = 1
                     seen_item[i, k, h].add(X)
+
     chart.set(items[n-1, 0, 0, 0],
               [[items[0, n-1, h, nonterm]]
                for h in range(n)
                for nonterm in range(N)
                if has_item[0, n-1, h, nonterm]])
-    # print "C", time.time() - start
+    #print "C", time.time() - start
     return chart.finish(True), encoder
 
 
-def pruning_graph(n, mod_of):
-    labels = defaultdict(auto())
-    items = np.arange(n * n * n).reshape((n, n, n))
-    chart = pydecode.ChartBuilder(items, unstrict=True)
-    has_item = defaultdict(lambda: 0)
+# def pruning_graph(n, mod_of):
+#     labels = defaultdict(auto())
+#     items = np.arange(n * n * n).reshape((n, n, n))
+#     chart = pydecode.ChartBuilder(items, unstrict=True)
+#     has_item = defaultdict(lambda: 0)
 
-    for i in range(n):
-        chart.init(items[i, i, i])
-        has_item[i, i, i] = 1
+#     for i in range(n):
+#         chart.init(items[i, i, i])
+#         has_item[i, i, i] = 1
 
-    for d in range(1, n):
-        for i in range(n):
-            k = i + d
-            if k >= n: continue
-            for h in range(i, k+1):
-                edges = [[items[i, j, h], items[j+1, k, m]]
-                         for m in mod_of[h]
-                         for j in range(i, k)
-                         if has_item[i, j, h] and has_item[j+1, k, m]] + \
-                         [[items[i, j, m], items[j+1, k, h]]
-                          for m in mod_of[h]
-                          for j in range(i, k)
-                          if has_item[i, j, m] and has_item[j+1, k, h]]
+#     for d in range(1, n):
+#         for i in range(n):
+#             k = i + d
+#             if k >= n: continue
+#             for h in range(i, k+1):
+#                 edges = [[items[i, j, h], items[j+1, k, m]]
+#                          for m in mod_of[h]
+#                          for j in range(i, k)
+#                          if has_item[i, j, h] and has_item[j+1, k, m]] + \
+#                          [[items[i, j, m], items[j+1, k, h]]
+#                           for m in mod_of[h]
+#                           for j in range(i, k)
+#                           if has_item[i, j, m] and has_item[j+1, k, h]]
 
-                if len(edges) > 0:
-                    chart.set(items[i, k, h], edges)
-                    has_item[i, k, h] = 1
-    chart.set(items[n-1, 0, 0],
-              [[items[0, n-1, h]]
-               for h in range(n)
-               if has_item[0, n-1, h]])
-    return chart.finish(True)
+#                 if len(edges) > 0:
+#                     chart.set(items[i, k, h], edges)
+#                     has_item[i, k, h] = 1
+#     chart.set(items[n-1, 0, 0],
+#               [[items[0, n-1, h]]
+#                for h in range(n)
+#                if has_item[0, n-1, h]])
+#     return chart.finish(True)
 
-def nt_pruning_graph(sentence, grammar, span_pruner):
-    N = len(grammar.nonterms)
-    n = len(sentence)
-    labels = defaultdict(auto())
-    items = np.arange(n * n * N).reshape((n, n, N))
-    chart = pydecode.ChartBuilder(items, unstrict=True)
+# def nt_pruning_graph(sentence, grammar, span_pruner):
+#     N = len(grammar.nonterms)
+#     n = len(sentence)
+#     labels = defaultdict(auto())
+#     items = np.arange(n * n * N).reshape((n, n, N))
+#     chart = pydecode.ChartBuilder(items, unstrict=True)
 
-    has_item = np.zeros((n, n, N), dtype=np.uint8)
-    in_cell = defaultdict(list)
+#     has_item = np.zeros((n, n, N), dtype=np.uint8)
+#     in_cell = defaultdict(list)
 
-    for i in range(n):
-        has_item[i,i, sentence[i]] = 1
-        in_cell[i, i].append(sentence[i])
-        chart.init(items[i, i, sentence[i]])
-        for r, (X, Y) in enumerate(grammar.unary_table):
-            if Y == sentence[i]:
-                has_item[i, i, X] = 1
-                in_cell[i, i].append(X)
-                chart.set(items[i, i, X],
-                          [[items[i, i, sentence[i]]]])
+#     for i in range(n):
+#         has_item[i,i, sentence[i]] = 1
+#         in_cell[i, i].append(sentence[i])
+#         chart.init(items[i, i, sentence[i]])
+#         for r, (X, Y) in enumerate(grammar.unary_table):
+#             if Y == sentence[i]:
+#                 has_item[i, i, X] = 1
+#                 in_cell[i, i].append(X)
+#                 chart.set(items[i, i, X],
+#                           [[items[i, i, sentence[i]]]])
 
-    for d in range(1, n):
-        for i in range(n):
-            k = i + d
-            if k >= n:
-                continue
-            if not span_pruner[i, k]: continue
-            stash = defaultdict(list)
-            for h, m, j in span_pruner[i, k]:
-                req_dir = 0 if h <= j else 1
-                if not span_pruner[i, j] or not span_pruner[j+1, k]: continue
-                for Y in in_cell[i, j]:
-                    for r, X, Z, dir in grammar.rules_by_first[Y]:
-                        if dir != req_dir: continue
-                        if has_item[j+1, k, Z]:
-                            stash[X].append((Y, Z, j, r))
-            for X in stash:
-                chart.set(items[i, k, X],
-                          [[items[i, j, Y], items[j+1, k, Z]]
-                           for Y, Z, j, r in stash[X]])
+#     for d in range(1, n):
+#         for i in range(n):
+#             k = i + d
+#             if k >= n:
+#                 continue
+#             if not span_pruner[i, k]: continue
+#             stash = defaultdict(list)
+#             for h, m, j in span_pruner[i, k]:
+#                 req_dir = 0 if h <= j else 1
+#                 if not span_pruner[i, j] or not span_pruner[j+1, k]: continue
+#                 for Y in in_cell[i, j]:
+#                     for r, X, Z, dir in grammar.rules_by_first[Y]:
+#                         if dir != req_dir: continue
+#                         if has_item[j+1, k, Z]:
+#                             stash[X].append((Y, Z, j, r))
+#             for X in stash:
+#                 chart.set(items[i, k, X],
+#                           [[items[i, j, Y], items[j+1, k, Z]]
+#                            for Y, Z, j, r in stash[X]])
 
-                has_item[i, k, X] = 1
-                in_cell[i, k].append(X)
+#                 has_item[i, k, X] = 1
+#                 in_cell[i, k].append(X)
 
-    chart.set(items[n-1, 0, 0],
-              [[items[0, n-1, X]]
-               for X in range(N)
-               if has_item[0, n-1, X]])
+#     chart.set(items[n-1, 0, 0],
+#               [[items[0, n-1, X]]
+#                for X in range(N)
+#                if has_item[0, n-1, X]])
 
-    return chart.finish(True)
+#     return chart.finish(True)

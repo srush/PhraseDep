@@ -34,6 +34,10 @@ def main():
     parser.add_argument('--store_hypergraph_dir', type=str, help='Directory to store/load hypergraphs.')
     parser.add_argument('--save_hypergraph', type=bool, help='Construct and save hypergraphs.')
     parser.add_argument('--limit', type=int, help='Amount of sentences to use.')
+    parser.add_argument('--test_file', type=str, help='Test files.')
+    parser.add_argument('--gold_file', type=str, help='Gold file.')
+    parser.add_argument('--model', type=str, help='Weight model.')
+
 
     parser.add_argument('config', type=str)
     parser.add_argument('label', type=str)
@@ -79,6 +83,16 @@ def main():
             graph, encoder = model.dynamic_program(X[i])
             pydecode.save("/home/srush/data/wsj_out/graphs%s.graph"%i, graph)
             encoder.save("/home/srush/data/wsj_out/encoder%s.pickle"%i)
+    elif args.test_file:
+        model.set_from_disk(None)
+        X_test, Y_test = train.read_data_set(args.test_file, args.gold_file, 100)
+        w = np.load(args.model)
+        for x, y in zip(X_test, Y_test):
+            y_hat = model.inference(x, w)
+            print tree.unbinarize(y_hat).pprint(1000000)
+            print tree.unbinarize(y).pprint(1000000)
+
+
     else:
         print "train"
         model.set_from_disk(args.store_hypergraph_dir)

@@ -8,8 +8,17 @@ import lex
 
 ParseInput = namedtuple("ParseInput", ["words", "tags", "deps", "index"])
 
-class ReconstructionModel(pydecode.model.HammingLossModel,
-                          pydecode.model.DynamicProgrammingModel):
+class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
+
+    def loss(self, y, yhat):
+        a = y.treepositions()
+        b = yhat.treepositions()
+        count = len([i for i in a if i in b])
+             
+        return count / float(len(a))
+
+    def max_loss(self, y):
+        return 1.0
 
     def set_grammar(self, grammar):
         self.grammar = grammar

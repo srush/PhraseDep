@@ -34,9 +34,9 @@ def un_z_node(tree):
     if isinstance(tree, str):
         return tree
     else:
-        return [flat
+        return tuple([flat
                 for node in tree
-                for flat in un_z(node)]
+                for flat in un_z(node)])
 
 def label(tree):
     if isinstance(tree, str): return tree

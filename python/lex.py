@@ -140,8 +140,6 @@ class LexicalizedCFGEncoder(SparseEncoder):
 
             else:
                 X, _ = self.grammar.unary_rev_indices[r]
-
-
                 parse[i, i] = Tree(X+"^"+str(h),
                                    (parse[i, i],))
 

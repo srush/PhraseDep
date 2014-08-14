@@ -6,13 +6,16 @@ import itertools
 import numpy as np
 import lex
 
-ParseInput = namedtuple("ParseInput", ["words", "tags", "deps"])
+ParseInput = namedtuple("ParseInput", ["words", "tags", "deps", "index"])
 
 class ReconstructionModel(pydecode.model.HammingLossModel,
                           pydecode.model.DynamicProgrammingModel):
 
     def set_grammar(self, grammar):
         self.grammar = grammar
+
+    def set_from_disk(self, path):
+        self.path = path
 
     def initialize(self, X, Y):
         self.bins = [1, 2, 3, 5, 8, 20, 40]
@@ -40,10 +43,18 @@ class ReconstructionModel(pydecode.model.HammingLossModel,
         return p
 
     def dynamic_program(self, x):
-        #mod_of = lex.make_mod(x.words, x.deps)
         sentence = [self.grammar.nonterms[tag]
                     for tag in x.tags]
-        return lex.cky(sentence, self.grammar, x.deps)
+
+        if self.path and x.index:
+            graph = pydecode.load(self.path + "graphs%s.graph"%x.index)
+            
+            encoder = lex.LexicalizedCFGEncoder(sentence, self.grammar)
+            encoder.load(self.path + "encoder%s.pickle"%x.index)
+            return graph, encoder
+        else:
+            #mod_of = lex.make_mod(x.words, x.deps)
+            return lex.cky(sentence, self.grammar, x.deps)
 
     def parts_features(self, x, parts):
         p = self._preprocess(x)
@@ -62,34 +73,36 @@ class ReconstructionModel(pydecode.model.HammingLossModel,
         Z = self.grammar.rule_table[o[:, RULE]][2]
 
 
-        dist = o[:, HEAD] - o[:, MOD]
-        bdist = np.digitize(dist, self.bins)
-        direction = dist >= 0
-        base = [(p["WORD"][o[:, HEAD]], p["WORD"][o[:, MOD]]),
-                (p["WORD"][o[:, HEAD]], p["TAG"][ o[:, MOD]]),
-                (p["TAG"][o[:, HEAD]],  p["WORD"][o[:, MOD]]),
-                (p["TAG"][o[:, HEAD]],  p["TAG"][ o[:, MOD]])]
-        t = base
-        t += [(direction, bdist) + b for b in base]
+        # dist = o[:, HEAD] - o[:, MOD]
+        # bdist = np.digitize(dist, self.bins)
+        # direction = dist >= 0
+        # base = [(p["WORD"][o[:, HEAD]], p["WORD"][o[:, MOD]]),
+        #         (p["WORD"][o[:, HEAD]], p["TAG"][ o[:, MOD]]),
+        #         (p["TAG"][o[:, HEAD]],  p["WORD"][o[:, MOD]]),
+        #         (p["TAG"][o[:, HEAD]],  p["TAG"][ o[:, MOD]])]
+        # t = base
+        # t += [(direction, bdist) + b for b in base]
 
-        for d in [(-1, -1), (-1, 1), (1, -1), (1, 1)]:
-            t += [(p["TAG"][o[:, HEAD] + d[0]],
-                   p["TAG"][o[:, HEAD]],
-                   p["TAG"][o[:, MOD] + d[1]],
-                   p["TAG"][o[:, MOD]])]
+        # for d in [(-1, -1), (-1, 1), (1, -1), (1, 1)]:
+        #     t += [(p["TAG"][o[:, HEAD] + d[0]],
+        #            p["TAG"][o[:, HEAD]],
+        #            p["TAG"][o[:, MOD] + d[1]],
+        #            p["TAG"][o[:, MOD]])]
+        t = [(o[:, RULE],)]
         return t
 
     def templates(self):
-        def s(t):
-            return self.preprocessor.size(t)
-        base = [(s("WORD"), s("WORD")),
-                (s("WORD"), s("TAG")),
-                (s("TAG"),  s("WORD")),
-                (s("TAG"),  s("TAG"))]
-        t = base
-        t += [(2, len(self.bins) + 1) + b for b in base]
-        t += [(s("TAG"), s("TAG"),
-               s("TAG"), s("TAG"))] * 4
+        t = [(len(self.grammar.rule_table),)]
+        # def s(t):
+        #     return self.preprocessor.size(t)
+        # base = [(s("WORD"), s("WORD")),
+        #         (s("WORD"), s("TAG")),
+        #         (s("TAG"),  s("WORD")),
+        #         (s("TAG"),  s("TAG"))]
+        # t = base
+        # t += [(2, len(self.bins) + 1) + b for b in base]
+        # t += [(s("TAG"), s("TAG"),
+        #        s("TAG"), s("TAG"))] * 4
         return t
 
 
@@ -109,15 +122,14 @@ def read_data_set(dep_file, ps_file, limit):
     deps = pydecode.nlp.read_csv_records(dep_file, limit=limit)
     pss = []
     for i, l in enumerate(open(ps_file)):
-        pss.append(nltk.Tree.fromstring(l))
+        pss.append(nltk.ImmutableTree.fromstring(l))
         if i > limit: break
-        #= [nltk.Tree.fromstring(l) for l in open(ps_file)][:limit]
+
 
     X = []
     Y = []
     f = pydecode.nlp.CONLL
-    for record, ps in itertools.izip(deps, pss):
-
+    for i, (record, ps) in enumerate(itertools.izip(deps, pss)):
         heads = record[:, f["HEAD"]]
         n = len(heads)
         dep_matrix = np.zeros((n, n))
@@ -128,7 +140,8 @@ def read_data_set(dep_file, ps_file, limit):
 
         X.append(ParseInput(tuple(record[:, f["WORD"]]),
                             tuple(record[:, f["TAG"]]),
-                            tuple(map(tuple,dep_matrix))))
+                            tuple(map(tuple,dep_matrix)),
+                            index=i))
         Y.append(ps)
         assert len(ps.leaves()) == n, "%d %d"%(n, len(ps.leaves()))
 

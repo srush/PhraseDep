@@ -1,10 +1,14 @@
 from collections import defaultdict, namedtuple
 from pydecode.encoder import StructuredEncoder
 import nltk
-from nltk import Tree
+from nltk import ImmutableTree as Tree
 import numpy as np
 import pydecode
 import cPickle as pickle
+
+def label(tree):
+    if isinstance(tree, str): return tree
+    return tree.label()
 
 class auto:
     def __init__(self):
@@ -61,6 +65,7 @@ class LexicalizedCFGEncoder(SparseEncoder):
            index, m is the modifier index, and r is the index of
            the rule used.
         """
+        print parse.pprint()
         stack = [(parse, 0, len(parse.leaves())-1)]
         parts = []
         while stack:
@@ -69,13 +74,18 @@ class LexicalizedCFGEncoder(SparseEncoder):
             X, h = node.label().split("^")
             h = int(h)
             if len(node) == 2:
+                print label(node[1])
                 Y, h_1 = label(node[0]).split("^")
                 Z, h_2 = label(node[1]).split("^")
                 h_1, h_2 = int(h_1), int(h_2)
                 other = h_1 if h == h_2 else h_2
 
                 r = self.grammar.rule_indices[X, Y, Z]
-                j = i + len(node[0].leaves()) - 1
+                if not isinstance(node[0], str):
+                    j = i + len(node[0].leaves()) - 1
+                else:
+                    j = i + 1 - 1
+
                 parts.append((i, j, k, h, other, r))
 
             if len(node) == 1 and not isinstance(node[0], str):
@@ -114,21 +124,30 @@ class LexicalizedCFGEncoder(SparseEncoder):
 
         parse = {}
         for i in range(len(self.sentence)):
-            parse[i, i] = str(self.sentence[i]) + "^" + str(i)
+            X = self.sentence[i]
+            if X in self.grammar.nonterms:
+                parse[i, i] = str(self.sentence[i]) + "^" + str(i)
+            else:
+                parse[i, i] = str(self.grammar.rev_nonterms[int(X)]) + "^" + str(i)
 
         for part in parts:
             i, j, k, h, _, r = part
 
             if i != k:
                 X, _, __ = self.grammar.rule_rev_indices[r]
-                parse[i, k] = nltk.Tree(X+"^"+str(h),
-                                        [parse[i,j], parse[j+1, k]])
+                parse[i, k] = Tree(X+"^"+str(h),
+                                   (parse[i,j], parse[j+1, k]))
+
             else:
                 X, _ = self.grammar.unary_rev_indices[r]
-                parse[i, i] = nltk.Tree(X+"^"+str(h),
-                                        [parse[i, i]])
 
-        return parse[0, len(self.sentence)-1]
+
+                parse[i, i] = Tree(X+"^"+str(h),
+                                   (parse[i, i],))
+
+        parse =  parse[0, len(self.sentence)-1]
+        print "SYTEM", parse.pprint()
+        return parse
 
 def pruning(n, dep_matrix):
     has_item = np.zeros(n*n*n).reshape((n,n,n)) # defaultdict(lambda: 0)

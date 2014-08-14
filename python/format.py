@@ -19,13 +19,16 @@ class UnaryRule(namedtuple("UnaryRule",
 class RuleSet(object):
     def __init__(self):
         self.nonterms = {}
-        # self.preterms = {}
+        self.rev_nonterms = {}
+
         self.rules = []
         self.unary_rules = []
 
     def add_nonterm(self, nonterm):
         if nonterm not in self.nonterms:
-            self.nonterms[nonterm] = len(self.nonterms)
+            i = len(self.nonterms)
+            self.nonterms[nonterm] = i
+            self.rev_nonterms[i] = nonterm
 
     # def add_preterm(self, preterm):
     #     if preterm not in self.preterms:
@@ -87,7 +90,8 @@ class RuleSet(object):
         self.rules_by_nonterm_dir = defaultdict(lambda: [])
         self.rules_by_first_nonterm_dir = defaultdict(lambda: [])
         self.rules_by_both_dir = defaultdict(lambda: [])
-        for r, rule in enumerate(self.rule_table):
+
+        for r, rule in enumerate(self.rule_table[:len(self.rules)]):
             self.rules_by_nonterm_dir[rule[0], rule[3]].append((r,rule[1], rule[2]))
             self.rules_by_nonterm[rule[0]].append((r,rule[1], rule[2], rule[3]))
             self.rules_by_first[rule[1]].append((r, rule[0], rule[2], rule[3]))

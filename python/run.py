@@ -77,8 +77,8 @@ def main():
             print i,
             if len(X[i].words) < 5: continue
             graph, encoder = model.dynamic_program(X[i])
-            pydecode.save("/home/srush/data/wsj_out/graphs%s.graph"%i, graph)
-            encoder.save("/home/srush/data/wsj_out/encoder%s.pickle"%i)
+            pydecode.save(args.store_hypergraph_dir+"/graphs%s.graph"%i, graph)
+            encoder.save(args.store_hypergraph_dir+"/encoder%s.pickle"%i)
     else:
         print "train"
         model.set_from_disk(args.store_hypergraph_dir)

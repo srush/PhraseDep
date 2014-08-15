@@ -40,7 +40,7 @@ def un_z_node(tree):
 
 def remove_head(tree):
     if isinstance(tree, str): return tree.split("^")[0]
-    return tree.label().split("^")[0]
+    return Tree(tree.label().split("^")[0], tuple(map(remove_head, tree)))
     
 def label(tree):
     if isinstance(tree, str): return tree

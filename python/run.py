@@ -67,7 +67,6 @@ def main():
 
     X, Y = zip(*[(x, y) for x, y in zip(X, Y)     
                  if len(x.words) >= 5
-                 if x.index == 86
              ])
     binarized_Y = [tree.binarize(orules, y) for y in Y]
     model = train.ReconstructionModel(feature_hash=int(1e7),

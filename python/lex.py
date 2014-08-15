@@ -123,7 +123,7 @@ class LexicalizedCFGEncoder(SparseEncoder):
            :math:`i \in \{0 \ldots n-1\}` is the index of the head word.
         """
 
-        print self.sentence
+
         parse = {}
         for i in range(len(self.sentence)):
             X = self.sentence[i]
@@ -134,7 +134,6 @@ class LexicalizedCFGEncoder(SparseEncoder):
 
         for part in parts:
             i, j, k, h, _, r = part
-            print part
             if i != k:
                 X, _, __ = self.grammar.rule_rev_indices[r]
                 parse[i, k] = Tree(X+"^"+str(h+1),

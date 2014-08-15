@@ -38,6 +38,10 @@ def un_z_node(tree):
                 for node in tree
                 for flat in un_z(node)])
 
+def remove_head(tree):
+    if isinstance(tree, str): return tree.split("^")[0]
+    return tree.label().split("^")[0]
+    
 def label(tree):
     if isinstance(tree, str): return tree
     return tree.label()

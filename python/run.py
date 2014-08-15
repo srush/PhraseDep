@@ -83,8 +83,8 @@ def main():
             if len(X[i].words) < 5: continue
             graph, encoder = model.dynamic_program(X[i])
 
-            pydecode.save(args.store_hypergraph_dir+"/graphs%s.graph"%i, graph)
-            encoder.save(args.store_hypergraph_dir+"/encoder%s.pickle"%i)
+            pydecode.save(args.store_hypergraph_dir+"/graphs%s.graph"%X[i].index, graph)
+            encoder.save(args.store_hypergraph_dir+"/encoder%s.pickle"%X[i].index)
 
     elif args.test_file:
         model.set_from_disk(None)
@@ -92,8 +92,8 @@ def main():
         w = np.load(args.model)
         for x, y in zip(X_test, Y_test):
             y_hat = model.inference(x, w)
-            print tree.unbinarize(y_hat).pprint(1000000)
-            print tree.unbinarize(y).pprint(1000000)
+            print tree.remove_head(tree.unbinarize(y_hat)).pprint(1000000)
+            print tree.remove_head(tree.unbinarize(y)).pprint(1000000)
 
 
     else:

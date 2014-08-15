@@ -72,12 +72,12 @@ class LexicalizedCFGEncoder(SparseEncoder):
             (node, i, k) = stack.pop()
             cur = i
             X, h = node.label().split("^")
-            h = int(h)
+            h = int(h)-1
             if len(node) == 2:
 
                 Y, h_1 = label(node[0]).split("^")
                 Z, h_2 = label(node[1]).split("^")
-                h_1, h_2 = int(h_1), int(h_2)
+                h_1, h_2 = int(h_1)-1, int(h_2)-1
                 other = h_1 if h == h_2 else h_2
 
                 r = self.grammar.rule_indices[X, Y, Z]
@@ -90,6 +90,7 @@ class LexicalizedCFGEncoder(SparseEncoder):
 
             if len(node) == 1 and not isinstance(node[0], str):
                 Y, h_1 = label(node[0]).split("^")
+                h_1 = int(h_1)-1
                 r = self.grammar.unary_indices[X, Y]
                 parts.append((i, k, k, h, h, r))
 
@@ -126,21 +127,21 @@ class LexicalizedCFGEncoder(SparseEncoder):
         for i in range(len(self.sentence)):
             X = self.sentence[i]
             if X in self.grammar.nonterms:
-                parse[i, i] = str(self.sentence[i]) + "^" + str(i)
+                parse[i, i] = str(self.sentence[i]) + "^" + str(i+1)
             else:
-                parse[i, i] = str(self.grammar.rev_nonterms[int(X)]) + "^" + str(i)
+                parse[i, i] = str(self.grammar.rev_nonterms[int(X)]) + "^" + str(i+1)
 
         for part in parts:
             i, j, k, h, _, r = part
 
             if i != k:
                 X, _, __ = self.grammar.rule_rev_indices[r]
-                parse[i, k] = Tree(X+"^"+str(h),
+                parse[i, k] = Tree(X+"^"+str(h+1),
                                    (parse[i,j], parse[j+1, k]))
 
             else:
                 X, _ = self.grammar.unary_rev_indices[r]
-                parse[i, i] = Tree(X+"^"+str(h),
+                parse[i, i] = Tree(X+"^"+str(h+1),
                                    (parse[i, i],))
 
         parse =  parse[0, len(self.sentence)-1]

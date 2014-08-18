@@ -1,154 +1,7 @@
-from collections import defaultdict, namedtuple
-from pydecode.encoder import StructuredEncoder
-import nltk
-from nltk import ImmutableTree as Tree
-import numpy as np
-import pydecode
-import cPickle as pickle
-
-def label(tree):
-    if isinstance(tree, str): return tree
-    return tree.label()
-
-class auto:
-    def __init__(self):
-        self.id = 0
-
-    def __call__(self):
-        self.id += 1
-        return self.id
-
-class SparseEncoder(StructuredEncoder):
-    """
-    A sparse structured encoder.
-    """
-    def __init__(self):
-        self.encoder = defaultdict(auto())
-
-    def transform_labels(self, labels):
-        reverse = dict(zip(self.encoder.values(), self.encoder.keys()))
-        return np.array([reverse[label] for label in labels])
-
-
-class LexicalizedCFGEncoder(SparseEncoder):
-    def save(self, file):
-        out = zip(self.encoder.keys(), self.encoder.values())
-        pickle.dump(out, open(file, "wb"))
-
-    def load(self, file):
-        out = pickle.load(open(file, "rb"))
-        self.encoder = dict(out)
-
-
-
-    def __init__(self, sentence, grammar):
-        self.grammar = grammar
-        self.sentence = sentence
-        super(LexicalizedCFGEncoder, self).__init__()
-
-    def transform_structure(self, parse):
-        """
-        Decompose a parse structure to parts.
-
-        Parameters
-        ----------
-        parse : nltk.Tree
-           A lexicalized parse tree with annotated nonterminals of the
-           form X^i where X is a non-terminal symbol in the grammar and
-           :math:`i \in \{0 \ldots n-1\}` is the index of the head word.
-
-        Returns
-        -------
-        parts : int ndarray
-           Each row is a part of the form (i, j, k, h, m, r) where
-           i < j < k is the span and the split point, h is the head
-           index, m is the modifier index, and r is the index of
-           the rule used.
-        """
-
-        stack = [(parse, 0, len(parse.leaves())-1)]
-        parts = []
-        while stack:
-            (node, i, k) = stack.pop()
-            cur = i
-            X, h = node.label().split("^")
-            h = int(h)-1
-            if len(node) == 2:
-
-                Y, h_1 = label(node[0]).split("^")
-                Z, h_2 = label(node[1]).split("^")
-                h_1, h_2 = int(h_1)-1, int(h_2)-1
-                other = h_1 if h == h_2 else h_2
-
-                r = self.grammar.rule_indices[X, Y, Z]
-                if not isinstance(node[0], str):
-                    j = i + len(node[0].leaves()) - 1
-                else:
-                    j = i + 1 - 1
-
-                parts.append((i, j, k, h, other, r))
-
-            if len(node) == 1 and not isinstance(node[0], str):
-                Y, h_1 = label(node[0]).split("^")
-                h_1 = int(h_1)-1
-                r = self.grammar.unary_indices[X, Y]
-                parts.append((i, k, k, h, h, r))
-
-            for n in node:
-                if isinstance(n, str):
-                    cur += 1
-                    continue
-                stack.append((n, cur, cur + len(n.leaves())-1))
-                cur += len(n.leaves())
-        parts.reverse()
-        return np.array(parts)
-
-    def from_parts(self, parts):
-        """
-        Compose a set of parts into a parse structure.
-
-        Parameters
-        ----------
-        parts : int ndarray
-           Each row is a part of the form (i, j, k, h, m, r) where
-           i < j < k is the span and the split point, h is the head
-           index, m is the modifier index, and r is the index of
-           the rule used.
-
-        Returns
-        -------
-        parse : nltk.Tree
-           A lexicalized parse tree with annotated nonterminals of the
-           form X^i where X is a non-terminal symbol in the grammar and
-           :math:`i \in \{0 \ldots n-1\}` is the index of the head word.
-        """
-
-
-        parse = {}
-        for i in range(len(self.sentence)):
-            X = self.sentence[i]
-            if X in self.grammar.nonterms:
-                parse[i, i] = str(self.sentence[i]) + "^" + str(i+1)
-            else:
-                parse[i, i] = str(self.grammar.rev_nonterms[int(X)]) + "^" + str(i+1)
-
-        for part in parts:
-            i, j, k, h, _, r = part
-            if i != k:
-                X, _, __ = self.grammar.rule_rev_indices[r]
-                parse[i, k] = Tree(X+"^"+str(h+1),
-                                   (parse[i,j], parse[j+1, k]))
-
-            else:
-                X, _ = self.grammar.unary_rev_indices[r]
-                parse[i, i] = Tree(X+"^"+str(h+1),
-                                   (parse[i, i],))
-
-        parse =  parse[0, len(self.sentence)-1]
-        return parse
+from encoder import LexicalizedCFGEncoder
 
 def pruning(n, dep_matrix):
-    has_item = np.zeros(n*n*n).reshape((n,n,n)) # defaultdict(lambda: 0)
+    has_item = np.zeros(n*n*n).reshape((n,n,n))
     head_item = defaultdict(list)
     heads = defaultdict(set)
     for i in range(n):
@@ -211,12 +64,6 @@ def nt_pruning(sentence, grammar, span_pruner, dep_matrix):
             if Y == sentence[i]:
                 has_item[i, i, X] = 1
                 in_cell[i, i].append(X)
-        # cell_rule_set[i, i, 0].update(*[
-        #         grammar.rule_vec_first[X]
-        #         for X in in_cell[i,i]])
-        # cell_rule_set[i, i, 1].update(*[
-        #         grammar.rule_vec_second[X]
-        #         for X in in_cell[i,i]])
 
     for d in range(1, n):
         for i in range(n):
@@ -226,21 +73,10 @@ def nt_pruning(sentence, grammar, span_pruner, dep_matrix):
             for h, m, j in span_pruner[i, k]:
 
                 req_dir = 0 if h <= j else 1
-                # for r in (cell_rule_set[i, j, 0] & cell_rule_set[j+1, k, 1]):
-
                 for Y in in_cell[i, j]:
                     for r, X, Z, dir in grammar.rules_by_first[Y]:
                         if dir != req_dir: continue
 
-                # #for r in (cell_rule_set[i, j, 0] & cell_rule_set[j+1, k, 1]):
-                # for r in (cell_rule_set[i, j, 0] & cell_rule_set[j+1, k, 1]):
-                    # X, Y, Z, dir = grammar.rule_table[r]
-                        # min_l, min_r = grammar.rule_limits[r]
-                        # if mods[h, 0] < min_l or mods[h, 1] < min_r:
-                        #     continue
-
-                    # print h, mods[h], min_l, min_r
-                        # if req_dir != dir: continue
                         if not has_item[i, k, X]:
                             has_item[i, k, X] = 1
                             in_cell[i, k].append(X)
@@ -249,15 +85,6 @@ def nt_pruning(sentence, grammar, span_pruner, dep_matrix):
                         else:
                             cell_rules[i, k, Z, 1].append((r, X, Y))
 
-            # cell_rule_set[i, k, 0].update([
-            #         rule
-            #         for X in in_cell[i,k]
-            #         for rule in grammar.rule_vec_first[X]
-            #         ])
-            # cell_rule_set[i, k, 1].update([
-            #         rule
-            #         for X in in_cell[i,k]
-            #         for rule in grammar.rule_vec_second[X]])
 
     return has_item, in_cell, cell_rules
 

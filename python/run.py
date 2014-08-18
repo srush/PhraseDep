@@ -11,7 +11,7 @@ import pydecode
 import argparse_config
 import warnings
 
-import train, lex, format, tree
+import train, dp, grammar, tree
 
 logger = logging.getLogger("parse")
 
@@ -62,8 +62,8 @@ def main():
     print args.training_ps
     X, Y = train.read_data_set(args.training_dep, args.training_ps, args.limit)
 
-    orules = tree.read_original_rules(args.original_rules)
-    grammar = format.read_rule_set(open(args.binarized_rules))
+    orules = tree.read_original_rules(open(args.original_rules))
+    grammar = grammar.read_rule_set(open(args.binarized_rules))
 
     X, Y = zip(*[(x, y) for x, y in zip(X, Y)     
                  if len(x.words) >= 5

@@ -1,10 +1,14 @@
+"""
+This file implements training.
+"""
+
 from collections import defaultdict, namedtuple
 import pydecode.model
 import pydecode.nlp
 import nltk
 import itertools
 import numpy as np
-import lex
+import dp, encoder
 
 ParseInput = namedtuple("ParseInput", ["words", "tags", "deps", "index"])
 
@@ -52,20 +56,16 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
         return p
 
     def dynamic_program(self, x):
-        
-        sentence = [self.grammar.nonterms[tag]
-                    for tag in x.tags]
         if x.index is not None and ("DP", x.index) not in self.cache:
             if self.path and x.index:
                 graph = pydecode.load(self.path + "graphs%s.graph"%x.index)
-
-                encoder = lex.LexicalizedCFGEncoder(sentence, self.grammar)
+                encoder = encoder.LexicalizedCFGEncoder(x.sentence, x.tags, self.grammar)
                 encoder.load(self.path + "encoder%s.pickle"%x.index)
                 self.cache["DP", x.index] = graph, encoder
                 return graph, encoder
             else:
                 #mod_of = lex.make_mod(x.words, x.deps)
-                return lex.cky(sentence, self.grammar, x.deps)
+                return dp.cky(x.sentence, x.tags, self.grammar, x.deps)
         return self.cache["DP", x.index]
 
     def parts_features(self, x, parts):

@@ -89,10 +89,19 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
         MOD = 4
         RULE = 5
 
-        X = self.grammar.rule_table[o[:, RULE]][0]
-        Y = self.grammar.rule_table[o[:, RULE]][1]
-        Z = self.grammar.rule_table[o[:, RULE]][2]
-
+        X = self.grammar.rule_table[o[:, RULE], 0]
+        Y = self.grammar.rule_table[o[:, RULE], 1]
+        Z = self.grammar.rule_table[o[:, RULE], 2]
+        base = [(X, p["TAG"][o[:, HEAD]], p["TAG"][o[:, MOD]]),
+                (X, p["TAG"][o[:, HEAD]]),
+                (X, Y, p["TAG"][o[:, HEAD]]),
+                (X, Z, p["TAG"][o[:, HEAD]]),
+                (X, p["WORD"][o[:, HEAD]]),
+                (o[:, RULE], p["TAG"][o[:, HEAD]], p["WORD"][o[:, MOD]]),
+                (o[:, RULE], p["WORD"][o[:, HEAD]], p["TAG"][o[:, MOD]]),
+                (np.abs(o[:, POS_i] - o[:, POS_j]), 
+                 np.abs(o[:, POS_j] - o[:, POS_k]),),
+                (o[:, RULE],)]
 
         # dist = o[:, HEAD] - o[:, MOD]
         # bdist = np.digitize(dist, self.bins)
@@ -109,11 +118,23 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
         #            p["TAG"][o[:, HEAD]],
         #            p["TAG"][o[:, MOD] + d[1]],
         #            p["TAG"][o[:, MOD]])]
-        t = [(o[:, RULE],)]
-        return t
+        # t = [(o[:, RULE],)]
+        return base
 
     def templates(self):
-        t = [(len(self.grammar.rule_table),)]
+        def s(t):
+            return self.preprocessor.size(t)
+        nonterms = len(self.grammar.nonterms)
+        rules = len(self.grammar.rule_table)
+        base = [(nonterms, s("TAG"), s("TAG")),
+                (nonterms, s("TAG")),
+                (nonterms, nonterms, s("TAG")),
+                (nonterms, nonterms, s("TAG")),
+                (nonterms, s("WORD")),
+                (rules, s("TAG"), s("WORD")),
+                (rules, s("WORD"), s("TAG")),
+                (200, 200),
+                (rules,)]
         # def s(t):
         #     return self.preprocessor.size(t)
         # base = [(s("WORD"), s("WORD")),
@@ -124,7 +145,7 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
         # t += [(2, len(self.bins) + 1) + b for b in base]
         # t += [(s("TAG"), s("TAG"),
         #        s("TAG"), s("TAG"))] * 4
-        return t
+        return base
 
 
 def read_data_set(dep_file, ps_file, limit):

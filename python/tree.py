@@ -72,7 +72,7 @@ def make_bin_nonterm(parent_nt, prev_label, dir, head):
     return "Z_(%s_%s_%s)^%d"%(parent_nt, 
                               "l" if dir == 0 else "r",
                               clean_label(prev_label), 
-                              head)
+                              head+1)
 
 def _un_z(tree):
     """

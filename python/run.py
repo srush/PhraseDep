@@ -94,17 +94,33 @@ def main():
                     args.store_hypergraph_dir, X[i].index))
 
     elif args.test_file:
+        model = train.ReconstructionModel(feature_hash=int(1e7),
+                                          joint_feature_format="sparse")
+        model.set_grammar(grammar)
+        model.initialize(X, binarized_Y)
         model.set_from_disk(None)
         X_test, Y_test = train.read_data_set(
             args.test_file, args.gold_file, 100)
         w = np.load(args.model)
-        for x, y in zip(X_test, Y_test):
+        binarized_Y_test = [tree.binarize(orules, y) for y in Y_test]
+        for x, y in zip(X_test, binarized_Y_test):            
+            graph, encoder = model.dynamic_program(x)
             y_hat = model.inference(x, w)
+
+            print w.T * model.joint_feature(x, y)
+            print w.T * model.joint_feature(x, y_hat)
+            # print y.pprint(1000000)
+            # print y_hat.pprint(1000000)
+            print y.pprint(1000000)
+            print y_hat.pprint(1000000)
+
+            print 
             print tree.remove_head(tree.unbinarize(y_hat))\
                 .pprint(1000000)
-            # print tree.remove_head(tree.unbinarize(y))\
-            #     .pprint(1000000)
-
+            
+            print tree.remove_head(tree.unbinarize(y))\
+                .pprint(1000000)
+            print
 
     else:
         model.set_from_disk(args.store_hypergraph_dir)

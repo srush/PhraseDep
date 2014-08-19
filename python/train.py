@@ -8,18 +8,25 @@ import pydecode.nlp
 import nltk
 import itertools
 import numpy as np
-import dp, encoder
+import dp
+import tree 
+from encoder import LexicalizedCFGEncoder
 
 ParseInput = namedtuple("ParseInput", ["words", "tags", "deps", "index"])
+
+def fscore(a, b):
+    hit = len(a & b)
+    recall =  hit / float(len(a))
+    precision = hit / float(len(b))
+    return 2 * ((precision * recall) / float(precision + recall))
+
 
 class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
 
     def loss(self, y, yhat):
-        a = y.treepositions()
-        b = yhat.treepositions()
-        count = len([i for i in a if i in b])
-             
-        return count / float(len(a))
+        a = tree.make_spans(y)
+        b = tree.make_spans(yhat)             
+        return fscore(a, b)
 
     def max_loss(self, y):
         return 1.0
@@ -58,14 +65,16 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
     def dynamic_program(self, x):
         if x.index is not None and ("DP", x.index) not in self.cache:
             if self.path and x.index:
-                graph = pydecode.load(self.path + "graphs%s.graph"%x.index)
-                encoder = encoder.LexicalizedCFGEncoder(x.sentence, x.tags, self.grammar)
-                encoder.load(self.path + "encoder%s.pickle"%x.index)
+                graph = pydecode.load("%s/graphs%s.graph"%(self.path, 
+                                                           x.index))
+                encoder = LexicalizedCFGEncoder(x.words, x.tags, self.grammar)
+                encoder.load("%s/encoder%s.pickle"%(self.path, x.index))
                 self.cache["DP", x.index] = graph, encoder
                 return graph, encoder
             else:
-                #mod_of = lex.make_mod(x.words, x.deps)
-                return dp.cky(x.sentence, x.tags, self.grammar, x.deps)
+                graph, enc = dp.cky(x.words, x.tags, self.grammar, x.deps)
+                self.cache["DP", x.index] = graph, enc
+                return graph, enc
         return self.cache["DP", x.index]
 
     def parts_features(self, x, parts):
@@ -135,7 +144,8 @@ def read_data_set(dep_file, ps_file, limit):
     pss = []
     for i, l in enumerate(open(ps_file)):
         pss.append(nltk.ImmutableTree.fromstring(l))
-        if i > limit: break
+        if i > limit: 
+            break
 
 
     X = []
@@ -147,7 +157,8 @@ def read_data_set(dep_file, ps_file, limit):
         dep_matrix = np.zeros((n, n))
         for m, h in enumerate(heads, 1):
             # Drop the root.
-            if int(h) == 0: continue
+            if int(h) == 0: 
+                continue
             dep_matrix[int(h)-1, int(m)-1] = 1
 
         X.append(ParseInput(tuple(record[:, f["WORD"]]),

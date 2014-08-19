@@ -40,3 +40,10 @@ def test_binarize():
     check = unbinarize(bin_tree)
     assert(check == tree)
     #bin_tree.draw()
+
+
+def test_spans():
+    t = Tree("A", (Tree("C", ("D",) ), Tree("C", ("D",)), Tree("C", ("D",) )))
+    spans = make_spans(t)
+    print spans
+    assert spans == set([('C', 2, 3), ('C', 1, 2), ('C', 0, 1), ('A', 0, 3)])

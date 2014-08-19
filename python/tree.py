@@ -40,7 +40,7 @@ def annotated_label(tree):
 
 def clean_label(tree):
     "Get tree label without head position."
-    return annotated_label(tree)[0]
+    return label(tree).split("^")[0]
 
 def annotate_label(symbol, head):
     "Construct a tree annotation"
@@ -90,8 +90,8 @@ def _un_z(tree):
 def remove_head(tree):
     "Recursively remove head annotations from a tree"
     if terminal(tree): 
-        return annotated_label(tree)[0]
-    return Tree(annotated_label(tree)[0],
+        return clean_label(tree)
+    return Tree(clean_label(tree),
                 map_t(remove_head, tree))
 
 def map_t(f, ls):
@@ -159,3 +159,20 @@ def binarize(original_rules, tree, head=None):
                        (bin_node, cur))
             
         return cur
+
+def make_spans(tree):
+    all = set()
+    def make_span(node, i):
+        if terminal(node):
+            return
+        cur = i
+        span = (label(node), i, i + len(node.leaves()))
+        all.add(span)
+        for n in node:
+            make_span(n, cur)
+            if terminal(n):
+                cur += 1
+            else:
+                cur += len(n.leaves())
+    make_span(tree, 0)
+    return all

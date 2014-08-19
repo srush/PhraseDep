@@ -5,6 +5,7 @@ lexicalized CFG parsing.
 from encoder import LexicalizedCFGEncoder, auto
 from collections import defaultdict
 import numpy as np
+import pydecode
 
 # def count_mods(dep_matrix):
 #     n = len(dep_matrix)
@@ -67,7 +68,6 @@ def span_pruning(n, dep_matrix):
                             heads[i, k].add(h2)
     return chart
 
-
 def grammar_pruning(preterms, grammar, span_pruner):
     """
     """
@@ -122,11 +122,8 @@ def cky(sentence, tags, grammar, dep_matrix):
     n = len(sentence)
     preterms = [grammar.nonterms[tag] 
                 for tag in tags]
-    start = time.time()
 
     span_pruner = span_pruning(n, dep_matrix)
-    #print "A", time.time() - start
-    start = time.time()
     cell_rules = \
         grammar_pruning(preterms, grammar, span_pruner)
 
@@ -169,20 +166,22 @@ def cky(sentence, tags, grammar, dep_matrix):
                         for r, X, Z in cell_rules[i, k, Y, 0]:
                             if has_item[j+1, k, m, Z]:
                                 to_add[X].append([r, Y, Z, j, h, m, 0])
+                                assert r < G
                 if h > j:
                     for Z in span_nts[j+1, k, h]:
                         for r, X, Y in cell_rules[i, k, Z, 1]:
                             if has_item[i, j, m, Y]:
                                 to_add[X].append([r, Y, Z, j, h, m, 1])
-
+                                assert r < G
                 for X in to_add:
-                    label, edges  = zip(*[
+                    labels_, edges  = zip(*[
                             (labels[i, j, k, h, m, r],
                              [items[i, j, h if dir_ == 0 else m, Y],
                               items[j+1, k, m if dir_ == 0 else h, Z]])
                             for r, Y, Z, j, h, m, dir_ in to_add[X]])
 
-                    chart.set(items[i, k, h, X], edges, labels=label)
+                    chart.set(items[i, k, h, X], edges, 
+                              labels=labels_)
                     has_item[i, k, h, X] = 1
                     span_nts[i, k, h].add(X)
 
@@ -190,7 +189,6 @@ def cky(sentence, tags, grammar, dep_matrix):
               [[items[0, n-1, h, grammar.root]]
                for h in range(n)
                if has_item[0, n-1, h, grammar.root]])
-
     return chart.finish(True), encoder
 
 

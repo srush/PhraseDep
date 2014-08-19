@@ -60,8 +60,8 @@ class RuleSet(object):
     """
 
     def __init__(self):
-        self.nonterms = {}
-        self.rev_nonterms = {}
+        self.nonterms = {"*BLANK*" : 0}
+        self.rev_nonterms = {0 : "*BLANK*"}
 
         self.rules = []
         self.unary_rules = []
@@ -142,7 +142,7 @@ class RuleSet(object):
 
             # self.rule_indices[rule.X, rule.Y, 0] = i
             # self.rule_rev_indices[i] = (rule.X, rule.Y, 0)
-            # self.rule_table.append([X_n, Y_n, 0, 0])
+            self.rule_table.append([X_n, Y_n, 0, 0])
 
         self.rule_table = np.array(self.rule_table)
         self.unary_table = np.array(self.unary_table)

@@ -68,11 +68,15 @@ def main():
 
     orules = tree.read_original_rules(open(args.original_rules))
     grammar = read_rule_set(open(args.binarized_rules))
-
+    # for rule in grammar.unary_rules:
+    #     print rule
     X, Y = zip(*[(x, y) for x, y in zip(X, Y)     
                  if len(x.words) >= 5
              ])
     binarized_Y = [tree.binarize(orules, y) for y in Y]
+    
+    
+    
     model = train.ReconstructionModel(feature_hash=int(1e7),
                                       joint_feature_format="fast")
     model.set_grammar(grammar)
@@ -83,10 +87,14 @@ def main():
     if args.save_hypergraph:
         model.set_from_disk(None)
         for i in range(40000):
-            if len(X[i].words) < 5: 
+            if len(X[i].words) < 5 or i < 560:
                 continue
             graph, encoder = model.dynamic_program(X[i])
-
+            
+            # Sanity Check
+            # print encoder.structure_path(graph, binarized_Y[i])
+            # print binarized_Y[i]
+            print i
             pydecode.save("%s/graphs%s.graph"%(
                     args.store_hypergraph_dir, X[i].index), 
                           graph)

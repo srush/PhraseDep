@@ -119,6 +119,10 @@ class RuleSet(object):
         else:
             return self._unary_rev_indices[index]
 
+    def enumerate_unary(self):
+        for (X, Y), number in self._unary_indices.iteritems():
+            yield number, (self.nonterm_index(X), self.nonterm_index(Y)) 
+
     def finish(self):
         self.root = self.nonterms["S"]
 

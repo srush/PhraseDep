@@ -70,6 +70,15 @@ def span_pruning(n, dep_matrix):
 
 def grammar_pruning(preterms, grammar, span_pruner):
     """
+    Construct a pruning chart for grammar rules. 
+
+
+    Returns
+    -------
+    chart : dict
+       chart[i, k, Y, dir] is a list of items of the form (r, X, Z) 
+       indicating a rule with non terms possible at this location. 
+
     """
     N = len(grammar.nonterms)
     n = len(preterms)
@@ -124,6 +133,7 @@ def cky(sentence, tags, grammar, dep_matrix):
                 for tag in tags]
 
     span_pruner = span_pruning(n, dep_matrix)
+
     cell_rules = \
         grammar_pruning(preterms, grammar, span_pruner)
 
@@ -144,11 +154,11 @@ def cky(sentence, tags, grammar, dep_matrix):
         chart.init(items[i, i, i, preterms[i]])
         has_item[i, i, i, preterms[i]] = 1
         span_nts[i, i, i].add(preterms[i])
-        for r, (X, Y) in enumerate(grammar.unary_table):
+        for r, (X, Y) in grammar.enumerate_unary():
             if Y == preterms[i]:
                 chart.set(items[i, i, i, X],
                           [[items[i, i, i, Y]]],
-                          labels=[labels[i, i, i, i, i, G + r]])
+                          labels=[labels[i, i, i, i, i, r]])
                 has_item[i, i, i, X] = 1
                 span_nts[i, i, i].add(X)
 
@@ -158,33 +168,40 @@ def cky(sentence, tags, grammar, dep_matrix):
             k = i + d
             if k >= n:
                 continue
+            to_add = defaultdict(list)
             for h, m, j in span_pruner[i, k]:
-                to_add = defaultdict(list)
+
 
                 if h <= j:
                     for Y in span_nts[i, j, h]:
                         for r, X, Z in cell_rules[i, k, Y, 0]:
                             if has_item[j+1, k, m, Z]:
-                                to_add[X].append([r, Y, Z, j, h, m, 0])
+                                to_add[X, h].append([r, Y, Z, j, h, m, 0])
                                 assert r < G
                 if h > j:
                     for Z in span_nts[j+1, k, h]:
                         for r, X, Y in cell_rules[i, k, Z, 1]:
                             if has_item[i, j, m, Y]:
-                                to_add[X].append([r, Y, Z, j, h, m, 1])
+                                to_add[X, h].append([r, Y, Z, j, h, m, 1])
                                 assert r < G
-                for X in to_add:
-                    labels_, edges  = zip(*[
-                            (labels[i, j, k, h, m, r],
-                             [items[i, j, h if dir_ == 0 else m, Y],
-                              items[j+1, k, m if dir_ == 0 else h, Z]])
-                            for r, Y, Z, j, h, m, dir_ in to_add[X]])
+            for X, h in to_add:
+                labels_, edges  = zip(*[
+                        (labels[i, j, k, h, m, r],
+                         [items[i, j, h if dir_ == 0 else m, Y],
+                          items[j+1, k, m if dir_ == 0 else h, Z]])
+                        for r, Y, Z, j, h, m, dir_ in to_add[X, h]])
 
-                    chart.set(items[i, k, h, X], edges, 
-                              labels=labels_)
-                    has_item[i, k, h, X] = 1
-                    span_nts[i, k, h].add(X)
+                chart.set(items[i, k, h, X], edges, 
+                          labels=labels_)
+                assert not has_item[i, k, h, X]
+                has_item[i, k, h, X] = 1
+                span_nts[i, k, h].add(X)
 
+    # print grammar.root, n, has_item[0, n-1, 2, 3]
+    # print [([0, n-1, h, grammar.root])
+    #        for h in range(n)
+    #        if has_item[0, n-1, h, grammar.root]]
+    
     chart.set(items[n-1, 0, 0, 0],
               [[items[0, n-1, h, grammar.root]]
                for h in range(n)

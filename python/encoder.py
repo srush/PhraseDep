@@ -5,6 +5,7 @@ the parts representation as annotated spans.
 """
 
 from collections import defaultdict
+import pydecode
 from pydecode.encoder import StructuredEncoder
 from nltk import ImmutableTree as Tree
 import numpy as np
@@ -44,6 +45,49 @@ class LexicalizedCFGEncoder(SparseEncoder):
         self.sentence = sentence
         self.tags = tags
         super(LexicalizedCFGEncoder, self).__init__()
+
+
+    def structure_path(self, graph, parse):
+        parts = self.transform_structure(parse)
+        #labels = [self.encoder[part] 
+        # print parts
+        label_weights = np.zeros(len(self.encoder)+20, dtype=np.int8)
+
+        for part in parts:
+            # assert (tuple(part) in self.encoder), part
+            # print part[-1], [self.grammar.nonterms[nt] for nt in self.grammar.rule_nonterms(part[-1])]
+            label_weights[self.encoder[tuple(part)]] = 1
+            
+
+        weights = pydecode.transform(graph, label_weights)
+
+        part_set = set([self.encoder[tuple(part)] for part in parts])
+        for edge in graph.edges:
+            if edge.label == -1:
+                weights[edge.id] = 1
+            else:
+                if edge.label in part_set:
+                    part_set.remove(edge.label) 
+        # assert not part_set, [self.transform_labels([part for part in part_set])]
+
+        chart = pydecode.inside(graph, weights, weight_type=pydecode.Boolean)
+        for edge in graph.edges:
+            if edge.label != -1 and weights[edge.id] == 1 or edge.head.id == graph.root.id:
+                # print len(edge.tail), edge.label
+                for node in edge.tail:
+                    # print node.id
+                    if chart[node.id] != 1:
+                        pass
+                        # print self.transform_labels([edge.label])
+                #         assert(False)
+                # assert chart[edge.head.id] == 1
+
+        # print chart
+        if not chart[graph.root.id]:
+            print "fail"
+        else: 
+            print "good"
+        return 
 
     def transform_structure(self, parse):
         r"""

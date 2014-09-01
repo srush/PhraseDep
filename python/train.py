@@ -26,7 +26,7 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
     def loss(self, y, yhat):
         a = tree.make_spans(y)
         b = tree.make_spans(yhat)             
-        return fscore(a, b)
+        return 1.0 - fscore(a, b)
 
     def max_loss(self, y):
         return 1.0
@@ -73,7 +73,7 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
                 return graph, encoder
             else:
                 graph, enc = dp.cky(x.words, x.tags, self.grammar, x.deps)
-                self.cache["DP", x.index] = graph, enc
+                #self.cache["DP", x.index] = graph, enc
                 return graph, enc
         return self.cache["DP", x.index]
 

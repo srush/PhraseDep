@@ -9,7 +9,7 @@ import nltk
 import itertools
 import numpy as np
 import dp
-import tree 
+import tree
 from encoder import LexicalizedCFGEncoder
 
 ParseInput = namedtuple("ParseInput", ["words", "tags", "deps", "index"])
@@ -25,7 +25,7 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
 
     def loss(self, y, yhat):
         a = tree.make_spans(y)
-        b = tree.make_spans(yhat)             
+        b = tree.make_spans(yhat)
         return 1.0 - fscore(a, b)
 
     def max_loss(self, y):
@@ -36,7 +36,7 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
 
     def set_from_disk(self, path):
         self.path = path
-        
+
 
     def initialize(self, X, Y):
         self.bins = [1, 2, 3, 5, 8, 20, 40]
@@ -62,7 +62,7 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
                     + [self._preprocess_word("*END*", "*END*")])
             self.cache["PP", x] = p
         return p
-        
+
     def dynamic_program(self, x):
 
         if x.index is not None:
@@ -70,7 +70,7 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
                 return self.last[1], self.last[2]
             if self.path and x.index:
                 if  ("DP", x.index) not in self.cache:
-                    graph = pydecode.load("%s/graphs%s.graph"%(self.path, 
+                    graph = pydecode.load("%s/graphs%s.graph"%(self.path,
                                                                x.index))
                     encoder = LexicalizedCFGEncoder(x.words, x.tags, self.grammar)
                     encoder.load("%s/encoder%s.pickle"%(self.path, x.index), graph)
@@ -99,19 +99,30 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
         HEAD = 3
         MOD = 4
         RULE = 5
+        dist1 = np.abs(o[:, POS_i] - o[:, POS_j])
+        dist2 = np.abs(o[:, POS_j] - o[:, POS_k])
+        bdist1 = np.digitize(dist1, self.bins)
+        bdist2 = np.digitize(dist2, self.bins)
 
         X = self.grammar.rule_table[o[:, RULE], 0]
         Y = self.grammar.rule_table[o[:, RULE], 1]
         Z = self.grammar.rule_table[o[:, RULE], 2]
+        G = len(self.grammar.rules)
+        size = np.abs(o[:, POS_k] - o[:, POS_i])
+        length = len(x)
+        top = size == length
+        is_unary = o[:, RULE] > G
         base = [(X, p["TAG"][o[:, HEAD]], p["TAG"][o[:, MOD]]),
                 (X, p["TAG"][o[:, HEAD]]),
+                (X, top),
+                (is_unary,),
+                (is_unary, size == 0),
                 (X, Y, p["TAG"][o[:, HEAD]]),
                 (X, Z, p["TAG"][o[:, HEAD]]),
                 (X, p["WORD"][o[:, HEAD]]),
                 (o[:, RULE], p["TAG"][o[:, HEAD]], p["WORD"][o[:, MOD]]),
                 (o[:, RULE], p["WORD"][o[:, HEAD]], p["TAG"][o[:, MOD]]),
-                (np.abs(o[:, POS_i] - o[:, POS_j]), 
-                 np.abs(o[:, POS_j] - o[:, POS_k]),),
+                (bdist1, bdist2),
                 (o[:, RULE],)]
 
         # dist = o[:, HEAD] - o[:, MOD]
@@ -139,6 +150,9 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
         rules = len(self.grammar.rule_table)
         base = [(nonterms, s("TAG"), s("TAG")),
                 (nonterms, s("TAG")),
+                (nonterms, 2),
+                (2,),
+                (2, 2,),
                 (nonterms, nonterms, s("TAG")),
                 (nonterms, nonterms, s("TAG")),
                 (nonterms, s("WORD")),
@@ -177,7 +191,7 @@ def read_data_set(dep_file, ps_file, limit):
     pss = []
     for i, l in enumerate(open(ps_file)):
         pss.append(nltk.ImmutableTree.fromstring(l))
-        if i > limit: 
+        if i > limit:
             break
 
 
@@ -190,7 +204,7 @@ def read_data_set(dep_file, ps_file, limit):
         dep_matrix = np.zeros((n, n))
         for m, h in enumerate(heads, 1):
             # Drop the root.
-            if int(h) == 0: 
+            if int(h) == 0:
                 continue
             dep_matrix[int(h)-1, int(m)-1] = 1
 

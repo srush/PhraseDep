@@ -36,10 +36,11 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
 
     def set_from_disk(self, path):
         self.path = path
+        
 
     def initialize(self, X, Y):
         self.bins = [1, 2, 3, 5, 8, 20, 40]
-
+        self.last = None
         # Preprocessor
         self.preprocessor = pydecode.model.Preprocessor()
         for x in X:
@@ -61,15 +62,25 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
                     + [self._preprocess_word("*END*", "*END*")])
             self.cache["PP", x] = p
         return p
-
+        
     def dynamic_program(self, x):
-        if x.index is not None and ("DP", x.index) not in self.cache:
+
+        if x.index is not None:
+            if self.last is not None and x.index == self.last[0]:
+                return self.last[1], self.last[2]
             if self.path and x.index:
-                graph = pydecode.load("%s/graphs%s.graph"%(self.path, 
-                                                           x.index))
-                encoder = LexicalizedCFGEncoder(x.words, x.tags, self.grammar)
-                encoder.load("%s/encoder%s.pickle"%(self.path, x.index))
-                self.cache["DP", x.index] = graph, encoder
+                if  ("DP", x.index) not in self.cache:
+                    graph = pydecode.load("%s/graphs%s.graph"%(self.path, 
+                                                               x.index))
+                    encoder = LexicalizedCFGEncoder(x.words, x.tags, self.grammar)
+                    encoder.load("%s/encoder%s.pickle"%(self.path, x.index), graph)
+                        # self.cache["DP", x.index] = graph
+                else:
+                    graph, encoder = self.cache["DP", x.index]
+                if False and len(x.words) < 10:
+                    self.cache["DP", x.index] = graph, encoder
+                if x.index% 100 == 0: print x.index
+                self.last = (x.index, graph, encoder)
                 return graph, encoder
             else:
                 graph, enc = dp.cky(x.words, x.tags, self.grammar, x.deps)
@@ -161,6 +172,7 @@ def read_data_set(dep_file, ps_file, limit):
     ps_file : string
        Binrarized phrase structures in bracket format with head annotations.
     """
+    print limit
     deps = pydecode.nlp.read_csv_records(dep_file, limit=limit)
     pss = []
     for i, l in enumerate(open(ps_file)):

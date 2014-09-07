@@ -1,6 +1,6 @@
 """
-This file implements an Encoder for lexicalized parsing. 
-Basically its job is to map between lexicalized trees and 
+This file implements an Encoder for lexicalized parsing.
+Basically its job is to map between lexicalized trees and
 the parts representation as annotated spans.
 """
 
@@ -11,6 +11,7 @@ from nltk import ImmutableTree as Tree
 import numpy as np
 import cPickle as pickle
 from tree import *
+from itertools import izip
 
 class auto:
     def __init__(self):
@@ -32,13 +33,17 @@ class SparseEncoder(StructuredEncoder):
         return np.array([reverse[label] for label in labels])
 
 class LexicalizedCFGEncoder(SparseEncoder):
-    def save(self, file):
-        out = zip(self.encoder.keys(), self.encoder.values())
-        pickle.dump(out, open(file, "wb"))
+    def save(self, file, graph):
+        s = set(graph.labeling)
+        out = [(k, v) for k, v in izip(self.encoder.keys(), self.encoder.values())
+                if v in s]
+        with open(file, "wb") as o:
+            pickle.dump(out, o)
 
-    def load(self, file):
-        out = pickle.load(open(file, "rb"))
-        self.encoder = dict(out)
+    def load(self, file, graph):
+        with open(file, "rb") as i:
+            out = pickle.load(i)
+            self.encoder = dict(out)
 
     def __init__(self, sentence, tags, grammar):
         self.grammar = grammar
@@ -49,15 +54,16 @@ class LexicalizedCFGEncoder(SparseEncoder):
 
     def structure_path(self, graph, parse):
         parts = self.transform_structure(parse)
-        #labels = [self.encoder[part] 
-        # print parts
+        #labels = [self.encoder[part]
+        print parts
         label_weights = np.zeros(len(self.encoder)+20, dtype=np.int8)
 
         for part in parts:
-            # assert (tuple(part) in self.encoder), part
+            #assert
+            if not (tuple(part) in self.encoder):  print part
             # print part[-1], [self.grammar.nonterms[nt] for nt in self.grammar.rule_nonterms(part[-1])]
             label_weights[self.encoder[tuple(part)]] = 1
-            
+
 
         weights = pydecode.transform(graph, label_weights)
 
@@ -67,8 +73,10 @@ class LexicalizedCFGEncoder(SparseEncoder):
                 weights[edge.id] = 1
             else:
                 if edge.label in part_set:
-                    part_set.remove(edge.label) 
-        # assert not part_set, [self.transform_labels([part for part in part_set])]
+                    part_set.remove(edge.label)
+        bad_parts = self.transform_labels([part for part in part_set])
+        print part_set, bad_parts, [self.grammar.rule_nonterms(p[-1]) for p in bad_parts]
+        #assert not part_set, [self.transform_labels([part for part in part_set])]
 
         chart = pydecode.inside(graph, weights, weight_type=pydecode.Boolean)
         for edge in graph.edges:
@@ -85,9 +93,9 @@ class LexicalizedCFGEncoder(SparseEncoder):
         # print chart
         if not chart[graph.root.id]:
             print "fail"
-        else: 
+        else:
             print "good"
-        return 
+        return
 
     def transform_structure(self, parse):
         r"""
@@ -167,19 +175,18 @@ class LexicalizedCFGEncoder(SparseEncoder):
             X = self.sentence[i]
             parse[i, i] = Tree(annotate_label(self.tags[i], i),
                                (annotate_label(self.sentence[i], i),))
-            
+
         for part in parts:
             i, j, k, h, _, r = part
-            if i != k:
+            if j != k:
                 X, _, __ = self.grammar.rule_nonterms(r)
                 parse[i, k] = Tree(annotate_label(X, h),
                                    (parse[i,j], parse[j+1, k]))
 
             else:
                 X, _ = self.grammar.rule_nonterms(r)
-                parse[i, i] = Tree(annotate_label(X, h),
-                                   (parse[i, i],))
+                parse[i, k] = Tree(annotate_label(X, h),
+                                   (parse[i, k],))
 
         parse =  parse[0, len(self.sentence)-1]
         return parse
-

@@ -27,13 +27,13 @@ def main():
     parser = argparse.ArgumentParser(description='Run parsing experiments.')
     parser.add_argument('--original_rules', type=str, help='Original rule file')
     parser.add_argument('--binarized_rules', type=str, help='Binarized rules')
-    parser.add_argument('--training_ps', type=str, 
+    parser.add_argument('--training_ps', type=str,
                         help='Lexicalized phrase structure file.')
-    parser.add_argument('--training_dep', type=str, 
+    parser.add_argument('--training_dep', type=str,
                         help='Dependency parse file.')
-    parser.add_argument('--store_hypergraph_dir', type=str, 
+    parser.add_argument('--store_hypergraph_dir', type=str,
                         help='Directory to store/load hypergraphs.')
-    parser.add_argument('--save_hypergraph', type=bool, 
+    parser.add_argument('--save_hypergraph', type=bool,
                         help='Construct and save hypergraphs.')
     parser.add_argument('--limit', type=int, help='Amount of sentences to use.')
     parser.add_argument('--test_file', type=str, help='Test files.')
@@ -59,50 +59,55 @@ def main():
     handler = logging.StreamHandler(open(data_out, 'w'))
     logger.addHandler(handler)
 
-    # Load data. 
+    # Load data.
     print args.training_dep
     print args.training_ps
-    X, Y = train.read_data_set(args.training_dep, 
-                               args.training_ps, 
+    X, Y = train.read_data_set(args.training_dep,
+                               args.training_ps,
                                args.limit)
 
     orules = tree.read_original_rules(open(args.original_rules))
     grammar = read_rule_set(open(args.binarized_rules))
     # for rule in grammar.unary_rules:
     #     print rule
-    X, Y = zip(*[(x, y) for x, y in zip(X, Y)     
+    X, Y = zip(*[(x, y) for x, y in zip(X, Y)
                  if len(x.words) >= 5
              ])
     binarized_Y = [tree.binarize(orules, y) for y in Y]
-    
-    
-    
+
+
+
     model = train.ReconstructionModel(feature_hash=int(1e7),
-                                      joint_feature_format="fast")
+                                      joint_feature_format="fast",
+                                      use_cache=False)
     model.set_grammar(grammar)
 
 
-    
+
     model.initialize(X, binarized_Y)
     if args.save_hypergraph:
         model.set_from_disk(None)
         for i in range(40000):
-            if len(X[i].words) < 5 or i < 560:
+            if len(X[i].words) < 5:
                 continue
             graph, encoder = model.dynamic_program(X[i])
-            
+
             # Sanity Check
-            # print encoder.structure_path(graph, binarized_Y[i])
             # print binarized_Y[i]
-            print i
+            # print encoder.structure_path(graph, binarized_Y[i])
+
+            # print i
             pydecode.save("%s/graphs%s.graph"%(
-                    args.store_hypergraph_dir, X[i].index), 
+                    args.store_hypergraph_dir, X[i].index),
                           graph)
             encoder.save("%s/encoder%s.pickle"%(
-                    args.store_hypergraph_dir, X[i].index))
+                    args.store_hypergraph_dir, X[i].index), graph)
 
+            del graph
+            del encoder
     elif args.test_file:
-        model = train.ReconstructionModel(feature_hash=int(1e7),
+        trees_out = open(os.path.join(output_dir, "trees.txt"), 'w')
+        model = train.ReconstructionModel(feature_hash=int(1e7), use_cache=True,
                                           joint_feature_format="sparse")
         model.set_grammar(grammar)
         model.initialize(X, binarized_Y)
@@ -111,24 +116,27 @@ def main():
             args.test_file, args.gold_file, 100)
         w = np.load(args.model)
         binarized_Y_test = [tree.binarize(orules, y) for y in Y_test]
-        for x, y in zip(X_test, binarized_Y_test):            
+        for x, y in zip(X_test, binarized_Y_test):
             graph, encoder = model.dynamic_program(x)
             y_hat = model.inference(x, w)
 
-            print w.T * model.joint_feature(x, y)
-            print w.T * model.joint_feature(x, y_hat)
+            a,b = w.T * model.joint_feature(x, y), w.T * model.joint_feature(x, y_hat)
+            print a, b
+            if a > b: print "FAIL"
             # print y.pprint(1000000)
             # print y_hat.pprint(1000000)
-            print y.pprint(1000000)
-            print y_hat.pprint(1000000)
+            # print y.pprint(1000000)
+            # print y_hat.pprint(1000000)
 
-            print 
-            print tree.remove_head(tree.unbinarize(y_hat))\
-                .pprint(1000000)
-            
-            print tree.remove_head(tree.unbinarize(y))\
-                .pprint(1000000)
             print
+            print tree.remove_head(tree.unbinarize(y_hat))\
+                .pprint()
+
+            print tree.remove_head(tree.unbinarize(y))\
+                .pprint()
+            print
+            print >>trees_out, tree.tree.remove_head(tree.unbinarize(y_hat))\
+                                        .pprint(100000)
 
     else:
         model.set_from_disk(args.store_hypergraph_dir)

@@ -8,8 +8,8 @@ class BinarizedRule(namedtuple("BinarizedRule",
                                 "mins"])):
     """
     A binarized rule consists of a lexicalized rule X->Y Z
-    and possibly information about the original rule it 
-    was derived from. 
+    and possibly information about the original rule it
+    was derived from.
 
     Attributes
     -----------
@@ -17,13 +17,13 @@ class BinarizedRule(namedtuple("BinarizedRule",
        The non-terminals of the rule X -> Y Z
 
     original : int
-       The id of the original rule. 
-    
+       The id of the original rule.
+
     direction : int
        The head of the rule. 0 for Y, 1 for z.
 
     mins : pair of int
-       The minimal left/right spans of X.  
+       The minimal left/right spans of X.
     """
     pass
 
@@ -36,7 +36,7 @@ class UnaryRule(namedtuple("UnaryRule",
 
 class RuleSet(object):
     """
-    The complete binarized rule set. 
+    The complete binarized rule set.
 
     Attributes
     ----------
@@ -44,17 +44,17 @@ class RuleSet(object):
         Mapping from non-terminal to id and reverse.
 
     rules, unary_rules : dict
-        Mapping from id to rules and unary rules. 
-    
+        Mapping from id to rules and unary rules.
+
     rule_table : ndarray
-        A Gx4 matrix. The first three columns are X, Y, Z, 
-        and the last column is a direction bit. 
+        A Gx4 matrix. The first three columns are X, Y, Z,
+        and the last column is a direction bit.
 
     unary_table : ndarray
         A Gx2 matrix. The columns are X, Y.
 
     rules_by_* : dict
-        Cached lookup tables to find rules by combinations of 
+        Cached lookup tables to find rules by combinations of
         X,Y,Z and direction.
 
     """
@@ -75,7 +75,7 @@ class RuleSet(object):
         self._rule_indices = {}
         self._rule_rev_indices = {}
 
-        self.root = None
+        self.roots = None
 
     def _add_nonterm(self, nonterm):
         if nonterm not in self.nonterms:
@@ -121,10 +121,12 @@ class RuleSet(object):
 
     def enumerate_unary(self):
         for (X, Y), number in self._unary_indices.iteritems():
-            yield number, (self.nonterm_index(X), self.nonterm_index(Y)) 
+            yield number, (self.nonterm_index(X), self.nonterm_index(Y))
 
     def finish(self):
-        self.root = self.nonterms["S"]
+        self.roots = [self.nonterms["S"], self.nonterms["SQ"], self.nonterms["SBARQ"],
+                      self.nonterms["FRAG"],
+                      self.nonterms["SINV"], self.nonterms["NP"], self.nonterms["UCP"]]
 
 
         for i, rule in enumerate(self.rules):
@@ -171,6 +173,16 @@ class RuleSet(object):
             self.rules_by_both_dir[rule[1], rule[2], rule[3]].append(
                 (r, rule[0]))
 
+        self.unary_rules_by_first = defaultdict(lambda: [])
+        # order = defaultdict(lambda: False)
+        # xs = set()
+        for r, rule in enumerate(self.rule_table[len(self.rules):], len(self.rules)):
+            self.unary_rules_by_first[rule[1]].append((r, rule[0]))
+        #     order[rule[0], rule[1]] = 1
+        #     xs.add(rule[0])
+        # l = list(xs)
+        # l.sort(lambda a, b: order[a, b] or not  order[b, a])
+        # self.unary_order = dict([(v, k) for k, v in enumerate(l)])
 
 def read_rule_set(handle):
     """
@@ -178,12 +190,12 @@ def read_rule_set(handle):
 
     Returns
     -------
-    RuleSet : 
+    RuleSet :
     """
     rules = RuleSet()
 
     for l in handle:
-        if not l.strip(): 
+        if not l.strip():
             continue
         t = l.split()
         if len(t) == 6:
@@ -207,7 +219,7 @@ def read_rule_set(handle):
             min_l = int(t[5].strip())
             min_r = int(t[6].strip())
 
-            rules.add(BinarizedRule(X, Y, Z, 
+            rules.add(BinarizedRule(X, Y, Z,
                                     original, direction, (min_l, min_r)))
     rules.finish()
     return rules

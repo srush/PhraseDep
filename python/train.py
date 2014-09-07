@@ -68,7 +68,8 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
         if x.index is not None:
             if self.last is not None and x.index == self.last[0]:
                 return self.last[1], self.last[2]
-            if self.path and x.index:
+            print x.index
+            if self.path and x.index is not None:
                 if  ("DP", x.index) not in self.cache:
                     graph = pydecode.load("%s/graphs%s.graph"%(self.path,
                                                                x.index))
@@ -83,6 +84,7 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
                 self.last = (x.index, graph, encoder)
                 return graph, encoder
             else:
+                print "running cky", x.index, self.path
                 graph, enc = dp.cky(x.words, x.tags, self.grammar, x.deps)
                 #self.cache["DP", x.index] = graph, enc
                 return graph, enc

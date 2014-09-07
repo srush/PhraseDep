@@ -37,13 +37,23 @@ class LexicalizedCFGEncoder(SparseEncoder):
         s = set(graph.labeling)
         out = [(k, v) for k, v in izip(self.encoder.keys(), self.encoder.values())
                 if v in s]
+
+        out = [(k, v) for k, v in izip(self.encoder.keys(), self.encoder.values())
+                if v in s]
+
+        a1 = np.array([a for (a, b) in out])
+        b1 = np.array([b for (a, b) in out])
+
         with open(file, "wb") as o:
-            pickle.dump(out, o)
+            np.save(file + ".keys", a1)
+            np.save(file + ".vals", b1)
+            # pickle.dump(out, o)
 
     def load(self, file, graph):
         with open(file, "rb") as i:
-            out = pickle.load(i)
-            self.encoder = dict(out)
+            keys = np.load(file + ".keys.npy")
+            vals = np.load(file + ".vals.npy")
+            self.encoder = dict([(tuple(keys[i]), vals[i]) for i in range(len(keys))])
 
     def __init__(self, sentence, tags, grammar):
         self.grammar = grammar

@@ -39,6 +39,8 @@ def main():
     parser.add_argument('--test_file', type=str, help='Test files.')
     parser.add_argument('--gold_file', type=str, help='Gold file.')
     parser.add_argument('--model', type=str, help='Weight model.')
+    parser.add_argument('--test_limit', type=int, help='Number of sentences to test on.')
+    parser.add_argument('--run_eval', default=False, type=bool, help='')
 
 
     parser.add_argument('config', type=str)
@@ -62,30 +64,32 @@ def main():
     # Load data.
     print args.training_dep
     print args.training_ps
-    X, Y = train.read_data_set(args.training_dep,
-                               args.training_ps,
-                               args.limit)
+    if args.training_dep:
+        X, Y = train.read_data_set(args.training_dep,
+                                   args.training_ps,
+                                   args.limit)
 
-    orules = tree.read_original_rules(open(args.original_rules))
-    grammar = read_rule_set(open(args.binarized_rules))
-    # for rule in grammar.unary_rules:
-    #     print rule
-    X, Y = zip(*[(x, y) for x, y in zip(X, Y)
-                 if len(x.words) >= 5
-             ])
-    binarized_Y = [tree.binarize(orules, y) for y in Y]
-
-
-
-    model = train.ReconstructionModel(feature_hash=int(1e7),
-                                      joint_feature_format="fast",
-                                      use_cache=False)
-    model.set_grammar(grammar)
+        orules = tree.read_original_rules(open(args.original_rules))
+        grammar = read_rule_set(open(args.binarized_rules))
+        # for rule in grammar.unary_rules:
+        #     print rule
+        X, Y = zip(*[(x, y) for x, y in zip(X, Y)
+                     if len(x.words) >= 5])
+        binarized_Y = [tree.binarize(orules, y) for y in Y]
 
 
 
-    model.initialize(X, binarized_Y)
+        model = train.ReconstructionModel(feature_hash=int(1e7),
+                                          joint_feature_format="fast",
+                                          use_cache=False)
+        model.set_grammar(grammar)
+
+
+
+        model.initialize(X, binarized_Y)
+
     if args.save_hypergraph:
+        print "SAVING"
         model.set_from_disk(None)
         for i in range(40000):
             if len(X[i].words) < 5:
@@ -106,6 +110,7 @@ def main():
             del graph
             del encoder
     elif args.test_file:
+        print "TESTING"
         trees_out = open(os.path.join(output_dir, "trees.txt"), 'w')
         model = train.ReconstructionModel(feature_hash=int(1e7), use_cache=True,
                                           joint_feature_format="sparse")
@@ -113,32 +118,34 @@ def main():
         model.initialize(X, binarized_Y)
         model.set_from_disk(None)
         X_test, Y_test = train.read_data_set(
-            args.test_file, args.gold_file, 100)
+            args.test_file, args.gold_file, args.test_limit)
         w = np.load(args.model)
-        binarized_Y_test = [tree.binarize(orules, y) for y in Y_test]
-        for x, y in zip(X_test, binarized_Y_test):
+        # binarized_Y_test = [tree.binarize(orules, y) for y in Y_test]
+        # for x, y in zip(X_test, binarized_Y_test):
+        for x in X_test:
             graph, encoder = model.dynamic_program(x)
             y_hat = model.inference(x, w)
 
-            a,b = w.T * model.joint_feature(x, y), w.T * model.joint_feature(x, y_hat)
-            print a, b
-            if a > b: print "FAIL"
-            # print y.pprint(1000000)
-            # print y_hat.pprint(1000000)
-            # print y.pprint(1000000)
-            # print y_hat.pprint(1000000)
+            # a,b = w.T * model.joint_feature(x, y), w.T * model.joint_feature(x, y_hat)
+            # print a, b
+            # if a > b: print "FAIL"
 
             print
             print tree.remove_head(tree.unbinarize(y_hat))\
                 .pprint()
 
-            print tree.remove_head(tree.unbinarize(y))\
-                .pprint()
+            # print tree.remove_head(tree.unbinarize(y))\
+            #     .pprint()
             print
-            print >>trees_out, tree.tree.remove_head(tree.unbinarize(y_hat))\
-                                        .pprint(100000)
-
+            print >>trees_out, tree.remove_head(tree.unbinarize(y_hat))\
+                                   .pprint(100000)
+    elif args.run_eval:
+        test_file = os.path.join(output_dir, "trees.txt")
+        gold_file = args.gold_file
+        print "Evaling", test_file, gold_file
+        os.system("../evalb/EVALB/evalb -p ../evalb/EVALB/COLLINS.prm %s %s"%(gold_file, test_file))
     else:
+        print "TRAINING"
         model.set_from_disk(args.store_hypergraph_dir)
         sp = StructuredPerceptron(model, verbose=1, max_iter=10,
                                   average=False)

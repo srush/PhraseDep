@@ -71,6 +71,65 @@ public class PTBRule {
 		return true;
 	}
 
+	// Original function
+//	public ArrayList<PTBRule> binRule() {
+//		if(rhs.size()<=2){
+//			System.err.println("Binarize a rule with length smaller than or equal to 2!");
+//			return null;
+//		}
+//		ArrayList<PTBRule> brules = new ArrayList<PTBRule>();
+//		String previousnnt = lhs;
+//		for(int i = 0; i < headInd-1; i++){
+//			// leave the left-most one outside
+//			// others just be one non-terminal
+//			String nnt = "Z_("+ruleInd + "," + "l" + ","+ i +")";
+//			ArrayList<String> nrhs = new ArrayList<String>();
+//			nrhs.add(rhs.get(i));
+//			nrhs.add(nnt);			
+//			PTBRule ptbr = new PTBRule(previousnnt, nrhs, 1, ruleInd);
+//			brules.add(ptbr);
+//			previousnnt = new String(nnt);
+//		}
+//		// the head is the rightmost one
+//		if (headInd == rhs.size()-1){
+//			ArrayList<String> nrhs = new ArrayList<String>();
+//			nrhs.add(rhs.get(headInd-1));
+//			nrhs.add(rhs.get(headInd));			
+//			PTBRule ptbr = new PTBRule(previousnnt, nrhs, 1, ruleInd);
+//			brules.add(ptbr);
+//			// Everything is done basically
+//		}else{
+//			// the head is not the rightmost one
+//			// left split the last one
+//			if(headInd >= 1){
+//				String nnt = "Z_("+ruleInd + "," + "l" + ","+ (headInd-1)  +")";
+//				ArrayList<String> nrhs = new ArrayList<String>();
+//				nrhs.add(rhs.get(headInd-1));
+//				nrhs.add(nnt);			
+//				PTBRule ptbr = new PTBRule(previousnnt, nrhs, 1, ruleInd);
+//				brules.add(ptbr);
+//				previousnnt = new String(nnt);
+//			}
+//			for(int i = 0; i < rhs.size() - headInd - 2; i++){
+//				// leave the right-most one outside
+//				// others just be one non-terminal
+//				String nnt = "Z_("+ruleInd + "," + "r" + ","+ i +")";
+//				ArrayList<String> nrhs = new ArrayList<String>();
+//				nrhs.add(nnt);
+//				nrhs.add(rhs.get(rhs.size()-1-i));			
+//				PTBRule ptbr = new PTBRule(previousnnt, nrhs, 0, ruleInd);
+//				brules.add(ptbr);
+//				previousnnt = new String(nnt);
+//			}
+//			ArrayList<String> nrhs = new ArrayList<String>();
+//			nrhs.add(rhs.get(headInd));
+//			nrhs.add(rhs.get(headInd+1));			
+//			PTBRule ptbr = new PTBRule(previousnnt, nrhs, 0, ruleInd);
+//			brules.add(ptbr);
+//		}
+//		return brules;
+//	}
+	
 	public ArrayList<PTBRule> binRule() {
 		if(rhs.size()<=2){
 			System.err.println("Binarize a rule with length smaller than or equal to 2!");
@@ -78,10 +137,12 @@ public class PTBRule {
 		}
 		ArrayList<PTBRule> brules = new ArrayList<PTBRule>();
 		String previousnnt = lhs;
+		
+		
 		for(int i = 0; i < headInd-1; i++){
 			// leave the left-most one outside
 			// others just be one non-terminal
-			String nnt = "Z_("+ruleInd + "," + "l" + ","+ i +")";
+			String nnt = "Z_("+lhs + "_" + "l" + "_"+ rhs.get(i) +")";
 			ArrayList<String> nrhs = new ArrayList<String>();
 			nrhs.add(rhs.get(i));
 			nrhs.add(nnt);			
@@ -101,7 +162,7 @@ public class PTBRule {
 			// the head is not the rightmost one
 			// left split the last one
 			if(headInd >= 1){
-				String nnt = "Z_("+ruleInd + "," + "l" + ","+ (headInd-1)  +")";
+				String nnt = "Z_("+lhs + "_" + "l" + "_"+ rhs.get(headInd-1) +")";
 				ArrayList<String> nrhs = new ArrayList<String>();
 				nrhs.add(rhs.get(headInd-1));
 				nrhs.add(nnt);			
@@ -112,7 +173,7 @@ public class PTBRule {
 			for(int i = 0; i < rhs.size() - headInd - 2; i++){
 				// leave the right-most one outside
 				// others just be one non-terminal
-				String nnt = "Z_("+ruleInd + "," + "r" + ","+ i +")";
+				String nnt = "Z_("+lhs + "_" + "r" + "_"+ rhs.get(rhs.size()-1-i) +")";
 				ArrayList<String> nrhs = new ArrayList<String>();
 				nrhs.add(nnt);
 				nrhs.add(rhs.get(rhs.size()-1-i));			
@@ -185,7 +246,7 @@ public class PTBRule {
 	}
 
 	public static void main(String[] args) {
-		PTBRule ptbr = new PTBRule("NP",Arrays.asList(new String[] { "DT", "NNP", "NNP", "CC", "NNP", "NNP" }),3,100);
+		PTBRule ptbr = new PTBRule("NP",Arrays.asList(new String[] { "A", "B", "C", "D", "E" }),3,100);
 		ArrayList<PTBRule> set = ptbr.binRule();
 		for(PTBRule r : set){
 			System.out.println(r.toString());

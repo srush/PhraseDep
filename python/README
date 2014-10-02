@@ -1,0 +1,6 @@
+dp.py : The dynamic programming algorithm.
+grammar.py : The grammar manager.
+tree.py : Tree helpers
+encoder.py : Mapping between numerical and tree representation.
+train.py : Training and features.
+run.py : The executable.  

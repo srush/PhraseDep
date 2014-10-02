@@ -126,9 +126,12 @@ def binarize(original_rules, tree, head=None):
 
     if len(tree) >=3:
         parent_nt, absolute_head = annotated_label(tree)
-        rule_num, new_head = original_rules[
-            parent_nt,
-            map_t(clean_label, tree)]
+        original_rule = (parent_nt, map_t(clean_label, tree))
+        if original_rule in original_rules:
+            _, new_head = original_rules[original_rule]
+        else:
+            # make head last word... 
+            new_head = len(original_rule[1]) -1
 
         if head is None:
             head = new_head

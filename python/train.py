@@ -39,7 +39,7 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
 
 
     def initialize(self, X, Y):
-        self.bins = [1, 2, 3, 5, 8, 20, 40]
+        self.bins = [1, 2, 3, 5, 8, 10, 20, 40]
         self.last = None
         # Preprocessor
         self.preprocessor = pydecode.model.Preprocessor()
@@ -53,22 +53,25 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
         return {"WORD": word, "TAG": tag}
 
     def _preprocess(self, x):
+
         if ("PP", x) in self.cache:
             return self.cache["PP", x]
         else:
+            children = defaultdict(list)
             p = self.preprocessor.transform(
                 [self._preprocess_word(word, tag)
                  for word, tag in zip(x.words, x.tags)] \
                     + [self._preprocess_word("*END*", "*END*")])
+            
             self.cache["PP", x] = p
-        return p
+        return self.cache["PP", x]
 
     def dynamic_program(self, x):
 
         if x.index is not None:
             if self.last is not None and x.index == self.last[0]:
                 return self.last[1], self.last[2]
-            print x.index
+            # print x.index
             if self.path and x.index is not None:
                 if  ("DP", x.index) not in self.cache:
                     graph = pydecode.load("%s/graphs%s.graph"%(self.path,
@@ -78,13 +81,13 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
                         # self.cache["DP", x.index] = graph
                 else:
                     graph, encoder = self.cache["DP", x.index]
-                if False and len(x.words) < 10:
-                    self.cache["DP", x.index] = graph, encoder
+                    #if False and len(x.words) < 10:
+                # self.cache["DP", x.index] = graph, encoder
                 if x.index% 100 == 0: print x.index
                 self.last = (x.index, graph, encoder)
                 return graph, encoder
             else:
-                print "running cky", x.index, self.path
+                # print "running cky", x.index, self.path
                 graph, enc = dp.cky(x.words, x.tags, self.grammar, x.deps)
                 #self.cache["DP", x.index] = graph, enc
                 return graph, enc
@@ -93,6 +96,19 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
     def parts_features(self, x, parts):
         p = self._preprocess(x)
         o = parts
+        mods = np.zeros((len(x.words) + 1, len(x.words) + 1), dtype=np.int8)
+        mod_count = np.zeros((len(x.words) + 1, 2), dtype=np.int8)
+        deps = x.deps
+        for h in range(len(x.words)):
+            for m in range(h, len(x.words)):
+                if deps[h][m] == 1.0:
+                    mod_count[h,1] += 1
+                    mods[h, m] = mod_count[h,1]
+
+            for m in range(h, 0, -1):
+                if deps[h][m] == 1.0:
+                    mod_count[h, 0] += 1
+                    mods[h, m] = mod_count[h, 0]
 
         # Parts are of the following form.
         POS_i = 0
@@ -103,28 +119,44 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
         RULE = 5
         dist1 = np.abs(o[:, POS_i] - o[:, POS_j])
         dist2 = np.abs(o[:, POS_j] - o[:, POS_k])
+        dist = o[:, HEAD] - o[:, MOD]
+        adist = np.abs(dist)
+        direction = (dist >= 0).astype(int)
+        bdist = np.digitize(adist, self.bins)
         bdist1 = np.digitize(dist1, self.bins)
         bdist2 = np.digitize(dist2, self.bins)
-
+        first_child = (mods[o[:, HEAD], o[:,MOD]] == 1).astype(int)
+        last_child = (mods[o[:, HEAD], o[:, MOD]] == mod_count[o[:, HEAD], direction]).astype(int)
         X = self.grammar.rule_table[o[:, RULE], 0]
         Y = self.grammar.rule_table[o[:, RULE], 1]
         Z = self.grammar.rule_table[o[:, RULE], 2]
         G = len(self.grammar.rules)
         size = np.abs(o[:, POS_k] - o[:, POS_i])
-        length = len(x)
+        length = len(x.words)
         top = size == length
         is_unary = o[:, RULE] > G
         base = [(X, p["TAG"][o[:, HEAD]], p["TAG"][o[:, MOD]]),
                 (X, p["TAG"][o[:, HEAD]]),
                 (X, top),
+                (X, Y),
+                (X, Z),
+                (mod_count[o[:, HEAD], 0], o[:, RULE]),
+                (mod_count[o[:, HEAD], 1], o[:, RULE]),
+                (first_child, o[:, RULE]),
+                (last_child, o[:, RULE]),
                 (is_unary,),
+                (is_unary, p["TAG"][o[:, HEAD]]),
+                (is_unary, X),
                 (is_unary, size == 0),
                 (X, Y, p["TAG"][o[:, HEAD]]),
                 (X, Z, p["TAG"][o[:, HEAD]]),
                 (X, p["WORD"][o[:, HEAD]]),
+                (o[:, RULE], p["TAG"][o[:, MOD]]),
+                (o[:, RULE], p["TAG"][o[:, HEAD]]),
                 (o[:, RULE], p["TAG"][o[:, HEAD]], p["WORD"][o[:, MOD]]),
                 (o[:, RULE], p["WORD"][o[:, HEAD]], p["TAG"][o[:, MOD]]),
-                (bdist1, bdist2),
+                (bdist, o[:, RULE]),
+                (direction, bdist1, bdist2),
                 (o[:, RULE],)]
 
         # dist = o[:, HEAD] - o[:, MOD]
@@ -153,14 +185,25 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
         base = [(nonterms, s("TAG"), s("TAG")),
                 (nonterms, s("TAG")),
                 (nonterms, 2),
+                (nonterms, nonterms),
+                (nonterms, nonterms),
+                (200, rules),
+                (200, rules),
+                (2, rules),
+                (2, rules),
                 (2,),
+                (2, s("TAG")),
+                (2, nonterms),
                 (2, 2,),
                 (nonterms, nonterms, s("TAG")),
                 (nonterms, nonterms, s("TAG")),
                 (nonterms, s("WORD")),
+                (rules, s("TAG")),
+                (rules, s("TAG")),
                 (rules, s("TAG"), s("WORD")),
                 (rules, s("WORD"), s("TAG")),
-                (200, 200),
+                (200, rules),
+                (2, 200, 200),
                 (rules,)]
         # def s(t):
         #     return self.preprocessor.size(t)

@@ -13,7 +13,7 @@ DEBUG 0
 ##    The process will stop when this number##
 ##    of errors are accumulated.            ##
 ##------------------------------------------##
-MAX_ERROR 10
+MAX_ERROR 100
 
 ##------------------------------------------##
 ## Cut-off length for statistics            ##

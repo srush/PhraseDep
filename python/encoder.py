@@ -65,7 +65,7 @@ class LexicalizedCFGEncoder(SparseEncoder):
     def structure_path(self, graph, parse):
         parts = self.transform_structure(parse)
         #labels = [self.encoder[part]
-        print parts
+        #print parts
         label_weights = np.zeros(len(self.encoder)+20, dtype=np.int8)
 
         for part in parts:
@@ -85,7 +85,7 @@ class LexicalizedCFGEncoder(SparseEncoder):
                 if edge.label in part_set:
                     part_set.remove(edge.label)
         bad_parts = self.transform_labels([part for part in part_set])
-        print part_set, bad_parts, [self.grammar.rule_nonterms(p[-1]) for p in bad_parts]
+        # print part_set, bad_parts, [self.grammar.rule_nonterms(p[-1]) for p in bad_parts]
         #assert not part_set, [self.transform_labels([part for part in part_set])]
 
         chart = pydecode.inside(graph, weights, weight_type=pydecode.Boolean)

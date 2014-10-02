@@ -106,9 +106,15 @@ class RuleSet(object):
         """
 
         if Z is not None:
-            return self._rule_indices[X, Y, Z]
+            if (X, Y, Z) in self._rule_indices:
+                return self._rule_indices[X, Y, Z]
+            else:
+                return 0
         else:
-            return self._unary_indices[X, Y]
+            if (X, Y) in self._unary_indices:
+                return self._unary_indices[X, Y]
+            else:
+                return 0
 
     def rule_nonterms(self, index):
         """

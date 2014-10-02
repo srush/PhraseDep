@@ -26,6 +26,32 @@ import pydecode
 #                 mod_of[h].append(m)
 #     return mod_of
 
+def make_bounds(dep_matrix):
+    children = defaultdict(list)
+
+    n = len(dep_matrix)
+    used = set()
+    for h in range(n):
+        for m in range(n):
+            if dep_matrix[h][m]:
+                children[h].append(m)
+                used.add(m)
+    for m in range(n):
+        if m not in used:
+            head = m
+
+    bounds = {}
+    def get_bounds(cur):
+        ml, mr = cur,cur
+        for child in children[cur]:
+            l, r = get_bounds(child)
+            ml = min(ml, l)
+            mr = max(mr, r)
+        bounds[cur] = (ml, mr)
+        return (ml, mr)
+    get_bounds(head)
+    return bounds
+
 def span_pruning(n, dep_matrix):
     """
     Construct a chart giving spans to prune.
@@ -47,6 +73,7 @@ def span_pruning(n, dep_matrix):
 
     chart = defaultdict(list)
     heads = defaultdict(set)
+    bounds = make_bounds(dep_matrix)
 
     for i in range(n):
         chart[i, i].append((i, i, i))
@@ -60,12 +87,13 @@ def span_pruning(n, dep_matrix):
             for j in range(i, k):
                 for h1 in heads[i, j]:
                     for h2 in heads[j+1, k]:
-                        if dep_matrix[h1][h2]:
+                        if dep_matrix[h1][h2] and bounds[h2] == (j+1, k):
                             chart[i, k].append((h1, h2, j))
                             heads[i, k].add(h1)
-                        if dep_matrix[h2][h1]:
+                        if dep_matrix[h2][h1] and bounds[h1] == (i, j):
                             chart[i, k].append((h2, h1, j))
                             heads[i, k].add(h2)
+    #assert(chart[0, n-1])
     return chart
 
 def grammar_pruning(preterms, grammar, span_pruner):
@@ -111,6 +139,8 @@ def grammar_pruning(preterms, grammar, span_pruner):
             k = i + d
             if k >= n:
                 continue
+            # if span_pruner[i, k]:
+            #     print i, k, span_pruner[i, k]
             for h, _, j in span_pruner[i, k]:
                 req_dir_ = 0 if h <= j else 1
                 for Y in cell_nts[i, j]:
@@ -135,7 +165,6 @@ def grammar_pruning(preterms, grammar, span_pruner):
                         else:
                             cell_rules[i, k, Z, 1].append((r, X, Y))
 
-
     return cell_rules
 
 import time
@@ -154,10 +183,9 @@ def cky(sentence, tags, grammar, dep_matrix):
                 for tag in tags]
 
     span_pruner = span_pruning(n, dep_matrix)
-
+    # print span_pruner
     cell_rules = \
         grammar_pruning(preterms, grammar, span_pruner)
-
     span_nts = defaultdict(set)
     encoder = LexicalizedCFGEncoder(sentence, tags, grammar)
     items = defaultdict(auto())
@@ -217,19 +245,13 @@ def cky(sentence, tags, grammar, dep_matrix):
             k = i + d
             if k >= n:
                 continue
-            # if i == 3 and k == 4:
-            #     print span_pruner[i, k]
+
             to_add = defaultdict(list)
+            #print i, k, bool(span_pruner[i, k])
             for h, m, j in span_pruner[i, k]:
-
-
                 if h <= j:
                     for Y in span_nts[i, j, h]:
-                        # if i == 3 and k == 4:
-                        #     print grammar.nonterm_name(Y)
                         for r, X, Z in cell_rules[i, k, Y, 0]:
-                            # if i == 3 and k == 4:
-                            #     print j+1, k, m, grammar.nonterm_name(Z), has_item[j+1, k, m, Z]
                             if has_item[j+1, k, m, Z]:
                                 to_add[X, h].append([r, Y, Z, j, h, m, 0])
                                 assert r < G, "%s %s"%(r, G)
@@ -285,6 +307,7 @@ def cky(sentence, tags, grammar, dep_matrix):
                         for r, Y in unary2[X, h]])
                 else:
                     labels_, edges = (), ()
+
                 if (X, h) in unary:
                     edges += ([items[i, k, h, X, MID]],)
                     labels_ += (-1,)
@@ -292,6 +315,7 @@ def cky(sentence, tags, grammar, dep_matrix):
                 if (X, h) in to_add:
                     edges += ([items[i, k, h, X, START]],)
                     labels_ += (-1,)
+
                 has_item[i, k, h, X] = 1
                 span_nts[i, k, h].add(X)
                 chart.set(items[i, k, h, X, DONE], edges,
@@ -328,10 +352,19 @@ def cky(sentence, tags, grammar, dep_matrix):
     #        for h in range(n)
     #        if has_item[0, n-1, h, grammar.root]]
 
-    chart.set(items[n-1, 0, 0, 0, DONE],
-              [[items[0, n-1, h, root, DONE]]
-               for h in range(n)
-               for root in grammar.roots
-               if has_item[0, n-1, h, root]
-           ])
-    return chart.finish(True), encoder
+    children = [[items[0, n-1, h, root, DONE]]
+                for h in range(n)
+                for root in grammar.roots
+                if has_item[0, n-1, h, root]]
+    #assert(children)
+    chart.set(items[n-1, 0, 0, 0, DONE], children)
+    graph =  chart.finish(True)
+    # for key in span_nts:
+    #     print key
+    #     for nt in span_nts[key]:
+    #         print grammar.nonterm_name(nt),
+    #     print
+    # print
+     
+    print "SIZE", n, len(graph.edges), len(items), len(span_nts)
+    return graph, encoder

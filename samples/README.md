@@ -1,5 +1,8 @@
 To run experiments:
 
+Bother me if there are any issues!
+
+0) Make sure you have the latest pydecode "pip install -U pydecode"
 1) Create a directory called experiments/ 
 2) Copy ini files over "cp samples/* experiments"
 3) Replace {vars} with correct paths.

@@ -7,25 +7,6 @@ from collections import defaultdict
 import numpy as np
 import pydecode
 
-# def count_mods(dep_matrix):
-#     n = len(dep_matrix)
-#     counts = np.zeros((n, 2))
-#     for h in range(n):
-#         for m in range(n):
-#             if dep_matrix[h][m]:
-#                 dir_ = 0 if m < h else 1
-#                 counts[h, dir_] += 1
-#     return counts
-
-# def make_mod(sentence, dep_matrix):
-#     n = len(sentence)
-#     mod_of = defaultdict(list)
-#     for h in range(n):
-#         for m in range(n):
-#             if dep_matrix[h][m]:
-#                 mod_of[h].append(m)
-#     return mod_of
-
 def make_bounds(dep_matrix):
     children = defaultdict(list)
 
@@ -196,7 +177,6 @@ def cky(sentence, tags, grammar, dep_matrix):
     temp = np.arange(1000000)
     chart = pydecode.ChartBuilder(temp, unstrict=True)
     has_item = defaultdict(lambda: 0)
-    #np.zeros(n*n*n*N).reshape((n,n,n,N))
 
     # Initialize the chart.
     for i in range(n):
@@ -213,8 +193,6 @@ def cky(sentence, tags, grammar, dep_matrix):
             chart.set(items[i, i, i, X, MID],
                       [[items[i, i, i, Y, START]]],
                       labels=[labels[i, i, i, i, i, r]])
-            # chart.set(items[i, i, i, X, DONE],
-            #           [[items[i, i, i, X, MID]]])
             has_item[i, i, i, X] = 1
             span_nts[i, i, i].add(X)
             for r_up, X_up in grammar.unary_rules_by_first[X]:
@@ -237,7 +215,6 @@ def cky(sentence, tags, grammar, dep_matrix):
             chart.set(items[i, i, i, X_up, DONE], edges, labels_)
             has_item[i, i, i, X_up] = 1
             span_nts[i, i, i].add(X_up)
-            # print i, grammar.nonterm_name(X_up)
 
     # Main loop.
     for d in range(1, n):
@@ -321,6 +298,24 @@ def cky(sentence, tags, grammar, dep_matrix):
                 chart.set(items[i, k, h, X, DONE], edges,
                           labels=labels_)
 
+    children = [[items[0, n-1, h, root, DONE]]
+                for h in range(n)
+                for root in grammar.roots
+                if has_item[0, n-1, h, root]]
+
+    #assert(children)
+
+    chart.set(items[n-1, 0, 0, 0, DONE], children)
+    graph =  chart.finish(True)
+    # for key in span_nts:
+    #     print key
+    #     for nt in span_nts[key]:
+    #         print grammar.nonterm_name(nt),
+    #     print
+    # print
+     
+    # print "SIZE", n, len(graph.edges), len(items), len(span_nts)
+    return graph, encoder
 
 
             # Unary rules.
@@ -352,19 +347,22 @@ def cky(sentence, tags, grammar, dep_matrix):
     #        for h in range(n)
     #        if has_item[0, n-1, h, grammar.root]]
 
-    children = [[items[0, n-1, h, root, DONE]]
-                for h in range(n)
-                for root in grammar.roots
-                if has_item[0, n-1, h, root]]
-    #assert(children)
-    chart.set(items[n-1, 0, 0, 0, DONE], children)
-    graph =  chart.finish(True)
-    # for key in span_nts:
-    #     print key
-    #     for nt in span_nts[key]:
-    #         print grammar.nonterm_name(nt),
-    #     print
-    # print
-     
-    print "SIZE", n, len(graph.edges), len(items), len(span_nts)
-    return graph, encoder
+
+# def count_mods(dep_matrix):
+#     n = len(dep_matrix)
+#     counts = np.zeros((n, 2))
+#     for h in range(n):
+#         for m in range(n):
+#             if dep_matrix[h][m]:
+#                 dir_ = 0 if m < h else 1
+#                 counts[h, dir_] += 1
+#     return counts
+
+# def make_mod(sentence, dep_matrix):
+#     n = len(sentence)
+#     mod_of = defaultdict(list)
+#     for h in range(n):
+#         for m in range(n):
+#             if dep_matrix[h][m]:
+#                 mod_of[h].append(m)
+#     return mod_of

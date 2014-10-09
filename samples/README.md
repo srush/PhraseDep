@@ -24,3 +24,4 @@ To setup virtualenv:
 	pip install cvxopt
 	pip install -U scikit-learn
 	pip install scipy
+	pip install argparse_config

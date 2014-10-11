@@ -1,5 +1,5 @@
 from nltk import Tree
-
+import random
 # http://www.nltk.org/_modules/nltk/treetransforms.html#chomsky_normal_form 
 
 def read_from_ptb(filename):
@@ -45,7 +45,7 @@ def chomsky_normal_form(tree, factor="right", horzMarkov=None, vertMarkov=0, chi
             print str(node.label()) + "\t-->\t" + "\t".join(child_list)
 
             # The head postion is determined by the collins rule
-            head_postion = 3
+            head_postion = random.randint(0, len(child_list))
 
             # parent annotation
             parentString = ""
@@ -116,11 +116,11 @@ def un_chomsky_normal_form(tree, expandUnary = True, childChar = "|", parentChar
                 # Generated node was on the left if the nodeIndex is 0 which
                 # means the grammar was left factored.  We must insert the children
                 # at the beginning of the parent's children
-                if nodeIndex == 0:
-                    parent.insert(0,node[0])
-                    parent.insert(1,node[1])
-                else:
-                    parent.extend([node[0],node[1]])
+                # if nodeIndex == 0:
+                parent.insert(nodeIndex,node[0])
+                parent.insert(nodeIndex+1,node[1])
+                # else:
+                #     parent.extend([node[0],node[1]])
 
                 # parent is now the current node so the children of parent will be added to the agenda
                 node = parent
@@ -140,6 +140,7 @@ def un_chomsky_normal_form(tree, expandUnary = True, childChar = "|", parentChar
 
             for child in node:
                 nodeList.append((child,node))
+        #print "#" + str(tree)
 
 
 def collapse_unary(tree, collapsePOS = False, collapseRoot = False, joinChar = "+"):
@@ -197,34 +198,34 @@ def demo():
     from copy import deepcopy
 
     # original tree from WSJ bracketed text
-  #   sentence = """(S
-  # (S
-  #   (VP
-  #     (VBN Turned)
-  #     (ADVP (RB loose))
-  #     (PP
-  #       (IN in)
-  #       (NP
-  #         (NP (NNP Shane) (NNP Longman) (POS 's))
-  #         (NN trading)
-  #         (NN room)))))
-  # (, ,)
-  # (NP (DT the) (NN yuppie) (NNS dealers))
-  # (VP (AUX do) (NP (NP (RB little)) (ADJP (RB right))))
-  # (. .))"""
-    sentence = """(S (A (B (B1 b1) (B2 b2) (B3 b3) (B4 b4)) (C c) (D d) (E e) (F f) (G g)) (W w))"""
+    sentence = """(S
+  (S
+    (VP
+      (VBN Turned)
+      (ADVP (RB loose))
+      (PP
+        (IN in)
+        (NP
+          (NP (NNP Shane) (NNP Longman) (POS 's))
+          (NN trading)
+          (NN room)))))
+  (, ,)
+  (NP (DT the) (NN yuppie) (NNS dealers))
+  (VP (AUX do) (NP (NP (RB little)) (ADJP (RB right))))
+  (. .))"""
+    sentence = """(S (A (B (B1 b1) (B2 b2) (B3 (BB1 bb1) (BB2 bb2) (BB3 bb3) ) (B4 b4)) (C (C1 c1) (C2 c2)  ) (D d) (E e) (F f) (G g)) (W w))"""
     t = tree.Tree.fromstring(sentence, remove_empty_top_bracketing=True)
 
     # collapse subtrees with only one child
-    collapsedTree = deepcopy(t)
-    collapse_unary(collapsedTree)
+    # collapsedTree = deepcopy(t)
+    # collapse_unary(collapsedTree)
 
     # convert the tree to CNF
     # cnfTree = deepcopy(collapsedTree)
     # chomsky_normal_form(cnfTree)
 
     # convert the tree to CNF with parent annotation (one level) and horizontal smoothing of order two
-    parentTree = deepcopy(collapsedTree)
+    parentTree = deepcopy(t)
     chomsky_normal_form(parentTree, horzMarkov=2, vertMarkov=2)
 
     # convert the tree back to its original form (used to make CYK results comparable)
@@ -233,9 +234,9 @@ def demo():
 
     # convert tree back to bracketed text
     sentence2 = original.pprint()
-    print(sentence)
+    print(t.pprint())
     print(sentence2)
-    print("Sentences the same? ", sentence == sentence2)
+    print("Sentences the same? ", str(sentence2) == str(t.pprint()))
 
     # draw_trees(t, collapsedTree, cnfTree, parentTree, original)
     #print t, collapsedTree, cnfTree, parentTree, original

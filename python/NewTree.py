@@ -13,6 +13,317 @@ def read_from_ptb(filename):
         print "+" + tree.pprint()
     ptb_file.close()
 
+# RuleChecker: Check the head rules to match in each case
+# (Now a re-implementation of (Collins, 1999) thesis)
+# Lingpeng Kong, lingpenk@cs.cmu.edu
+
+PUNCTSET = set([".", ",", ":", "``", "''"])
+
+# Parent is a string, child_list is a list of string
+def findHead(parent,child_list):
+    if len(child_list) == 1:
+        #Unary Rule -> the head must be the only one
+        return 0
+
+    normalHead = findHeaderNormal(parent, child_list)
+    return findHeaderCoord(parent, child_list, normalHead);
+
+def firstNoPunctChild(child_list):
+    for i in xrange(len(child_list)):
+        if child_list[i] not in PUNCTSET:
+            return i
+    return 0
+
+def lastNoPunctChild(child_list):
+    for i in reversed(xrange(len(child_list))):
+        if child_list[i] not in PUNCTSET:
+            return i
+    return -1
+
+def test():
+    print findHead("NP",["DT", "NNP", "CC", "NNP"])
+    print findHead("VP",["ADVP", "VBN", "PP", "NP"])
+    print findHead("NP",["NP", "NP",",","NP",",","NP","CC","NP"])
+
+def findHeaderNormal(parent, child_list):
+        # Rules for NPs
+        if parent == "NP":
+            # If the last word is tagged POS return (last word)
+            if child_list[lastNoPunctChild(child_list)] == "POS":
+                return lastNoPunctChild(child_list)
+            
+            # Else search from right to left for the first child which is an
+            # NN, NNP, NNPS, NNS, NX, POS or JJR
+            s = set(["NN", "NNP", "NNPS", "NNS", "NX", "POS", "JJR"])
+
+            for i in reversed(xrange(len(child_list))):
+                if child_list[i] in s:
+                    return i
+            
+            # Else search from left to right for the first child which is an NP
+            for i in xrange(len(child_list)):
+                if child_list[i] == "NP":
+                    return i
+            
+            # Else search from right to left for the first child which is a $,
+            # ADJP or PRN.
+            s = set(["$", "ADJP", "PRN"])
+            for i in reversed(xrange(len(child_list))):
+                if child_list[i] in s:
+                    return i
+
+            # Else search from right to left for the first child which is a CD.
+            for i in reversed(xrange(len(child_list))):
+                if child_list[i] == ("CD"):
+                    return i
+
+            # Else search from right to left for the first child which is a JJ,
+            # JJS, RB or QP.
+            s = set(["JJ", "JJS", "RB", "QP"])
+            for i in reversed(xrange(len(child_list))):
+                if child_list[i] in s:
+                    return i
+
+            # Else return the last word.
+            return lastNoPunctChild(child_list)
+        
+
+        # ADJP -- Left -- NNS QP NN $ ADVP JJ VBN VBG ADJP JJR NP JJS DT FW RBR
+        # RBS SBAR RB
+        if parent == "ADJP":
+            plist = ["NNS", "QP", "NN", "$", "ADVP", "JJ", "VBN", "VBG", "ADJP", "JJR", "NP", "JJS", "DT", "FW", "RBR", "RBS", "SBAR", "RB"]
+            for pe in plist:
+                for i in xrange(len(child_list)):
+                    if child_list[i] == pe:
+                        return i
+
+            # Nothing found, return leftmost
+            return firstNoPunctChild(child_list)
+
+        # ADVP -- Right -- RB RBR RBS FW ADVP TO CD JJR JJ IN NP JJS NN
+        if parent == "ADVP":
+            plist = ["RB", "RBR", "RBS", "FW", "ADVP", "TO", "CD", "JJR", "JJ", "IN", "NP", "JJS", "NN"]
+            for pe in plist:
+                for i in reversed(xrange(len(child_list))):
+                    if child_list[i] == pe:
+                        return i
+            # Nothing found, return rightmost
+            return lastNoPunctChild(child_list)
+
+        # CONJP -- Right -- CC RB IN
+        if parent == "CONJP":
+            plist = ["CC", "RB", "IN"]
+            for pe in plist:
+                for i in reversed(xrange(len(child_list))):
+                    if child_list[i] == pe:
+                        return i
+            # Nothing found, return rightmost
+            return lastNoPunctChild(child_list)
+
+        # FRAG -- Right
+        if parent == "FRAG":
+            return lastNoPunctChild(child_list)
+
+        # INTJ -- Left
+        if parent == "INTJ":
+            return firstNoPunctChild(child_list)
+
+        # LST -- Right -- LS :
+        if parent == "LST":
+            plist = ["LS", ":"]
+            for pe in plist:
+                for i in reversed(xrange(len(child_list))):
+                    if child_list[i] == pe:
+                        return i
+            # Nothing found, return rightmost
+            return lastNoPunctChild(child_list)
+
+        # NAC -- Left -- NN NNS NNP NNPS NP NAC EX $ CD QP PRP VBG JJ JJS JJR
+        # ADJP FW
+        if parent == "NAC":
+            plist = ["NN", "NNS", "NNP", "NNPS", "NP", "NAC", "EX", "$", "CD", "QP", "PRP", "VBG", "JJ", "JJS", "JJR", "ADJP", "FW"]
+            for pe in plist:
+                for i in reversed(xrange(len(child_list))):
+                    if child_list[i] == pe:
+                        return i
+            # Nothing found, return leftmost
+            return firstNoPunctChild(child_list)
+
+        # PP -- Right -- IN TO VBG VBN RP FW
+        if parent == "PP":
+            plist = ["IN", "TO", "VBG", "VBN", "RP", "FW"]
+            for pe in plist:
+                for i in reversed(xrange(len(child_list))):
+                    if child_list[i] == pe:
+                        return i
+
+            # Nothing found, return rightmost
+            return lastNoPunctChild(child_list);
+
+        # PRN -- Left
+        if parent == "PRN":
+            return firstNoPunctChild(child_list)
+
+        # PRT -- Right -- RP
+        if parent == "PRT":
+            plist = ["RP"]
+            for pe in plist:
+                for i in reversed(xrange(len(child_list))):
+                    if child_list[i] == pe:
+                        return i
+
+            # Nothing found, return rightmost
+            return lastNoPunctChild(child_list);
+
+        # QP -- Left -- $ IN NNS NN JJ RB DT CD NCD QP JJR JJS
+        if parent == "QP":
+            plist = ["$", "IN", "NNS", "NN", "JJ", "RB", "DT", "CD", "NCD", "QP", "JJR", "JJS"]
+            for pe in plist:
+                for i in xrange(len(child_list)):
+                    if child_list[i] == pe:
+                        return i
+
+            # Nothing found, return leftmost
+            return firstNoPunctChild(child_list)
+
+        # RRC -- Right -- VP NP ADVP ADJP PP
+        if parent == "RRC":
+            plist = ["VP","NP","ADVP","ADJP","PP"]
+            for pe in plist:
+                for i in reversed(xrange(len(child_list))):
+                    if child_list[i] == pe:
+                        return i
+
+            # Nothing found, return rightmost
+            return lastNoPunctChild(child_list)
+
+        # S -- Left -- TO IN VP S SBAR ADJP UCP NP
+        if parent == "S":
+            plist = ["TO", "IN", "VP", "S", "SBAR", "ADJP", "UCP", "NP"]
+            for pe in plist:
+                for i in xrange(len(child_list)):
+                    if child_list[i] == pe:
+                        return i
+            # Nothing found, return leftmost
+            return firstNoPunctChild(child_list)
+
+        # SBAR -- Left -- WHNP WHPP WHADVP WHADJP IN DT S SQ SINV SBAR FRAG
+        if parent == "SBAR":
+            plist = ["WHNP", "WHPP", "WHADVP", "WHADJP", "IN", "DT", "S", "SQ", "SINV", "SBAR", "FRAG"]
+            for pe in plist:
+                for i in xrange(len(child_list)):
+                    if child_list[i] == pe:
+                        return i
+            # Nothing found, return leftmost
+            return firstNoPunctChild(child_list)
+
+        # SBARQ -- Left -- SQ S SINV SBARQ FRAG
+        if parent == "SBARQ":
+            plist = ["SQ", "S", "SINV", "SBARQ", "FRAG"]
+            for pe in plist:
+                for i in xrange(len(child_list)):
+                    if child_list[i] == pe:
+                        return i
+            # Nothing found, return leftmost
+            return firstNoPunctChild(child_list)
+
+        # SINV -- Left -- VBZ VBD VBP VB MD VP S SINV ADJP NP
+        if parent == "SINV":
+            plist = ["VBZ", "VBD", "VBP", "VB", "MD", "VP", "S", "SINV", "ADJP", "NP"]
+            for pe in plist:
+                for i in xrange(len(child_list)):
+                    if child_list[i] == pe:
+                        return i
+            # Nothing found, return leftmost
+            return firstNoPunctChild(child_list)
+
+        # SQ -- Left -- VBZ VBD VBP VB MD VP SQ
+        if parent == "SQ":
+            plist = ["VBZ", "VBD", "VBP", "VB", "MD", "VP", "SQ"]
+            for pe in plist:
+                for i in reversed(xrange(len(child_list))):
+                    if child_list[i] == pe:
+                        return i
+            # Nothing found, return leftmost
+            return firstNoPunctChild(child_list)
+
+        # UCP -- Right
+        if parent == "UCP":
+            return lastNoPunctChild(child_list)
+
+        # VP -- Left -- TO VBD VBN MD VBZ VB VBG VBP VP ADJP NN NNS NP
+        if parent == "VP":
+            plist = ["TO", "VBD", "VBN", "MD", "VBZ", "VB", "VBG", "VBP", "VP", "ADJP", "NN", "NNS", "NP"]
+            for pe in plist:
+                for i in xrange(len(child_list)):
+                    if child_list[i] == pe:
+                        return i
+            # Nothing found, return leftmost
+            return firstNoPunctChild(child_list)
+
+        # WHADJP -- Left -- CC WRB JJ ADJP
+        if parent == "WHADJP":
+            plist = ["CC", "WRB", "JJ", "ADJP"]
+            for pe in plist:
+                for i in xrange(len(child_list)):
+                    if child_list[i] == pe:
+                        return i
+            # Nothing found, return leftmost
+            return firstNoPunctChild(child_list)
+        
+        # WHADVP -- Right -- CC WRB
+        if parent == "WHADVP":
+            plist = ["CC", "WRB"]
+            for pe in plist:
+                for i in reversed(xrange(len(child_list))):
+                    if child_list[i] == pe:
+                        return i
+            # Nothing found, return rightmost
+            return lastNoPunctChild(child_list);
+        
+        # WHNP -- Left -- WDT WP WP$ WHADJP WHPP WHNP
+        if parent == "WHNP":
+            plist = ["WDT", "WP", "WP$", "WHADJP", "WHPP", "WHNP"]
+            for pe in plist:
+                for i in xrange(len(child_list)):
+                    if child_list[i] == pe:
+                        return i
+            # Nothing found, return leftmost
+            return firstNoPunctChild(child_list)
+
+        # WHPP -- Right -- IN TO FW
+        if parent == "WHPP":
+            plist = ["IN", "TO", "FW"]
+            for pe in plist:
+                for i in reversed(xrange(len(child_list))):
+                    if child_list[i] == pe:
+                        return i
+            # Nothing found, return rightmost
+            return lastNoPunctChild(child_list)
+        
+        # No rule found, return leftmost
+        return firstNoPunctChild(child_list)
+
+def findHeaderCoord(parent, child_list, normalHead):
+        # Rules for Coordinated Phrases
+        h = normalHead
+        if h < len(child_list) - 2:
+            if child_list[h+1] == "CC":
+                # Y_h Y_h+1 Y_h+2 forms a triple of non-terminals in a coordinating relationship,
+                # But since Y_h already the head, nothing happened in unlabeled parsing.
+                return normalHead
+
+        if h > 1:
+            if child_list[h-1] == "CC":
+                # Y_h-2 Y_h-1 Y_h forms a triple of non-terminals in a coordinating relationship,
+                # the head is modified to be Y_h-2 in this case
+
+                # Make sure punctuation not selected as the head
+                if child_list[h-2] not in PUNCTSET:
+                    return h-2
+
+        return normalHead
+
 def chomsky_normal_form(tree, factor="right", horzMarkov=None, vertMarkov=0, childChar="|", parentChar="^"):
     # assume all subtrees have homogeneous children
     # assume all terminals have no siblings
@@ -41,11 +352,13 @@ def chomsky_normal_form(tree, factor="right", horzMarkov=None, vertMarkov=0, chi
             if len(child_list) == 0:
                 continue
 
-            print parent
+            # print parent
             print str(node.label()) + "\t-->\t" + "\t".join(child_list)
 
             # The head postion is determined by the collins rule
-            head_postion = random.randint(0, len(child_list))
+            head_postion = findHead(node.label(),child_list)
+
+            print child_list[head_postion]
 
             # parent annotation
             parentString = ""
@@ -213,7 +526,7 @@ def demo():
   (NP (DT the) (NN yuppie) (NNS dealers))
   (VP (AUX do) (NP (NP (RB little)) (ADJP (RB right))))
   (. .))"""
-    sentence = """(S (A (B (B1 b1) (B2 b2) (B3 (BB1 bb1) (BB2 bb2) (BB3 bb3) ) (B4 b4)) (C (C1 c1) (C2 c2)  ) (D d) (E e) (F f) (G g)) (W w))"""
+    #sentence = """(S (A (B (B1 b1) (B2 b2) (B3 (BB1 bb1) (BB2 bb2) (BB3 bb3) ) (B4 b4)) (C (C1 c1) (C2 c2)  ) (D d) (E e) (F f) (G g)) (W w))"""
     t = tree.Tree.fromstring(sentence, remove_empty_top_bracketing=True)
 
     # collapse subtrees with only one child

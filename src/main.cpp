@@ -79,6 +79,7 @@ int main(int argc, char* argv[])
             }
             score = correct / (double)best_rules.size();
             total_score += score;
+            // cout << score << " " << best_rules.size() << " " << sentence->gold_rules.size() << endl;
             // cout << correct << " " << best_rules.size() << " " << score << endl;
 
             // cout << "BEST" << endl;

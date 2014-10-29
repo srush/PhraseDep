@@ -34,7 +34,15 @@ Grammar *read_rule_set(string file) {
             }
         }
     }
+    vector<int> roots;
+    roots.push_back(grammar->to_nonterm("S"));
+    roots.push_back(grammar->to_nonterm("SQ"));
+    roots.push_back(grammar->to_nonterm("SBARQ"));
+    roots.push_back(grammar->to_nonterm("FRAG"));
+    roots.push_back(grammar->to_nonterm("SINV"));
+    roots.push_back(grammar->to_nonterm("NP"));
+    roots.push_back(grammar->to_nonterm("UCP"));
 
-    grammar->finish(grammar->to_nonterm("S"));
+    grammar->finish(roots);
     return grammar;
 }

@@ -26,6 +26,11 @@ class Triple {
     }
     int _total_size;
 
+    void inc(int a, int b, int c, vector<int> *base, int *tally) const {
+        base->push_back(*tally + apply(a, b, c));
+        (*tally) += _total_size;
+    }
+
   private:
     int _size_a;
     int _size_b;
@@ -42,6 +47,12 @@ class Double {
     int apply(int a, int b) const {
         return a * _size_b + b;
     }
+
+    void inc(int a, int b, vector<int> *base, int *tally) const {
+        base->push_back(*tally + apply(a, b));
+        (*tally) += _total_size;
+    }
+
     int _total_size;
 
   private:
@@ -53,20 +64,7 @@ class Double {
 // Replicated from python training code.
 class FeatureGen {
   public:
-    FeatureGen(const Grammar *grammar) : grammar_(grammar) {
-        triples.resize(2);
-        doubles.resize(5);
-
-        triples[0] = Triple(grammar_->n_nonterms, n_tags, n_tags);
-        triples[1] = Triple(grammar_->n_rules, n_tags, n_tags);
-
-        doubles[0] = Double(grammar_->n_nonterms, n_tags);
-        doubles[1] = Double(grammar_->n_nonterms, grammar_->n_nonterms);
-        doubles[2] = Double(grammar_->n_nonterms, grammar_->n_nonterms);
-        doubles[3] = Double(2, n_tags);
-        doubles[4] = Double(2, grammar_->n_nonterms);
-    }
-
+    FeatureGen(const Grammar *grammar);
 
     void generate(const Sentence &sentence,
                   const AppliedRule &rule,

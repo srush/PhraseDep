@@ -207,10 +207,10 @@ struct BackPointer {
 class Chart {
   public:
     Chart (int n, int N) : n_(n), N_(N) {
-        int total_size = n * n * n * N * 3;
-        has_item_.resize(total_size, 0);
+        int total_size = n * n * n * 3;
+        has_item_.resize(total_size);
         bps_.resize(total_size);
-        item_score_.resize(total_size, -100000000);
+        item_score_.resize(total_size);
 
         span_nts.resize(n);
         for (int i = 0; i < n; ++i) {
@@ -226,16 +226,16 @@ class Chart {
 
     void init(const Item &item) {
         int index = index_item(item);
-        if (!has_item_[index]) {
+        if (!has_item_[index][item.nt]) {
             span_nts[item.i][item.k][item.h][item.layer].push_back(item.nt);
-            has_item_[index] = 1;
+            has_item_[index][item.nt] = 1;
         }
     }
 
     void to_tree(const Item &item, const Grammar &grammar,
                  vector<AppliedRule> *best_rules) {
         int index = index_item(item);
-        BackPointer &bp = bps_[index];
+        BackPointer &bp = bps_[index][item.nt];
         if (bp.terminal) {
             assert(item.i == item.k);
             // cout << grammar.rev_nonterm_map.find(item.nt)->second;
@@ -259,14 +259,15 @@ class Chart {
     void promote(const Item &item, const Item &item1) {
         int index = index_item(item);
         int index1 = index_item(item1);
-        assert(has_item_[index1]);
-        double new_score =  item_score_[index1];
-        if (!has_item_[index] or new_score > item_score_[index]) {
-            bps_[index].item1 = item1;
-            bps_[index].promotion = true;
-            bps_[index].single = false;
-            bps_[index].terminal = false;
-            item_score_[index] = new_score;
+        assert(has_item_[index1][item1.nt]);
+        double new_score =  item_score_[index1][item1.nt];
+        if (!has_item_[index][item.nt] or new_score > item_score_[index][item.nt]) {
+            BackPointer &bp = bps_[index][item.nt];
+            bp.item1 = item1;
+            bp.promotion = true;
+            bp.single = false;
+            bp.terminal = false;
+            item_score_[index][item.nt] = new_score;
         }
         init(item);
     }
@@ -275,15 +276,16 @@ class Chart {
 
         int index = index_item(item);
         int index1 = index_item(item1);
-        assert(has_item_[index1]);
-        double new_score = score + item_score_[index1];
-        if (!has_item_[index] or new_score > item_score_[index]) {
-            bps_[index].item1 = item1;
-            bps_[index].single = true;
-            bps_[index].terminal = false;
-            bps_[index].promotion = false;
-            bps_[index].rule = rule;
-            item_score_[index] = new_score;
+        assert(has_item_[index1][item1.nt]);
+        double new_score = score + item_score_[index1][item1.nt];
+        if (!has_item_[index][item.nt] or new_score > item_score_[index][item.nt]) {
+            BackPointer &bp = bps_[index][item.nt];
+            bp.item1 = item1;
+            bp.single = true;
+            bp.terminal = false;
+            bp.promotion = false;
+            bp.rule = rule;
+            item_score_[index][item.nt] = new_score;
         }
         init(item);
     }
@@ -291,8 +293,8 @@ class Chart {
     bool has_item (const Item &item) const {
 
         int index = index_item(item);
+        return has_item_[index].find(item.nt) != has_item_[index].end();
 
-        return has_item_[index];
     }
 
     void update(const Item &item, double score, const Item &item1, const Item &item2,
@@ -303,18 +305,19 @@ class Chart {
         int index1 = index_item(item1);
         int index2 = index_item(item2);
 
-        assert(has_item_[index1]);
-        assert(has_item_[index2]);
+        assert(has_item_[index1][item1.nt]);
+        assert(has_item_[index2][item2.nt]);
 
-        double new_score = score + item_score_[index1] + item_score_[index2];
-        if (!has_item_[index] or new_score > item_score_[index]) {
-            bps_[index].item1 = item1;
-            bps_[index].item2 = item2;
-            bps_[index].single = false;
-            bps_[index].terminal = false;
-            bps_[index].promotion = false;
-            bps_[index].rule = rule;
-            item_score_[index] = new_score;
+        double new_score = score + item_score_[index1][item1.nt] + item_score_[index2][item2.nt];
+        if (!has_item_[index][item.nt] or new_score > item_score_[index][item.nt]) {
+            BackPointer &bp = bps_[index][item.nt];
+            bp.item1 = item1;
+            bp.item2 = item2;
+            bp.single = false;
+            bp.terminal = false;
+            bp.promotion = false;
+            bp.rule = rule;
+            item_score_[index][item.nt] = new_score;
         }
         init(item);
     }
@@ -324,14 +327,15 @@ class Chart {
 
   private:
     int index_item(const Item &item) const {
-        return 3 * n_ * n_ * N_ * item.i +  3 * n_ * N_ * item.k + 3 * N_ * item.h + 3 * item.nt + item.layer;
+        // 3 * item.nt
+        return 3 * n_ * n_ *  item.i +  3 * n_ * item.k + 3 * item.h +  + item.layer;
     }
 
     int n_;
     int N_;
-    vector<bool> has_item_;
-    vector<double> item_score_;
-    vector<BackPointer> bps_;
+    vector<map<int, bool> > has_item_;
+    vector<map<int, double> > item_score_;
+    vector<map<int, BackPointer> > bps_;
 };
 
 
@@ -461,6 +465,13 @@ void cky(const vector<int> &preterms,
             root_word = i;
         }
     }
-    Item item(0, n-1, root_word, grammar.root, 2);
+    Item item(0, n-1, root_word, 0, 2);
+    for (int i = 0; i < grammar.roots.size(); ++i) {
+        int root = grammar.roots[i];
+        Item item1(0, n-1, root_word, root, 2);
+        if (chart.has_item(item1)) {
+            chart.promote(item, item1);
+        }
+    }
     chart.to_tree(item, grammar, best_rules);
 }

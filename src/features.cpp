@@ -25,21 +25,22 @@ void FeatureScorer::update(const vector<AppliedRule> &rules,
 }
 
 
-// void FeatureGen::initialize(const Grammar *grammar) {
-//     grammar_ = grammar;
-//     triples.resize(2);
-//     doubles.resize(5);
 
-//     triples[0] = Triple(grammar_->n_nonterms, n_tags, n_tags);
-//     triples[1] = Triple(grammar_->n_rules, n_tags, n_tags);
+FeatureGen::FeatureGen(const Grammar *grammar) : grammar_(grammar) {
 
-//     doubles[0] = Double(grammar_->n_nonterms, n_tags);
-//     doubles[1] = Double(grammar_->n_nonterms, grammar_->n_nonterms);
-//     doubles[2] = Double(grammar_->n_nonterms, grammar_->n_nonterms);
-//     doubles[3] = Double(2, n_tags);
-//     doubles[4] = Double(2, grammar_->n_nonterms);
+    triples.push_back(Triple(grammar_->n_nonterms, n_tags, n_tags));
+    triples.push_back(Triple(grammar_->n_rules, n_tags, n_tags));
 
-// }
+    doubles.push_back(Double(grammar_->n_nonterms, n_tags));
+    doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_nonterms));
+    doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_nonterms));
+    doubles.push_back(Double(2, n_tags));
+    doubles.push_back(Double(2, grammar_->n_nonterms));
+    doubles.push_back(Double(2, grammar_->n_rules));
+    doubles.push_back(Double(grammar_->n_rules, n_tags));
+    doubles.push_back(Double(grammar_->n_rules, n_tags));
+}
+
 
 
 void FeatureGen::generate(const Sentence &sentence,
@@ -52,18 +53,15 @@ void FeatureGen::generate(const Sentence &sentence,
     bool is_unary = grammar_->is_unary[rule.rule];
 
     int tally = 0;
-    base->push_back(tally+triples[0].apply(X, sentence.int_tags[rule.h], sentence.int_tags[rule.m]));
-    tally += triples[0]._total_size;
-    base->push_back(tally+triples[1].apply(rule.rule, sentence.int_tags[rule.h], sentence.int_tags[rule.m]));
-    tally += triples[1]._total_size;
+    triples[0].inc(X, sentence.int_tags[rule.h], sentence.int_tags[rule.m], base, &tally);
+    triples[1].inc(rule.rule, sentence.int_tags[rule.h], sentence.int_tags[rule.m], base, &tally);
 
-    base->push_back(tally+doubles[0].apply(X, sentence.int_tags[rule.h]));
-    tally += doubles[0]._total_size;
-    base->push_back(tally+doubles[1].apply(X, Y));
-    tally += doubles[1]._total_size;
-    base->push_back(tally+doubles[2].apply(X, Z));
-    tally += doubles[2]._total_size;
-    base->push_back(tally+doubles[3].apply(is_unary, sentence.int_tags[rule.h]));
-    tally += doubles[3]._total_size;
-    base->push_back(tally+doubles[4].apply(is_unary, X));
+    doubles[0].inc(X, sentence.int_tags[rule.h], base, &tally);
+    doubles[1].inc(X, Y, base, &tally);
+    doubles[2].inc(X, Z, base, &tally);
+    doubles[3].inc(is_unary, sentence.int_tags[rule.h], base, &tally);
+    doubles[4].inc(is_unary, X, base, &tally);
+    doubles[5].inc(is_unary, rule.rule, base, &tally);
+    doubles[6].inc(rule.rule, sentence.int_tags[rule.h], base, &tally);
+    doubles[7].inc(rule.rule, sentence.int_tags[rule.m], base, &tally);
 }

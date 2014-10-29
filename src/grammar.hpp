@@ -99,8 +99,8 @@ class Grammar {
 
     }
 
-    void finish(int root_) {
-        root = root_;
+    void finish(const vector<int> &roots_) {
+        roots = roots_;
         if (rules_by_first.size() <= n_nonterms) {
             rules_by_first.resize(n_nonterms + 1);
         }
@@ -112,7 +112,7 @@ class Grammar {
      int n_nonterms;
      int n_rules;
 
-    int root;
+    vector<int> roots;
 
     vector<int> head_symbol;
     vector<int> left_symbol;

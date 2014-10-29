@@ -95,9 +95,6 @@ def main():
                                           joint_feature_cache=False,
                                           part_feature_cache=False)
         model.set_grammar(grammar)
-
-
-
         model.initialize(X, binarized_Y)
 
     if args.test_load:
@@ -144,6 +141,7 @@ def main():
                     args.store_hypergraph_dir, X[i].index), graph)
             del graph
             del encoder
+
     elif args.oracle:
         print "ORACLE"
         trees_out = open(os.path.join(output_dir, "oracle.txt"), 'w')
@@ -279,7 +277,7 @@ def main():
         print "TRAINING"
         model.set_from_disk(args.store_hypergraph_dir)
         sp = StructuredPerceptron(model, verbose=1, max_iter=5,
-                                  average=True)
+                                  average=False)
         import warnings
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")

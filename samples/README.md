@@ -13,4 +13,15 @@ Bother me if there are any issues!
 8) Run "python ../python/run.py config.eval.ini {exname}"
 
 
-To setup virtualenv
+To setup virtualenv:
+0) go to a proper place and run "virtualenv env"
+1) at the current directory run "source env/bin/activate"
+2) Install the dependencies: (follow this order)
+	pip install numpy
+	pip install -U pydecode
+	pip install Cython
+	pip install pystruct
+	pip install cvxopt
+	pip install -U scikit-learn
+	pip install scipy
+	pip install argparse_config

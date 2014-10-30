@@ -37,7 +37,7 @@ def main():
 
     out = open(args.parse_output, "w")
     for x, y in zip(X, Y):
-        if len(x.tags) > 50:  continue
+        # if len(x.tags) > 50:  continue
         encoder = LexicalizedCFGEncoder(x.words, x.tags, grammar)
         bin_y = tree.binarize(orules, y)
         parts = encoder.transform_structure(bin_y)

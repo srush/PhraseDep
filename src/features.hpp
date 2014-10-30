@@ -4,6 +4,7 @@
 
 #include "sentence.hpp"
 #include "perceptron.hpp"
+#include <cmath>
 
 
 const int n_tags = 1000;
@@ -26,12 +27,19 @@ class Triple {
     }
     int _total_size;
 
-    void inc(int a, int b, int c, vector<int> *base, int *tally) const {
-        base->push_back(*tally + apply(a, b, c));
+    inline void inc(int a, int b, int c, vector<int> *base, int *tally,
+                 const vector<double> *weights, double *score) const {
+        int index = *tally + apply(a, b, c);
+        if (weights != NULL) {
+            *score += (*weights)[((int)abs(index)) % 1000000];
+        } else {
+            base->push_back(index);
+        }
         (*tally) += _total_size;
+
     }
 
-  private:
+
     int _size_a;
     int _size_b;
     int _size_c;
@@ -48,14 +56,19 @@ class Double {
         return a * _size_b + b;
     }
 
-    void inc(int a, int b, vector<int> *base, int *tally) const {
-        base->push_back(*tally + apply(a, b));
+    void inc(int a, int b, vector<int> *base, int *tally, const vector<double> *weights, double *score) const {
+        int index = *tally + apply(a, b);
+        if (weights != NULL) {
+            *score += (*weights)[((int)abs(index)) % 1000000];
+        } else {
+            base->push_back(index);
+        }
         (*tally) += _total_size;
     }
 
     int _total_size;
 
-  private:
+
     int _size_a;
     int _size_b;
 
@@ -66,9 +79,10 @@ class FeatureGen {
   public:
     FeatureGen(const Grammar *grammar);
 
-    void generate(const Sentence &sentence,
-                  const AppliedRule &rule,
-                  vector<int> *base) const;
+    double generate(const Sentence &sentence,
+                        const AppliedRule &rule,
+                        vector<int> *base,
+                        const vector<double> *weights) const;
   private:
     vector <Triple> triples;
     vector <Double> doubles;
@@ -88,8 +102,9 @@ class FeatureScorer {
 
     void update(const vector<AppliedRule> &rules, int direction);
 
-  private:
     Perceptron perceptron_;
+  private:
+
     FeatureGen feature_gen_;
     const Sentence *sentence_;
 };

@@ -4,19 +4,19 @@
 double FeatureScorer::score(const AppliedRule &rule) const {
     double score = 0.0;
     vector<int> features;
-    feature_gen_.generate(*sentence_, rule, &features);
-    for (int i = 0; i < features.size(); ++i) {
-        int val = features[i];
-        score += perceptron_.weights[((int)abs(val)) % 1000000];
-    }
-    return score;
+    return feature_gen_.generate(*sentence_, rule, &features, &perceptron_.weights);
+    // for (int i = 0; i < features.size(); ++i) {
+    //     int val = features[i];
+    //     score += perceptron_.weights[((int)abs(val)) % 1000000];
+    // }
+    // return score;
 }
 
 void FeatureScorer::update(const vector<AppliedRule> &rules,
                            int direction) {
     for (int i = 0; i < rules.size(); ++i) {
         vector<int> features;
-        feature_gen_.generate(*sentence_, rules[i], &features);
+        feature_gen_.generate(*sentence_, rules[i], &features, NULL);
         for (int j = 0; j < features.size(); ++j) {
             int val = features[j];
             perceptron_.update((int)abs(val) % 1000000, direction);
@@ -42,26 +42,54 @@ FeatureGen::FeatureGen(const Grammar *grammar) : grammar_(grammar) {
 }
 
 
+inline void inc3(const Triple &t, int a, int b, int c, vector<int> *base, int *tally,
+                 const vector<double> *weights, double *score)  {
+    int index = *tally + (a * t._size_b * t._size_c + b * t._size_c + c);
+        if (weights != NULL) {
+            *score += (*weights)[((int)abs(index)) % 1000000];
+        } else {
+            base->push_back(index);
+        }
+        (*tally) += t._total_size;
+}
 
-void FeatureGen::generate(const Sentence &sentence,
-              const AppliedRule &rule,
-              vector<int> *base) const {
+inline void inc2(const Double &t, int a, int b,  vector<int> *base, int *tally,
+                 const vector<double> *weights, double *score)  {
+    int index = *tally + (a * t._size_b + b);
+        if (weights != NULL) {
+            *score += (*weights)[((int)abs(index)) % 1000000];
+        } else {
+            base->push_back(index);
+        }
+        (*tally) += t._total_size;
+}
+
+
+
+double FeatureGen::generate(const Sentence &sentence,
+                          const AppliedRule &rule,
+                          vector<int> *base,
+                          const vector<double> *weights) const {
 
     int X = grammar_->head_symbol[rule.rule];
     int Y = grammar_->left_symbol[rule.rule];
     int Z = grammar_->right_symbol[rule.rule];
+    int m_tag = sentence.int_tags[rule.m];
+    int h_tag = sentence.int_tags[rule.m];
     bool is_unary = grammar_->is_unary[rule.rule];
 
     int tally = 0;
-    triples[0].inc(X, sentence.int_tags[rule.h], sentence.int_tags[rule.m], base, &tally);
-    triples[1].inc(rule.rule, sentence.int_tags[rule.h], sentence.int_tags[rule.m], base, &tally);
+    double score = 0.0;
+    inc3(triples[0], X, h_tag, m_tag, base, &tally, weights, &score);
+    inc3(triples[1], rule.rule, h_tag, m_tag, base, &tally, weights, &score);
 
-    doubles[0].inc(X, sentence.int_tags[rule.h], base, &tally);
-    doubles[1].inc(X, Y, base, &tally);
-    doubles[2].inc(X, Z, base, &tally);
-    doubles[3].inc(is_unary, sentence.int_tags[rule.h], base, &tally);
-    doubles[4].inc(is_unary, X, base, &tally);
-    doubles[5].inc(is_unary, rule.rule, base, &tally);
-    doubles[6].inc(rule.rule, sentence.int_tags[rule.h], base, &tally);
-    doubles[7].inc(rule.rule, sentence.int_tags[rule.m], base, &tally);
+    inc2(doubles[0], X, h_tag, base, &tally, weights, &score);
+    inc2(doubles[1], X, Y, base, &tally, weights, &score);
+    inc2(doubles[2], X, Z, base, &tally, weights, &score);
+    inc2(doubles[3], is_unary, h_tag, base, &tally, weights, &score);
+    inc2(doubles[4], is_unary, X, base, &tally, weights, &score);
+    inc2(doubles[5], is_unary, rule.rule, base, &tally, weights, &score);
+    inc2(doubles[6], rule.rule, h_tag, base, &tally, weights, &score);
+    inc2(doubles[7], rule.rule, m_tag, base, &tally, weights, &score);
+    return score;
 }

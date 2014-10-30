@@ -72,12 +72,17 @@ class Grammar {
         if (rules_by_first.size() <= n_nonterms) {
             rules_by_first.resize(n_nonterms + 1);
         }
+        if (rules_by_second.size() <= n_nonterms) {
+            rules_by_second.resize(n_nonterms + 1);
+        }
+
         head_symbol.push_back(rule.nt_X);
         left_symbol.push_back(rule.nt_Y);
         right_symbol.push_back(rule.nt_Z);
         is_unary.push_back(0);
         n_rules++;
-        return rules_by_first[rule.nt_Y].push_back(rule);
+        rules_by_first[rule.nt_Y].push_back(rule);
+        rules_by_second[rule.nt_Z].push_back(rule);
     }
 
     double score(const AppliedRule &rule) const {
@@ -104,6 +109,11 @@ class Grammar {
         if (rules_by_first.size() <= n_nonterms) {
             rules_by_first.resize(n_nonterms + 1);
         }
+
+        if (rules_by_second.size() <= n_nonterms) {
+            rules_by_second.resize(n_nonterms + 1);
+        }
+
         if (unary_rules_by_first.size() <= n_nonterms) {
             unary_rules_by_first.resize(n_nonterms + 1);
         }
@@ -121,6 +131,7 @@ class Grammar {
 
     vector<vector<UnaryRule> > unary_rules_by_first;
     vector<vector<BinaryRule> > rules_by_first;
+    vector<vector<BinaryRule> > rules_by_second;
     map<string, int> nonterm_map;
     map<int, string> rev_nonterm_map;
 

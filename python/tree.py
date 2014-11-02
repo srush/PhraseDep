@@ -20,12 +20,13 @@ def read_original_rules(handle):
                 head = i
         rhs = tuple([i.strip("*") for i in t[2:-1]])
         rule_num = int(t[-1])
-        d[X, rhs] = (rule_num, head)
+        # if (X, rhs) not in d or d[X, rhs][0] > rule_num:
+        d[X, rhs, head] = (rule_num, head)
     return d
 
 def terminal(node):
     "Is node terminal?"
-    return isinstance(node, str) 
+    return isinstance(node, str)
 
 def label(tree):
     "Get tree label"
@@ -53,7 +54,7 @@ def is_bin_nonterm(tree):
 def make_bin_nonterm(parent_nt, prev_label, dir, head):
     """
     Make a binarized nonterminal.
-    
+
     Parameters
     ----------
     parent_nt : str
@@ -69,16 +70,16 @@ def make_bin_nonterm(parent_nt, prev_label, dir, head):
        Absolute head.
 
     """
-    return "Z_[%s_%s_%s]^%d"%(parent_nt, 
+    return "Z_(%s_%s_%s)^%d"%(parent_nt,
                               "l" if dir == 0 else "r",
-                              clean_label(prev_label), 
+                              clean_label(prev_label),
                               head+1)
 
 def _un_z(tree):
     """
-    Remove binarization from tree. 
+    Remove binarization from tree.
     """
-    if terminal(tree): 
+    if terminal(tree):
         return [tree]
     if is_bin_nonterm(tree):
         return tuple([flat
@@ -89,21 +90,21 @@ def _un_z(tree):
 
 def remove_head(tree):
     "Recursively remove head annotations from a tree"
-    if terminal(tree): 
+    if terminal(tree):
         return clean_label(tree)
     return Tree(clean_label(tree),
                 map_t(remove_head, tree))
 
 def map_t(f, ls):
     return tuple(map(f, ls))
-    
+
 def unbinarize(tree):
-    if terminal(tree): 
+    if terminal(tree):
         return tree
     tree_label = label(tree)
 
     if is_bin_nonterm(tree[0]):
-        return Tree(tree_label, 
+        return Tree(tree_label,
                     _un_z(tree[0]) + (unbinarize(tree[1]),))
 
     if len(tree) > 1 and is_bin_nonterm(tree[1]):
@@ -113,55 +114,82 @@ def unbinarize(tree):
     return Tree(tree_label, map_t(unbinarize, tree))
 
 
-def binarize(original_rules, tree, head=None):
-    if terminal(tree): 
-        return tree
-    children = []
-    binarized_children = tuple([binarize(original_rules, node)
-                                for node in tree])
-    tree_label = label(tree)
+def binarize(original_rules, deps, tree, fixed_head=None, start=0):
+    if terminal(tree):
+        return tree, start, start + 1
 
+    binarized_children = []
+    head_children = []
+    pstart = start
+
+
+    for node in tree:
+        c, head, pstart = binarize(original_rules, deps, node, start=pstart)
+        binarized_children.append(c)
+        head_children.append(head)
+    absolute_head = deps[start, pstart]
+    for i in range(len(head_children)):
+        if head_children[i] == absolute_head:
+            relative_head = i
+
+
+    binarized_children = tuple(binarized_children)
+    parent_nt, _ = annotated_label(tree)
+
+    original_rule = (parent_nt, map_t(clean_label, tree), relative_head)
+
+    if original_rule in original_rules:
+        _, new_head = original_rules[original_rule]
+
+        assert len(original_rule[1]) == len(head_children)
+    else:
+        # make head last word...
+        new_head = relative_head #len(original_rule[1]) - 1
+
+    if fixed_head is None:
+        head = new_head
+    else:
+        head = fixed_head
+
+    #absolute_head2 = head_children[head]
+    cur = binarized_children[head]
+    _, absolute_head2 = annotated_label(cur)
+    # absolute_head = deps[start, pstart]
+    # assert absolute_head == absolute_head2, "%s %s %s %s"%(absolute_head, absolute_head2, start, pstart)
+    tree_label = annotate_label(parent_nt, absolute_head)
     if len(tree) <= 2:
-        return Tree(tree_label, binarized_children)
+        return Tree(tree_label, binarized_children), absolute_head, pstart
 
     if len(tree) >=3:
-        parent_nt, absolute_head = annotated_label(tree)
-        original_rule = (parent_nt, map_t(clean_label, tree))
-        if original_rule in original_rules:
-            _, new_head = original_rules[original_rule]
-        else:
-            # make head last word... 
-            new_head = len(original_rule[1]) -1
-
-        if head is None:
-            head = new_head
-            
         cur = binarized_children[head]
+        #_, absolute_head = annotated_label(cur)
+
+        #assert absolute_head1 == absolute_head, "%s %s"%(absolute_head, absolute_head1)
         for pos, bin_node in enumerate(binarized_children[head+1:], head+1):
             if pos == len(tree) - 1:
                 if head == 0:
                     node_label = tree_label
                 else:
-                    node_label = make_bin_nonterm(parent_nt, 
-                                                  tree[head-1], 0, 
+                    node_label = make_bin_nonterm(parent_nt,
+                                                  tree[head-1], 0,
                                                   absolute_head)
             else:
-                node_label = make_bin_nonterm(parent_nt, 
-                                              tree[pos + 1], 
+                node_label = make_bin_nonterm(parent_nt,
+                                              tree[pos + 1],
                                               1, absolute_head)
             cur = Tree(node_label, (cur, bin_node))
 
         for i, bin_node in enumerate(reversed(binarized_children[:head])):
             pos = head - 1 - i
-            node_label = make_bin_nonterm(parent_nt, 
-                                          tree[pos - 1], 
+            node_label = make_bin_nonterm(parent_nt,
+                                          tree[pos - 1],
                                           0, absolute_head)
             if pos == 0:
                 node_label = tree_label
-            cur = Tree(node_label, 
+            cur = Tree(node_label,
                        (bin_node, cur))
-            
-        return cur
+
+        return cur, absolute_head, pstart
 
 def make_spans(tree):
     all = set()

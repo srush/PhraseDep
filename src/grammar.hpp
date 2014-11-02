@@ -54,7 +54,17 @@ class Grammar {
 
     Grammar() {
         n_nonterms = 0;
+        n_words = 0;
+    }
 
+    int to_word(string word) {
+        if (word_map.find(word) != word_map.end()) {
+            return word_map[word];
+        } else {
+            word_map[word] = n_words;
+            n_words++;
+            return n_words-1;
+        }
     }
 
     int to_nonterm(string nonterm) {
@@ -81,8 +91,11 @@ class Grammar {
         right_symbol.push_back(rule.nt_Z);
         is_unary.push_back(0);
         n_rules++;
-        rules_by_first[rule.nt_Y].push_back(rule);
-        rules_by_second[rule.nt_Z].push_back(rule);
+        if (rule.dir == 0) {
+            rules_by_first[rule.nt_Y].push_back(rule);
+        } else {
+            rules_by_second[rule.nt_Z].push_back(rule);
+        }
     }
 
     double score(const AppliedRule &rule) const {
@@ -119,8 +132,9 @@ class Grammar {
         }
     }
 
-     int n_nonterms;
-     int n_rules;
+    int n_nonterms;
+    int n_rules;
+    int n_words;
 
     vector<int> roots;
 
@@ -132,6 +146,7 @@ class Grammar {
     vector<vector<UnaryRule> > unary_rules_by_first;
     vector<vector<BinaryRule> > rules_by_first;
     vector<vector<BinaryRule> > rules_by_second;
+    map<string, int> word_map;
     map<string, int> nonterm_map;
     map<int, string> rev_nonterm_map;
 

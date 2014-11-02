@@ -3,6 +3,31 @@ from encoder import LexicalizedCFGEncoder
 import train, tree
 from grammar import read_rule_set
 
+
+def make_bounds(dep_matrix):
+    head = {}
+
+    n = len(dep_matrix)
+    used = set()
+    for h in range(n):
+        for m in range(n):
+            if dep_matrix[h][m]:
+                used.add(m)
+                head[m] = h
+
+    for m in range(n):
+        if m not in used:
+            head[m] = -1
+
+    bounds = {}
+    for i in range(n):
+        for k in range(i, n+1):
+            for j in range(i, k):
+                if not (i <= head[j] < k):
+                    bounds[i, k] = j
+    return bounds
+
+
 def main():
     parser = argparse.ArgumentParser(description='Preprocess parsing data.')
     parser.add_argument('--training_ps', type=str,
@@ -54,14 +79,16 @@ def main():
     for x, y in zip(X, Y):
         # if len(x.tags) > 50:  continue
         encoder = LexicalizedCFGEncoder(x.words, x.tags, grammar)
-
-        bin_y = tree.binarize(orules, y)
         
         # y is lex (^index) ps tree
         # bin_y is bin lex (^index) ps tree
         # they are all instances of ImmutableTree
+        
+        bounds = make_bounds(x.deps)
+        bin_y, _, _ = tree.binarize(orules, bounds, y)
 
         parts = encoder.transform_structure(bin_y)
+
         n = len(x.tags)
         print >>out, len(x.tags), len(parts)
         print >>out, " ".join(x.words)

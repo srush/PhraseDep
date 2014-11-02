@@ -17,6 +17,31 @@ logger = logging.getLogger("parse")
 
 INF = 1e9
 
+SIZE = 1e7
+
+def make_bounds(dep_matrix):
+    head = {}
+
+    n = len(dep_matrix)
+    used = set()
+    for h in range(n):
+        for m in range(n):
+            if dep_matrix[h][m]:
+                used.add(m)
+                head[m] = h
+
+    for m in range(n):
+        if m not in used:
+            head[m] = -1
+
+    bounds = {}
+    for i in range(n):
+        for k in range(i, n+1):
+            for j in range(i, k):
+                if not (i <= head[j] < k):
+                    bounds[i, k] = j
+    return bounds
+
 class StructuredMessage(object):
     def __init__(self, message, **kwargs):
         self.message = message
@@ -86,11 +111,10 @@ def main():
         #     print rule
         X, Y = zip(*[(x, y) for x, y in zip(X, Y)
                      if len(x.words) >= 5])
-        binarized_Y = [tree.binarize(orules, y) for y in Y]
+        binarized_Y = [tree.binarize(orules, make_bounds(x.deps), y)[0] for x, y in zip(X, Y)]
 
 
-
-        model = train.ReconstructionModel(feature_hash=int(1e8),
+        model = train.ReconstructionModel(feature_hash=int(1e7),
                                           joint_feature_format="fast",
                                           joint_feature_cache=False,
                                           part_feature_cache=False)
@@ -107,7 +131,7 @@ def main():
                 continue
             x = X[i]
             path = "%s/graphs%s.graph"%(args.store_hypergraph_dir, i)
-            
+
             encoder = LexicalizedCFGEncoder(x.words, x.tags, grammar)
             pre = memory()
             graph = pydecode.load(path)
@@ -145,7 +169,7 @@ def main():
     elif args.oracle:
         print "ORACLE"
         trees_out = open(os.path.join(output_dir, "oracle.txt"), 'w')
-        model = train.ReconstructionModel(feature_hash=int(1e8), part_feature_cache=False,
+        model = train.ReconstructionModel(feature_hash=int(1e7), part_feature_cache=False,
                                           joint_feature_cache=False,
                                           joint_feature_format="sparse")
         model.set_grammar(grammar)
@@ -158,10 +182,10 @@ def main():
 
         # GOLD TREES
         binarized_Y_test = []
-        
+
         for x, orig_y in zip(X_test, Y_test):
             y = tree.binarize(orules, orig_y)
-            
+
             try:
                 graph, encoder = model.dynamic_program(x)
                 label_values = np.zeros(np.max(graph.labeling) + 1)
@@ -173,7 +197,7 @@ def main():
                     X = grammar.rule_nonterms(part[5])[0]
                     brackets.add((part[0], part[2], X))
                     #print part
-                    if tuple(part) in encoder.encoder: 
+                    if tuple(part) in encoder.encoder:
                         label = encoder.encoder[tuple(part)]
                         label_values[label] = 10.0
                         possible += 1
@@ -202,7 +226,7 @@ def main():
                 #                                          model.temp_shape,
                 #                                          model.offsets,
                 #                                          model.feature_hash)
-                
+
                 # # Sum the feature weights for the features in each label row.
                 # label_weights = np.zeros(len(graph.labeling))
                 # label_weights[graph.labeling != -1] = \
@@ -225,7 +249,7 @@ def main():
     elif args.test_file:
         print "TESTING"
         trees_out = open(os.path.join(output_dir, "trees.txt"), 'w')
-        model = train.ReconstructionModel(feature_hash=int(1e8), part_feature_cache=False,
+        model = train.ReconstructionModel(feature_hash=int(1e7), part_feature_cache=False,
                                           joint_feature_cache=False,
                                           joint_feature_format="sparse")
         model.set_grammar(grammar)

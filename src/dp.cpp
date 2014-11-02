@@ -49,7 +49,7 @@ void span_pruning(const int n, const vector<int> &deps,
 
     // List of head positions at each span.
     vector<vector<vector<int> > > heads(n);
-    vector<vector<vector<int > > >  has_head(n);
+    vector<vector<vector<int> > > has_head(n);
 
     // Initialize.
     for (int i = 0; i < n; ++i) {
@@ -93,6 +93,362 @@ void span_pruning(const int n, const vector<int> &deps,
         }
     }
 }
+
+struct BackPointer {
+    BackPointer() : terminal(true) {}
+    bool terminal;
+    bool single;
+    bool promotion;
+    Item item1;
+    Item item2;
+    AppliedRule rule;
+};
+
+const int kLayers = 3;
+
+class Chart {
+  public:
+    Chart (int n, int N, const vector<string> *words) : n_(n), N_(N), words_(words) {
+        int total_size = n * n * n * kLayers;
+        bps_.resize(total_size);
+        item_score_.resize(total_size);
+
+        span_nts.resize(n);
+        for (int i = 0; i < n; ++i) {
+            span_nts[i].resize(n);
+            for (int j = 0; j < n; ++j) {
+                span_nts[i][j].resize(n);
+                for (int h = 0; h < n; ++h) {
+                    span_nts[i][j][h].resize(kLayers);
+                }
+            }
+        }
+    }
+
+    void span_init(const Item &item) {
+        span_nts[item.i][item.k][item.h][item.layer].push_back(item.nt);
+    }
+
+    void init(const Item &item) {
+        span_init(item);
+        int index = index_item(item);
+        BackPointer &bp = bps_[index][item.nt];
+        bp.terminal = true;
+        item_score_[index][item.nt] = 0.0;
+    }
+
+    void promote(const Item &item, const Item &item1) {
+        assert(has_item(item1));
+
+        int index = index_item(item);
+        int index1 = index_item(item1);
+        //assert(has_item_[index1][item1.nt]);
+        double new_score = item_score_[index1][item1.nt];
+        map<int, double>::iterator iter = item_score_[index].find(item.nt);
+        if (iter == item_score_[index].end() or new_score > iter->second) {
+            BackPointer &bp = bps_[index][item.nt];
+            bp.item1 = item1;
+            bp.promotion = true;
+            bp.single = false;
+            bp.terminal = false;
+
+            // iter->second = new_score;
+
+            if (iter == item_score_[index].end()) {
+                item_score_[index][item.nt] = new_score;
+                span_init(item);
+            } else{
+                iter->second = new_score;
+            }
+
+            // item_score_[index][item.nt] = new_score;
+        }
+
+    }
+
+    void update(const Item &item, double score, const Item &item1, const AppliedRule &rule,
+                double score1) {
+
+        assert(has_item(item1));
+
+        int index = index_item(item);
+        double new_score = score + score1;
+        map<int, double>::iterator iter = item_score_[index].find(item.nt);
+        if (iter == item_score_[index].end() or new_score > iter->second) {
+            BackPointer &bp = bps_[index][item.nt];
+            bp.item1 = item1;
+            bp.single = true;
+            bp.terminal = false;
+            bp.promotion = false;
+            bp.rule = rule;
+            if (iter == item_score_[index].end()) {
+                item_score_[index][item.nt] = new_score;
+                span_init(item);
+            } else{
+                iter->second = new_score;
+            }
+        }
+    }
+
+    bool has_item(const Item &item) const {
+        int index = index_item(item);
+        return item_score_[index].find(item.nt) != item_score_[index].end();
+    }
+
+    double score(const Item &item) {
+        int index = index_item(item);
+        return item_score_[index][item.nt];
+    }
+
+    void update(const Item &item, double score, const Item &item1, const Item &item2,
+                const AppliedRule &rule, double score1, double score2) {
+
+        int index = index_item(item);
+        double new_score = score + score1 + score2;
+
+        assert(has_item(item1) && has_item(item2));
+
+        map<int, double>::iterator iter = item_score_[index].find(item.nt);
+        if (iter == item_score_[index].end() or new_score > iter->second) {
+            BackPointer &bp = bps_[index][item.nt];
+            bp.item1 = item1;
+            bp.item2 = item2;
+            bp.single = false;
+            bp.terminal = false;
+            bp.promotion = false;
+            bp.rule = rule;
+
+            if (iter == item_score_[index].end()) {
+                item_score_[index][item.nt] = new_score;
+                span_init(item);
+            } else{
+                iter->second = new_score;
+            }
+        }
+    }
+
+    void to_tree(const Item &item, const Grammar &grammar,
+                 vector<AppliedRule> *best_rules, bool output) {
+        int index = index_item(item);
+        BackPointer &bp = bps_[index][item.nt];
+        if (bp.terminal) {
+            assert(item.i == item.k);
+            if (output)
+                cout << " (" << grammar.rev_nonterm_map.find(item.nt)->second
+                     << " " << (*words_)[item.i] << ") ";
+
+        } else if (bp.single) {
+            best_rules->push_back(bp.rule);
+            if (output)
+                cout << " (" << grammar.rev_nonterm_map.find(item.nt)->second << " ";
+            to_tree(bp.item1, grammar, best_rules, output);
+            if (output)
+                cout << ") ";
+        } else if (bp.promotion) {
+            to_tree(bp.item1, grammar, best_rules, output);
+        } else {
+            best_rules->push_back(bp.rule);
+            string nt = grammar.rev_nonterm_map.find(item.nt)->second;
+            bool binarized =  (nt[0] == 'Z');
+
+
+            if (output && !binarized)
+                cout << " (" << nt << " ";
+            to_tree(bp.item1, grammar, best_rules, output);
+            if (output)
+                cout << " ";
+            to_tree(bp.item2, grammar, best_rules, output);
+            if (output && !binarized)
+                cout << ") ";
+        }
+    }
+
+    vector<vector<vector<vector<vector<int> > > > > span_nts;
+
+
+  private:
+    int index_item(const Item &item) const {
+        // 3 * item.nt
+        return kLayers * n_ * n_ *  item.i +  kLayers * n_ * item.k + kLayers * item.h +  item.layer;
+    }
+
+    int n_;
+    int N_;
+    // vector<map<int, bool> > has_item_;
+    vector<map<int, double> > item_score_;
+    vector<map<int, BackPointer> > bps_;
+    const vector<string> *words_;
+};
+
+
+
+
+
+void complete(int i, int k, int h, const Grammar &grammar, const FeatureScorer &scorer,  Chart *chart) {
+    // Fill in the unary rules.
+    for (int index = 0; index < chart->span_nts[i][k][h][0].size(); ++index) {
+        int Y = chart->span_nts[i][k][h][0][index];
+        Item item(i, k, h, Y, 0);
+        Item item_prom(i, k, h, Y, 2);
+        assert(chart->has_item(item));
+        chart->promote(item_prom, item);
+
+        double item_score = chart->score(item);
+
+        for (int index2 = 0; index2 < grammar.unary_rules_by_first[Y].size(); ++index2) {
+            int X = grammar.unary_rules_by_first[Y][index2].nt_X;
+            int r = grammar.unary_rules_by_first[Y][index2].rule_num;
+            AppliedRule rule(i, k, k, h, h, r);
+            Item item2(i, k, h, X, 1);
+            chart->update(item2, scorer.score(rule), item, rule, item_score);
+
+            assert(chart->has_item(item2));
+            Item item2_prom(i, k, h, X, 2);
+            chart->promote(item2_prom, item2);
+        }
+    }
+
+    for (int index = 0; index < chart->span_nts[i][k][h][1].size(); ++index) {
+        int Y = chart->span_nts[i][k][h][1][index];
+        Item item(i, k, h, Y, 1);
+        double item_score = chart->score(item);
+
+        for (int index2 = 0; index2 < grammar.unary_rules_by_first[Y].size(); ++index2) {
+            int X = grammar.unary_rules_by_first[Y][index2].nt_X;
+            int r = grammar.unary_rules_by_first[Y][index2].rule_num;
+            AppliedRule rule(i, k, k, h, h, r);
+            Item item2(i, k, h, X, 2);
+            chart->update(item2, scorer.score(rule), item, rule, item_score);
+        }
+    }
+}
+
+double cky(const vector<int> &preterms,
+           const vector<string> &words,
+           const vector<int> &deps,
+           const Grammar &grammar,
+           const FeatureScorer &scorer,
+           vector<AppliedRule> *best_rules,
+           bool output) {
+    int n = preterms.size();
+    vector<vector<vector<DepSplit> > > span_pruner;
+    // vector<vector<vector<vector<vector <RuleSplit> > > > > cell_rules;
+    int G = grammar.n_rules;
+    int N = grammar.n_nonterms;
+
+    // Run the pruning stages.
+    span_pruning(n, deps, &span_pruner);
+    // grammar_pruning(preterms, grammar, span_pruner, &cell_rules);
+
+    Chart chart(n, grammar.n_nonterms, &words);
+
+    // Initialize the chart.
+    for (int i = 0; i < n; ++i) {
+        int Y = preterms[i];
+        Item item(i, i, i, Y, 0);
+        chart.init(item);
+        complete(i, i, i, grammar, scorer, &chart);
+    }
+
+    // Main loop.
+    for (int d = 1; d < n; ++d) {
+        for (int i = 0; i < n; ++i) {
+            int k = i + d;
+            if (k >= n) continue;
+
+            for (int span = 0; span < span_pruner[i][k].size(); ++span) {
+                int h = span_pruner[i][k][span].head;
+                int m = span_pruner[i][k][span].mod;
+                int j = span_pruner[i][k][span].split;
+
+
+                if (h <= j) {
+                    vector<bool> have_nt(N, 0);
+                    //Item other_item(j+1, k, m, Z, 2);
+                    for (int index = 0; index < chart.span_nts[j+1][k][m][2].size(); ++index) {
+                        int Z = chart.span_nts[j+1][k][m][2][index];
+                        have_nt[Z] = 1;
+                    }
+
+                    for (int index = 0; index < chart.span_nts[i][j][h][2].size(); ++index) {
+                        int Y = chart.span_nts[i][j][h][2][index];
+                        Item item(i, j, h, Y, 2);
+                        double item_score = chart.score(item);
+
+                        for (int r_index = 0; r_index < grammar.rules_by_first[Y].size(); ++r_index) {
+                            const BinaryRule &rule = grammar.rules_by_first[Y][r_index];
+                            int r = rule.rule_num;
+                            int X = rule.nt_X;
+                            int Z = rule.nt_Z;
+                            if (have_nt[Z]) {
+                                Item other_item(j+1, k, m, Z, 2);
+                                double other_item_score = chart.score(other_item);
+                                Item new_item(i, k, h, X, 0);
+                                AppliedRule rule(i, j, k, h, m, r);
+                                double score = scorer.score(rule);
+                                chart.update(new_item, score, item, other_item, rule,
+                                             item_score, other_item_score);
+                                assert(r < G);
+                            }
+                        }
+                    }
+                }
+                if (h > j) {
+                    vector<bool> have_nt(N, 0);
+                    for (int index = 0; index < chart.span_nts[i][j][m][2].size(); ++index) {
+                        int Y = chart.span_nts[i][j][m][2][index];
+                        have_nt[Y] = 1;
+                    }
+
+                    for (int index = 0; index < chart.span_nts[j+1][k][h][2].size(); ++index) {
+                        int Z = chart.span_nts[j+1][k][h][2][index];
+                        Item item(j+1, k, h, Z, 2);
+                        double item_score = chart.score(item);
+
+                        for (int r_index = 0; r_index < grammar.rules_by_second[Z].size(); ++r_index) {
+                            const BinaryRule &rule = grammar.rules_by_second[Z][r_index];
+                            int r = rule.rule_num;
+                            int X = rule.nt_X;
+                            int Y = rule.nt_Y;
+
+                            if (have_nt[Y]) {
+                                Item other_item(i, j, m, Y, 2);
+                                double other_item_score = chart.score(other_item);
+                                Item new_item(i, k, h, X, 0);
+                                AppliedRule rule(i, j, k, h, m, r);
+                                double score = scorer.score(rule);
+
+                                chart.update(new_item, score, other_item, item, rule, item_score,
+                                             other_item_score);
+                                assert(r < G);
+                            }
+                        }
+                    }
+                }
+            }
+            for (int h = i; h <= k; ++h) {
+                complete(i, k, h, grammar, scorer, &chart);
+            }
+        }
+    }
+    int root_word = 0;
+    for (int i = 0; i < n; ++i) {
+        if (deps[i] == -1) {
+            root_word = i;
+        }
+    }
+    Item item(0, n-1, root_word, 0, 2);
+    for (int i = 0; i < grammar.roots.size(); ++i) {
+        int root = grammar.roots[i];
+        Item item1(0, n-1, root_word, root, 2);
+        if (chart.has_item(item1)) {
+            chart.promote(item, item1);
+        }
+    }
+    chart.to_tree(item, grammar, best_rules, output);
+    return chart.score(item);
+}
+
 
 
 // void initialize_grammar_pruning(int n, int N,
@@ -202,370 +558,3 @@ void span_pruning(const int n, const vector<int> &deps,
 //         }
 //     }
 // }
-
-
-struct BackPointer {
-    BackPointer() : terminal(true) {}
-    bool terminal;
-    bool single;
-    bool promotion;
-    Item item1;
-    Item item2;
-    AppliedRule rule;
-};
-
-class Chart {
-  public:
-    Chart (int n, int N, const vector<string> *words) : n_(n), N_(N), words_(words) {
-        int total_size = n * n * n * 3;
-        // has_item_.resize(total_size);
-        bps_.resize(total_size);
-        item_score_.resize(total_size);
-
-        span_nts.resize(n);
-        for (int i = 0; i < n; ++i) {
-            span_nts[i].resize(n);
-            for (int j = 0; j < n; ++j) {
-                span_nts[i][j].resize(n);
-                for (int h = 0; h < n; ++h) {
-                    span_nts[i][j][h].resize(3);
-                }
-            }
-        }
-    }
-
-    void span_init(const Item &item) {
-        span_nts[item.i][item.k][item.h][item.layer].push_back(item.nt);
-    }
-
-    void init(const Item &item) {
-        // int index = index_item(item);
-        if (!has_item(item)) {
-            span_init(item);
-            // span_nts[item.i][item.k][item.h][item.layer].push_back(item.nt);
-            // has_item_[index][item.nt] = 1;
-        }
-    }
-
-    void to_tree(const Item &item, const Grammar &grammar,
-                 vector<AppliedRule> *best_rules, bool output) {
-        int index = index_item(item);
-        BackPointer &bp = bps_[index][item.nt];
-        if (bp.terminal) {
-            // assert(item.i == item.k);
-            if (output)
-                cout << " (" << grammar.rev_nonterm_map.find(item.nt)->second
-                     << " " << (*words_)[item.i] << ") ";
-
-        } else if (bp.single) {
-            best_rules->push_back(bp.rule);
-            if (output)
-                cout << " (" << grammar.rev_nonterm_map.find(item.nt)->second << " ";
-            to_tree(bp.item1, grammar, best_rules, output);
-            if (output)
-                cout << ") ";
-        } else if (bp.promotion) {
-            to_tree(bp.item1, grammar, best_rules, output);
-        } else {
-            best_rules->push_back(bp.rule);
-            string nt = grammar.rev_nonterm_map.find(item.nt)->second;
-            bool binarized =  (nt[0] == 'Z');
-
-
-            if (output && !binarized)
-                cout << " (" << nt << " ";
-            to_tree(bp.item1, grammar, best_rules, output);
-            if (output)
-                cout << " ";
-            to_tree(bp.item2, grammar, best_rules, output);
-            if (output && !binarized)
-                cout << ") ";
-        }
-    }
-
-    void promote(const Item &item, const Item &item1) {
-        int index = index_item(item);
-        int index1 = index_item(item1);
-        //assert(has_item_[index1][item1.nt]);
-        double new_score = item_score_[index1][item1.nt];
-        map<int, double>::iterator iter = item_score_[index].find(item.nt);
-        if (iter == item_score_[index].end() or new_score > iter->second) {
-            BackPointer &bp = bps_[index][item.nt];
-            bp.item1 = item1;
-            bp.promotion = true;
-            bp.single = false;
-            bp.terminal = false;
-
-            // iter->second = new_score;
-
-            if (iter == item_score_[index].end()) {
-                item_score_[index][item.nt] = new_score;
-                span_init(item);
-            } else{
-                iter->second = new_score;
-            }
-
-            // item_score_[index][item.nt] = new_score;
-        }
-
-    }
-
-    void update(const Item &item, double score, const Item &item1, const AppliedRule &rule,
-                double score1) {
-
-        int index = index_item(item);
-        //int index1 = index_item(item1);
-        //assert(has_item_[index1][item1.nt]);
-        double new_score = score + score1;
-        map<int, double>::iterator iter = item_score_[index].find(item.nt);
-        if (iter == item_score_[index].end() or new_score > iter->second) {
-            BackPointer &bp = bps_[index][item.nt];
-            bp.item1 = item1;
-            bp.single = true;
-            bp.terminal = false;
-            bp.promotion = false;
-            bp.rule = rule;
-            // init(item);
-            if (iter == item_score_[index].end()) {
-                item_score_[index][item.nt] = new_score;
-                span_init(item);
-            } else{
-                iter->second = new_score;
-            }
-
-        }
-
-    }
-
-    bool has_item (const Item &item) const {
-
-        int index = index_item(item);
-        return item_score_[index].find(item.nt) != item_score_[index].end();
-
-    }
-
-    double score(const Item &item) {
-        int index = index_item(item);
-        return item_score_[index][item.nt];
-    }
-
-    void update(const Item &item, double score, const Item &item1, const Item &item2,
-                const AppliedRule &rule, double score1, double score2) {
-
-        int index = index_item(item);
-
-        // int index1 = index_item(item1);
-        // int index2 = index_item(item2);
-
-        //assert(has_item_[index1][item1.nt]);
-        //assert(has_item_[index2][item2.nt]);
-
-        double new_score = score + score1 + score2; //item_score_[index1][item1.nt] + item_score_[index2][item2.nt];
-        map<int, double>::iterator iter = item_score_[index].find(item.nt);
-        if (iter == item_score_[index].end() or new_score > iter->second) {
-            BackPointer &bp = bps_[index][item.nt];
-            bp.item1 = item1;
-            bp.item2 = item2;
-            bp.single = false;
-            bp.terminal = false;
-            bp.promotion = false;
-            bp.rule = rule;
-
-            if (iter == item_score_[index].end()) {
-                item_score_[index][item.nt] = new_score;
-                span_init(item);
-            } else{
-                iter->second = new_score;
-            }
-
-            // item_score_[index][item.nt] = new_score;
-
-        }
-
-    }
-
-    vector<vector<vector<vector<vector<int> > > > > span_nts;
-
-
-  private:
-    int index_item(const Item &item) const {
-        // 3 * item.nt
-        return 3 * n_ * n_ *  item.i +  3 * n_ * item.k + 3 * item.h +  + item.layer;
-    }
-
-    int n_;
-    int N_;
-    // vector<map<int, bool> > has_item_;
-    vector<map<int, double> > item_score_;
-    vector<map<int, BackPointer> > bps_;
-    const vector<string> *words_;
-};
-
-
-
-
-
-void complete(int i, int k, int h, const Grammar &grammar, const FeatureScorer &scorer,  Chart *chart) {
-    // Fill in the unary rules.
-    for (int index = 0; index < chart->span_nts[i][k][h][0].size(); ++index) {
-        int Y = chart->span_nts[i][k][h][0][index];
-        Item item(i, k, h, Y, 0);
-
-        Item item_prom(i, k, h, Y, 2);
-        double item_score = chart->score(item);
-        chart->promote(item_prom, item);
-
-        for (int index = 0; index < grammar.unary_rules_by_first[Y].size(); ++index) {
-            int X = grammar.unary_rules_by_first[Y][index].nt_X;
-            int r = grammar.unary_rules_by_first[Y][index].rule_num;
-            AppliedRule rule(i, k, k, h, h, r);
-            Item item2(i, k, h, X, 1);
-            chart->update(item2, scorer.score(rule), item, rule, item_score);
-
-            Item item2_prom(i, k, h, X, 2);
-            chart->promote(item2_prom, item2);
-
-            double item2_score = chart->score(item2);
-
-            for (int index_up = 0; index_up < grammar.unary_rules_by_first[X].size(); ++index_up) {
-                int X_up = grammar.unary_rules_by_first[X][index_up].nt_X;
-                int r_up = grammar.unary_rules_by_first[X][index_up].rule_num;
-                AppliedRule rule(i, k, k, h, h, r_up);
-
-                Item item3(i, k, h, X_up, 2);
-                chart->update(item3, scorer.score(rule), item2, rule, item2_score);
-            }
-        }
-    }
-}
-
-void cky(const vector<int> &preterms,
-         const vector<string> &words,
-         const vector<int> &deps,
-         const Grammar &grammar,
-         const FeatureScorer &scorer,
-         vector<AppliedRule> *best_rules,
-         bool output) {
-    int n = preterms.size();
-    vector<vector<vector<DepSplit> > > span_pruner;
-    // vector<vector<vector<vector<vector <RuleSplit> > > > > cell_rules;
-    int G = grammar.n_rules;
-    int N = grammar.n_nonterms;
-
-    // Run the pruning stages.
-    span_pruning(n, deps, &span_pruner);
-    // grammar_pruning(preterms, grammar, span_pruner, &cell_rules);
-
-    Chart chart(n, grammar.n_nonterms, &words);
-
-    // Initialize the chart.
-    for (int i = 0; i < n; ++i) {
-        int Y = preterms[i];
-        Item item(i, i, i, Y, 0);
-        chart.init(item);
-        complete(i, i, i, grammar, scorer,  &chart);
-    }
-
-    // Main loop.
-    for (int d = 1; d < n; ++d) {
-        for (int i = 0; i < n; ++i) {
-            int k = i + d;
-            if (k >= n) continue;
-
-            for (int span = 0; span < span_pruner[i][k].size(); ++span) {
-                int h = span_pruner[i][k][span].head;
-                int m = span_pruner[i][k][span].mod;
-                int j = span_pruner[i][k][span].split;
-
-
-                if (h <= j) {
-                    vector<bool> have_nt(N, 0);
-                    //Item other_item(j+1, k, m, Z, 2);
-                    for (int index = 0; index < chart.span_nts[j+1][k][m][2].size(); ++index) {
-                        int Z = chart.span_nts[j+1][k][m][2][index];
-                        have_nt[Z] = 1;
-                    }
-
-                    for (int index = 0; index < chart.span_nts[i][j][h][2].size(); ++index) {
-
-                        int Y = chart.span_nts[i][j][h][2][index];
-                        Item item(i, j, h, Y, 2);
-                        double item_score = chart.score(item);
-
-                        // Need j+1 k m* Z*
-
-                        for (int r_index = 0; r_index < grammar.rules_by_first[Y].size(); ++r_index) {
-                            const BinaryRule &rule = grammar.rules_by_first[Y][r_index];
-                            int r = rule.rule_num;
-                            int X = rule.nt_X;
-                            int Z = rule.nt_Z;
-                            if (have_nt[Z]) {
-                                Item other_item(j+1, k, m, Z, 2);
-
-                            //if (chart.has_item(other_item)) {
-                                double other_item_score = chart.score(other_item);
-                                Item new_item(i, k, h, X, 0);
-                                AppliedRule rule(i, j, k, h, m, r);
-                                double score = scorer.score(rule);
-                                chart.update(new_item, score, item, other_item, rule,
-                                             item_score, other_item_score);
-                                assert(r < G);
-                            }
-                        }
-                    }
-                }
-                if (h > j) {
-                    vector<bool> have_nt(N, 0);
-                    //Item other_item(j+1, k, m, Z, 2);
-                    for (int index = 0; index < chart.span_nts[i][j][m][2].size(); ++index) {
-                        int Y = chart.span_nts[i][j][m][2][index];
-                        have_nt[Y] = 1;
-                    }
-
-                    for (int index = 0; index < chart.span_nts[j+1][k][h][2].size(); ++index) {
-                        int Z = chart.span_nts[j+1][k][h][2][index];
-                        Item item(j+1, k, h, Z, 2);
-                        double item_score = chart.score(item);
-
-                        for (int r_index = 0; r_index < grammar.rules_by_second[Z].size(); ++r_index) {
-                            const BinaryRule &rule = grammar.rules_by_second[Z][r_index];
-                            int r = rule.rule_num;
-                            int X = rule.nt_X;
-                            int Y = rule.nt_Y;
-
-                            if (have_nt[Y]) {
-                                Item other_item(i, j, m, Y, 2);
-                                double other_item_score = chart.score(other_item);
-                                Item new_item(i, k, h, X, 0);
-                                AppliedRule rule(i, j, k, h, m, r);
-                                double score = scorer.score(rule);
-
-                                chart.update(new_item, score, other_item, item, rule, item_score,
-                                             other_item_score);
-                                assert(r < G);
-                            }
-                        }
-                    }
-                }
-            }
-            for (int h = i; h <= k; ++h) {
-                complete(i, k, h, grammar, scorer, &chart);
-            }
-        }
-    }
-    int root_word = 0;
-    for (int i = 0; i < n; ++i) {
-        if (deps[i] == -1) {
-            root_word = i;
-        }
-    }
-    Item item(0, n-1, root_word, 0, 2);
-    for (int i = 0; i < grammar.roots.size(); ++i) {
-        int root = grammar.roots[i];
-        Item item1(0, n-1, root_word, root, 2);
-        if (chart.has_item(item1)) {
-            chart.promote(item, item1);
-        }
-    }
-    chart.to_tree(item, grammar, best_rules, output);
-}

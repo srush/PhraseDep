@@ -8,6 +8,7 @@
 
 
 const int n_tags = 1000;
+const int n_size = 10000000;
 
 class FeatureGen;
 class Double;
@@ -25,13 +26,13 @@ class Triple {
     int apply(int a, int b, int c) const {
         return a * _size_b * _size_c + b * _size_c + c;
     }
-    int _total_size;
+
 
     inline void inc(int a, int b, int c, vector<int> *base, int *tally,
-                 const vector<double> *weights, double *score) const {
+                    const vector<double> *weights, double *score) const {
         int index = *tally + apply(a, b, c);
         if (weights != NULL) {
-            *score += (*weights)[((int)abs(index)) % 1000000];
+            *score += (*weights)[((int)abs(index)) % n_size];
         } else {
             base->push_back(index);
         }
@@ -39,11 +40,10 @@ class Triple {
 
     }
 
-
     int _size_a;
     int _size_b;
     int _size_c;
-
+    long int _total_size;
 };
 
 class Double {
@@ -59,15 +59,14 @@ class Double {
     void inc(int a, int b, vector<int> *base, int *tally, const vector<double> *weights, double *score) const {
         int index = *tally + apply(a, b);
         if (weights != NULL) {
-            *score += (*weights)[((int)abs(index)) % 1000000];
+            *score += (*weights)[((int)abs(index)) % n_size];
         } else {
             base->push_back(index);
         }
         (*tally) += _total_size;
     }
 
-    int _total_size;
-
+    long int _total_size;
 
     int _size_a;
     int _size_b;
@@ -92,7 +91,7 @@ class FeatureGen {
 class FeatureScorer {
   public:
     FeatureScorer(const Grammar *grammar)
-            : perceptron_(1000000), feature_gen_(grammar) {}
+            : perceptron_(n_size), feature_gen_(grammar) {}
 
     void set_sentence(const Sentence *sentence) {
         sentence_ = sentence;

@@ -1,5 +1,6 @@
 from nltk import Tree
-import random
+from copy import deepcopy
+import sys
 # http://www.nltk.org/_modules/nltk/treetransforms.html#chomsky_normal_form 
 
 def read_from_ptb(filename):
@@ -8,9 +9,12 @@ def read_from_ptb(filename):
         tree = Tree.fromstring(l)
         # for st in tree.subtrees():
         #     print "*" + st.pprint()
-        print "*" + tree.pprint()
-        tree.chomsky_normal_form(factor='right', horzMarkov=2, vertMarkov=2, childChar='|', parentChar='^')
-        print "+" + tree.pprint()
+        original = deepcopy(tree)
+        #print tree.pprint()
+        chomsky_normal_form(tree, horzMarkov=2, vertMarkov=2, childChar='|', parentChar='#')
+        #un_chomsky_normal_form(tree)
+        #print tree.pprint()
+        #print original.pprint() == tree.pprint()
     ptb_file.close()
 
 # RuleChecker: Check the head rules to match in each case
@@ -19,14 +23,22 @@ def read_from_ptb(filename):
 
 PUNCTSET = set([".", ",", ":", "``", "''"])
 
+def remove_labelChar(n, labelChar = '^'):
+    if isinstance(n, str):
+        return n[:(n.rfind(labelChar) if n.rfind(labelChar) > 0 else len(n))]
+    else:
+        return [remove_labelChar(x) for x in n]
+
 # Parent is a string, child_list is a list of string
-def findHead(parent,child_list):
-    if len(child_list) == 1:
+def findHead(parent,child_list, labelChar='^'):
+    r_parent = remove_labelChar(parent, labelChar)
+    r_child_list = remove_labelChar(child_list, labelChar)
+    #print r_child_list
+    if len(r_child_list) == 1:
         #Unary Rule -> the head must be the only one
         return 0
-
-    normalHead = findHeaderNormal(parent, child_list)
-    return findHeaderCoord(parent, child_list, normalHead);
+    normalHead = findHeaderNormal(r_parent, r_child_list)
+    return findHeaderCoord(r_parent, r_child_list, normalHead);
 
 def firstNoPunctChild(child_list):
     for i in xrange(len(child_list)):
@@ -324,7 +336,71 @@ def findHeaderCoord(parent, child_list, normalHead):
 
         return normalHead
 
-def chomsky_normal_form(tree, factor="right", horzMarkov=None, vertMarkov=0, childChar="|", parentChar="^"):
+def lexLabel(tree, labelChar="^"):
+    # a little hacky way to label the leaves using the index
+    preterminals = [t for t in tree.subtrees(lambda t: t.height() == 2)]
+    for i in xrange(len(preterminals)):
+        preterminals[i][0] = preterminals[i][0] + labelChar + str(i+1)
+    #     leaves[i] = leaves[i] + "-" + str(i+1)
+    # print leaves
+    for t in tree.subtrees():
+        if isinstance(t, str):
+            continue
+        else:
+            t.set_label(t.label() + labelChar + getLexLabelNT(t))
+
+# return a string representing a int as index
+def getLexLabelNT(node, labelChar='^'):
+    # print "we are at " + str(node)
+    if isinstance(node, str):
+        return findIndex(node, labelChar)
+    if isinstance(node,Tree):
+        if node.height() == 2:
+            return findIndex(node[0])
+        else:
+            child_list_str = [n.label() if isinstance(n, Tree) else n for n in node]
+            child_list = [n for n in node]
+            return getLexLabelNT(child_list[findHead(node.label(), child_list_str)], labelChar)
+
+# e.g. for "word^3" return '3'
+def findIndex(s, labelChar='^'):
+    return s[s.rfind(labelChar)+1:]
+
+def getParentDic(lexTree, labelChar='^'):
+    # build a parent set
+    dep_set = {}
+    # add root to the tree
+    dep_set[findIndex(lexTree.label())] = '0'
+    for nt in lexTree.subtrees():
+        if isinstance(nt, Tree):
+            ind_p = findIndex(nt.label())
+            for c in nt:
+                ind_c = findIndex(c.label() if isinstance(c, Tree) else c)
+                if not ind_c == ind_p:
+                    dep_set[ind_c] = ind_p
+    return dep_set
+
+def generateDep(ot, labelChar='^'):
+    lt = deepcopy(ot)
+    lexLabel(lt, labelChar)
+    dep_set = getParentDic(lt, labelChar)
+
+    conll_lines = []
+    preterminals = [t for t in lt.subtrees(lambda t: t.height() == 2)]
+    for i in xrange(len(preterminals)):
+        word = remove_labelChar(preterminals[i][0], labelChar)
+        pos = remove_labelChar(preterminals[i].label(), labelChar)
+        index = findIndex(preterminals[i][0], labelChar)
+        parent = dep_set[index]
+        conll_lines.append([index, word, pos, parent])
+    return conll_lines
+
+def print_conll_lines(clines, wt):
+    # 1 Influential _   JJ  JJ  _   2   _   _
+    for l in clines:
+        wt.write(l[0] + "\t" + l[1] + "\t_\t" + l[2] + "\t" + l[2] + "\t_\t" + l[3] + "\t_\t_\n") 
+
+def chomsky_normal_form(tree, horzMarkov=None, vertMarkov=0, childChar="|", parentChar="#"):
     # assume all subtrees have homogeneous children
     # assume all terminals have no siblings
 
@@ -339,7 +415,6 @@ def chomsky_normal_form(tree, factor="right", horzMarkov=None, vertMarkov=0, chi
     # This method is 7x faster which helps when parsing 40,000 sentences.
 
     nodeList = [(tree, [tree.label()])]
-    # print "***0"
     # print nodeList
     
     while nodeList != []:
@@ -353,12 +428,12 @@ def chomsky_normal_form(tree, factor="right", horzMarkov=None, vertMarkov=0, chi
                 continue
 
             # print parent
-            print str(node.label()) + "\t-->\t" + "\t".join(child_list)
+            # print str(node.label()) + "\t-->\t" + "\t".join(child_list)
 
             # The head postion is determined by the collins rule
             head_postion = findHead(node.label(),child_list)
 
-            print child_list[head_postion]
+            #print child_list[head_postion]
 
             # parent annotation
             parentString = ""
@@ -413,7 +488,7 @@ def chomsky_normal_form(tree, factor="right", horzMarkov=None, vertMarkov=0, chi
                 curNode[0:] = [child for child in nodeCopy]
 
 
-def un_chomsky_normal_form(tree, expandUnary = True, childChar = "|", parentChar = "^", unaryChar = "+"):
+def un_chomsky_normal_form(tree, expandUnary = True, childChar = "|", parentChar = "#", unaryChar = "+"):
     # Traverse the tree-depth first keeping a pointer to the parent for modification purposes.
     nodeList = [(tree,[])]
     while nodeList != []:
@@ -456,7 +531,7 @@ def un_chomsky_normal_form(tree, expandUnary = True, childChar = "|", parentChar
         #print "#" + str(tree)
 
 
-def collapse_unary(tree, collapsePOS = False, collapseRoot = False, joinChar = "+"):
+def collapse_unary(tree, collapsePOS = False, collapseRoot = True, joinChar = "+"):
     """
     Collapse subtrees with a single child (ie. unary productions)
     into a new non-terminal (Tree node) joined by 'joinChar'.
@@ -497,6 +572,11 @@ def collapse_unary(tree, collapsePOS = False, collapseRoot = False, joinChar = "
                 for child in node:
                     nodeList.append(child)
 
+def flat_print(t):
+    # print the tree in one single line
+    return t._pprint_flat(nodesep='', parens='()', quotes=False)
+
+
 #################################################################
 # Demonstration
 #################################################################
@@ -526,19 +606,29 @@ def demo():
   (NP (DT the) (NN yuppie) (NNS dealers))
   (VP (AUX do) (NP (NP (RB little)) (ADJP (RB right))))
   (. .))"""
-    #sentence = """(S (A (B (B1 b1) (B2 b2) (B3 (BB1 bb1) (BB2 bb2) (BB3 bb3) ) (B4 b4)) (C (C1 c1) (C2 c2)  ) (D d) (E e) (F f) (G g)) (W w))"""
-    t = tree.Tree.fromstring(sentence, remove_empty_top_bracketing=True)
 
+    sentence = """(S (NP (NP (JJ Influential) (NNS members)) (PP (IN of) (NP (DT the) (NNP House) (NNP Ways) (CC and) (NNP Means) (NNP Committee)))) (VP (VBD introduced) (NP (NP (NN legislation)) (SBAR (WHNP (WDT that)) (S (VP (MD would) (VP (VB restrict) (SBAR (WHADVP (WRB how)) (S (NP (DT the) (JJ new) (NN savings-and-loan) (NN bailout) (NN agency)) (VP (MD can) (VP (VB raise) (NP (NN capital)))))) (, ,) (S (VP (VBG creating) (NP (NP (DT another) (JJ potential) (NN obstacle)) (PP (TO to) (NP (NP (NP (DT the) (NN government) (POS 's)) (NN sale)) (PP (IN of) (NP (JJ sick) (NNS thrifts)))))))))))))) (. .))"""
+    # sentence = """(M (S (A (B (B1 b1) (B2 b2) (B3 (BB1 bb1) (BB2 bb2) (BB3 bb3) ) (B4 b4)) (C (C1 c1) (C2 c2)  ) (D d) (E e) (F f) (G g)) (W w)))"""
+    t = tree.Tree.fromstring(sentence, remove_empty_top_bracketing=True)
+    
     # collapse subtrees with only one child
-    # collapsedTree = deepcopy(t)
-    # collapse_unary(collapsedTree)
+    lTree = deepcopy(t)
+    lexLabel(lTree)
+    print flat_print(lTree)
+
+    deps = generateDep(t)
+    print_conll_lines(deps,sys.stdout)
+
+
+    collapsedTree = deepcopy(t)
+    collapse_unary(collapsedTree)
 
     # convert the tree to CNF
     # cnfTree = deepcopy(collapsedTree)
     # chomsky_normal_form(cnfTree)
 
     # convert the tree to CNF with parent annotation (one level) and horizontal smoothing of order two
-    parentTree = deepcopy(t)
+    parentTree = deepcopy(collapsedTree)
     chomsky_normal_form(parentTree, horzMarkov=2, vertMarkov=2)
 
     # convert the tree back to its original form (used to make CYK results comparable)
@@ -554,8 +644,8 @@ def demo():
     # draw_trees(t, collapsedTree, cnfTree, parentTree, original)
     #print t, collapsedTree, cnfTree, parentTree, original
     print parentTree
-    
+
 
 if __name__ == '__main__':
     demo()
-    # read_from_ptb('/media/lingpenk/Data/PhraseDep/treebank/dev.1.notraces')
+    #read_from_ptb('/media/lingpenk/Data/PhraseDep/treebank/dev.1.notraces')

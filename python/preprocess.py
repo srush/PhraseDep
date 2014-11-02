@@ -21,7 +21,22 @@ def main():
                                args.training_ps,
                                args.limit)
 
+    # X is, 
+    # ParseInput = namedtuple("ParseInput", ["words", "tags", "deps", "index"])
+    # index is the index of the sentence, and deps is a matrix encode the dependencies
+    # Y is,
+    # ImmutableTree representation of the phrase structure tree, not necessarily binarized.
+
     grammar = read_rule_set(open(args.binarized_rules))
+
+    # grammar contains a set of bin rules
+    # BinarizedRule: namedtuple("BinarizedRule",["X", "Y", "Z", "original", "direction", "mins"])
+    # where mins l, r is the min l and r number if use this rule
+    # Say X -> Y_1* Y_2 Y_3
+    # size is 3 here and head index is 0
+    # 3 - 0 - 1 = 2 is the rightMin
+    # left min is just 0 here (head position)
+
     orules = tree.read_original_rules(open(args.original_rules))
 
     out = open(args.rule_output, "w")
@@ -39,7 +54,13 @@ def main():
     for x, y in zip(X, Y):
         # if len(x.tags) > 50:  continue
         encoder = LexicalizedCFGEncoder(x.words, x.tags, grammar)
+
         bin_y = tree.binarize(orules, y)
+        
+        # y is lex (^index) ps tree
+        # bin_y is bin lex (^index) ps tree
+        # they are all instances of ImmutableTree
+
         parts = encoder.transform_structure(bin_y)
         n = len(x.tags)
         print >>out, len(x.tags), len(parts)

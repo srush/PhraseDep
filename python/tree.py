@@ -69,7 +69,7 @@ def make_bin_nonterm(parent_nt, prev_label, dir, head):
        Absolute head.
 
     """
-    return "Z_(%s_%s_%s)^%d"%(parent_nt, 
+    return "Z_[%s_%s_%s]^%d"%(parent_nt, 
                               "l" if dir == 0 else "r",
                               clean_label(prev_label), 
                               head+1)

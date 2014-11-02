@@ -24,7 +24,7 @@ class auto:
 
 class SparseEncoder(StructuredEncoder):
     """
-    A sparse structured encoder. Gives a new id to each new key. 
+    A sparse structured encoder. Gives a new id to each new key.
     """
     def __init__(self):
         self.encoder = defaultdict(auto())
@@ -92,12 +92,13 @@ class LexicalizedCFGEncoder(SparseEncoder):
                 Y, h_1 = annotated_label(node[0])
                 Z, h_2 = annotated_label(node[1])
                 other = h_1 if h == h_2 else h_2
-
+                assert h == h_1 or h == h_2, "%s %s %s\n%s"%(h, h_1, h_2, parse)
                 r = self.grammar.rule_index(X, Y, Z)
                 if not terminal(node[0]):
                     j = i + len(node[0].leaves()) - 1
                 else:
                     j = i + 1 - 1
+                assert(i <= h <= k), "%s %s %s %s %s %s\n%s"%(h, h_1, h_2, i, j, k, parse)
 
                 parts.append((i, j, k, h, other, r))
 
@@ -157,7 +158,7 @@ class LexicalizedCFGEncoder(SparseEncoder):
 
     def structure_path(self, graph, parse):
         """
-        Helper method for debugging. Checks that a graph contains parse. 
+        Helper method for debugging. Checks that a graph contains parse.
 
         Parameters
         -----------

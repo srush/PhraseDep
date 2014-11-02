@@ -11,6 +11,7 @@ struct Sentence {
     vector<string> tags;
     vector<int> int_tags;
     vector<string> words;
+    vector<int> int_words;
     vector<int> deps;
     vector<AppliedRule> gold_rules;
 };

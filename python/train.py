@@ -24,9 +24,15 @@ def fscore(a, b):
 class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
 
     def loss(self, y, yhat):
-        a = tree.make_spans(y)
-        b = tree.make_spans(yhat)
-        return 1.0 - fscore(a, b)
+        encoder = LexicalizedCFGEncoder(self.temp_x.words, self.temp_x.tags, self.grammar)
+        parts = map(tuple, list(encoder.transform_structure(y)))
+        partsb = map(tuple, list(encoder.transform_structure(yhat)))
+
+        # print len([1 for p in parts if p in partsb]), float(len(parts))
+        return len([1 for p in parts if p in partsb]) / float(len(parts))
+        # a = tree.make_spans(y)
+        # b = tree.make_spans(yhat)
+        # return 1.0 - fscore(a, b)
 
     def max_loss(self, y):
         return 1.0
@@ -62,12 +68,12 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
                 [self._preprocess_word(word, tag)
                  for word, tag in zip(x.words, x.tags)] \
                     + [self._preprocess_word("*END*", "*END*")])
-            
+
             self.cache["PP", x] = p
         return self.cache["PP", x]
 
     def dynamic_program(self, x):
-
+        self.temp_x = x
         if x.index is not None:
             if self.last is not None and x.index == self.last[0]:
                 return self.last[1], self.last[2]
@@ -135,29 +141,70 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
         length = len(x.words)
         top = size == length
         is_unary = o[:, RULE] > G
+
+
         base = [(X, p["TAG"][o[:, HEAD]], p["TAG"][o[:, MOD]]),
-                (X, p["TAG"][o[:, HEAD]]),
-                (X, top),
-                (X, Y),
-                (X, Z),
-                (mod_count[o[:, HEAD], 0], o[:, RULE]),
-                (mod_count[o[:, HEAD], 1], o[:, RULE]),
-                (first_child, o[:, RULE]),
-                (last_child, o[:, RULE]),
-                (is_unary,),
-                (is_unary, p["TAG"][o[:, HEAD]]),
-                (is_unary, X),
-                (is_unary, size == 0),
                 (X, Y, p["TAG"][o[:, HEAD]]),
                 (X, Z, p["TAG"][o[:, HEAD]]),
-                (X, p["WORD"][o[:, HEAD]]),
-                (o[:, RULE], p["TAG"][o[:, MOD]]),
-                (o[:, RULE], p["TAG"][o[:, HEAD]]),
-                (o[:, RULE], p["TAG"][o[:, HEAD]], p["WORD"][o[:, MOD]]),
+                (o[:, RULE], p["TAG"][o[:, HEAD]], p["TAG"][o[:, MOD]]),
                 (o[:, RULE], p["WORD"][o[:, HEAD]], p["TAG"][o[:, MOD]]),
-                (bdist, o[:, RULE]),
-                (direction, bdist1, bdist2),
-                (o[:, RULE],)]
+
+                (X, p["TAG"][o[:, HEAD]]),
+                (X, p["WORD"][o[:, HEAD]]),
+                (o[:, RULE], p["WORD"][o[:, HEAD]]),
+                (X, Y),
+                (X, Z),
+                (is_unary, p["TAG"][o[:, HEAD]]),
+                (is_unary, X),
+                (is_unary, o[:, RULE]),
+                (o[:, RULE], p["TAG"][o[:, HEAD]]),
+                (o[:, RULE], p["TAG"][o[:, MOD]]),
+                (is_unary, size == 0),
+                (X, top)]
+        #EXTRA
+                # (mod_count[o[:, HEAD], 0], o[:, RULE]),
+                # (mod_count[o[:, HEAD], 1], o[:, RULE]),
+                # (first_child, o[:, RULE]),
+                # (last_child, o[:, RULE]),
+                # (is_unary,),
+
+                # (is_unary, X),
+
+                # (X, Y, p["TAG"][o[:, HEAD]]),
+                # (X, Z, p["TAG"][o[:, HEAD]]),
+                # (X, p["WORD"][o[:, HEAD]]),
+                # (o[:, RULE], p["TAG"][o[:, MOD]]),
+                # (o[:, RULE], p["TAG"][o[:, HEAD]]),
+                # (o[:, RULE], p["TAG"][o[:, HEAD]], p["WORD"][o[:, MOD]]),
+                # (o[:, RULE], p["WORD"][o[:, HEAD]], p["TAG"][o[:, MOD]]),
+                # (bdist, o[:, RULE]),
+                # (direction, bdist1, bdist2),
+                # (o[:, RULE],)]
+
+
+        # base = [(X, p["TAG"][o[:, HEAD]], p["TAG"][o[:, MOD]]),
+        #         (X, p["TAG"][o[:, HEAD]]),
+        #         (X, top),
+        #         (X, Y),
+        #         (X, Z),
+        #         (mod_count[o[:, HEAD], 0], o[:, RULE]),
+        #         (mod_count[o[:, HEAD], 1], o[:, RULE]),
+        #         (first_child, o[:, RULE]),
+        #         (last_child, o[:, RULE]),
+        #         (is_unary,),
+        #         (is_unary, p["TAG"][o[:, HEAD]]),
+        #         (is_unary, X),
+        #         (is_unary, size == 0),
+        #         (X, Y, p["TAG"][o[:, HEAD]]),
+        #         (X, Z, p["TAG"][o[:, HEAD]]),
+        #         (X, p["WORD"][o[:, HEAD]]),
+        #         (o[:, RULE], p["TAG"][o[:, MOD]]),
+        #         (o[:, RULE], p["TAG"][o[:, HEAD]]),
+        #         (o[:, RULE], p["TAG"][o[:, HEAD]], p["WORD"][o[:, MOD]]),
+        #         (o[:, RULE], p["WORD"][o[:, HEAD]], p["TAG"][o[:, MOD]]),
+        #         (bdist, o[:, RULE]),
+        #         (direction, bdist1, bdist2),
+        #         (o[:, RULE],)]
 
         # dist = o[:, HEAD] - o[:, MOD]
         # bdist = np.digitize(dist, self.bins)
@@ -182,29 +229,51 @@ class ReconstructionModel(pydecode.model.DynamicProgrammingModel):
             return self.preprocessor.size(t)
         nonterms = len(self.grammar.nonterms)
         rules = len(self.grammar.rule_table)
+
         base = [(nonterms, s("TAG"), s("TAG")),
+                (nonterms, nonterms, s("TAG")),
+                (nonterms, nonterms, s("TAG")),
+                (rules, s("TAG"), s("TAG")),
+                (rules, s("WORD"), s("TAG")),
+
+
                 (nonterms, s("TAG")),
-                (nonterms, 2),
+                (nonterms, s("WORD")),
+                (rules, s("WORD")),
                 (nonterms, nonterms),
                 (nonterms, nonterms),
-                (200, rules),
-                (200, rules),
-                (2, rules),
-                (2, rules),
-                (2,),
                 (2, s("TAG")),
                 (2, nonterms),
-                (2, 2,),
-                (nonterms, nonterms, s("TAG")),
-                (nonterms, nonterms, s("TAG")),
-                (nonterms, s("WORD")),
+                (2, rules),
                 (rules, s("TAG")),
                 (rules, s("TAG")),
-                (rules, s("TAG"), s("WORD")),
-                (rules, s("WORD"), s("TAG")),
-                (200, rules),
-                (2, 200, 200),
-                (rules,)]
+                (2, 2),
+                (nonterms, 2)]
+
+
+        # base = [(nonterms, s("TAG"), s("TAG")),
+        #         (nonterms, s("TAG")),
+        #         (nonterms, 2),
+        #         (nonterms, nonterms),
+        #         (nonterms, nonterms),
+        #         (200, rules),
+        #         (200, rules),
+        #         (2, rules),
+        #         (2, rules),
+        #         (2,),
+        #         (2, s("TAG")),
+        #         (2, nonterms),
+        #         (2, 2,),
+        #         (nonterms, nonterms, s("TAG")),
+        #         (nonterms, nonterms, s("TAG")),
+        #         (nonterms, s("WORD")),
+        #         (rules, s("TAG")),
+        #         (rules, s("TAG")),
+        #         (rules, s("TAG"), s("WORD")),
+        #         (rules, s("WORD"), s("TAG")),
+        #         (200, rules),
+        #         (2, 200, 200),
+        #         (rules,)]
         # def s(t):
         #     return self.preprocessor.size(t)
         # base = [(s("WORD"), s("WORD")),

@@ -576,6 +576,46 @@ def flat_print(t):
     # print the tree in one single line
     return t._pprint_flat(nodesep='', parens='()', quotes=False)
 
+# this actually assumes that every bin rule contains one dep, like we assumed in the paper.
+def binarize_lex(otree, labelChar='^'):
+    work_tree = deepcopy(otree)
+    lexLabel(work_tree)
+    parent_dic = getParentDic(work_tree)
+    # for x in parent_dic:
+    #     print x, parent_dic[x]
+    work_tree = deepcopy(otree)
+    chomsky_normal_form(work_tree, horzMarkov=2, vertMarkov=2)
+
+    preterminals = [t for t in work_tree.subtrees(lambda t: t.height() == 2)]
+    for i in xrange(len(preterminals)):
+        preterminals[i][0] = preterminals[i][0] + labelChar + str(i+1)
+    print work_tree
+    for t in work_tree.subtrees():
+        if isinstance(t, str):
+            continue
+        else:
+            t.set_label(t.label() + labelChar + find_lex_head_bin(t, parent_dic)) 
+    print work_tree
+
+def find_lex_head_bin(nt, parent_dic, labelChar='^'):
+    if isinstance(nt, str):
+        return findIndex(nt)
+    if isinstance(nt, Tree):
+        if nt.height() == 2:
+            return findIndex(nt[0])
+        else:
+            if len(nt) == 1:
+                return find_lex_head_bin(nt[0], parent_dic)
+            else:
+                if find_lex_head_bin(nt[0], parent_dic) in parent_dic:
+                    if parent_dic[find_lex_head_bin(nt[0], parent_dic)] == find_lex_head_bin(nt[1], parent_dic):
+                        return find_lex_head_bin(nt[1], parent_dic)
+                    else:
+                        return find_lex_head_bin(nt[0], parent_dic)
+                else:
+                    return find_lex_head_bin(nt[1], parent_dic)
+
+
 
 #################################################################
 # Demonstration
@@ -644,6 +684,10 @@ def demo():
     # draw_trees(t, collapsedTree, cnfTree, parentTree, original)
     #print t, collapsedTree, cnfTree, parentTree, original
     print parentTree
+
+    binarize_lex(t)
+
+
 
 
 if __name__ == '__main__':

@@ -74,9 +74,9 @@ inline void inc2(const Double &t, int a, int b,  vector<int> *base, int *tally,
 
 
 double FeatureGen::generate(const Sentence &sentence,
-                          const AppliedRule &rule,
-                          vector<int> *base,
-                          const vector<double> *weights) const {
+                            const AppliedRule &rule,
+                            vector<int> *base,
+                            const vector<double> *weights) const {
 
     int X = grammar_->head_symbol[rule.rule];
     int Y = grammar_->left_symbol[rule.rule];

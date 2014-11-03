@@ -1,5 +1,5 @@
-CPPFLAGS= -O2 -DNDEBUG
-LDFLAGS=-O2 -DNDEBUG
+CPPFLAGS=-g -O2 -DNDEBUG
+LDFLAGS=-g -O2 -DNDEBUG
 LDLIBS=-Wall
 
 main: main.o dp.o grammar.o features.o sentence.o

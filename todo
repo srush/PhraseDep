@@ -1,0 +1,9 @@
+- Accuracy, different binarizations. Different features.
+- Comparison with other parsers. (Ling-Peng)
+- Charniak/ Berkeley - Most accurate
+- Different languages. (head rules).
+- Use this with english head rules, recover the phrase structure. (LingPeng )
+- Train a delexicalized model. (sasha) (delexicalized)
+- Theoretical analysis. O(n^2)
+- Empirical Analysis O(n)
+- Malt parser

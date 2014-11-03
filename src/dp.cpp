@@ -290,7 +290,8 @@ class Chart {
 
 
 
-void complete(int i, int k, int h, const Grammar &grammar, const FeatureScorer &scorer,  Chart *chart) {
+void complete(int i, int k, int h, const vector<int> &preterms,
+              const Grammar &grammar, const FeatureScorer &scorer,  Chart *chart) {
     // Fill in the unary rules.
     for (int index = 0; index < chart->span_nts[i][k][h][0].size(); ++index) {
         int Y = chart->span_nts[i][k][h][0][index];
@@ -301,9 +302,13 @@ void complete(int i, int k, int h, const Grammar &grammar, const FeatureScorer &
 
         double item_score = chart->score(item);
 
+
         for (int index2 = 0; index2 < grammar.unary_rules_by_first[Y].size(); ++index2) {
             int X = grammar.unary_rules_by_first[Y][index2].nt_X;
             int r = grammar.unary_rules_by_first[Y][index2].rule_num;
+            if (grammar.pruning && !grammar.rule_head_tags[r][preterms[h]])
+                continue;
+
             AppliedRule rule(i, k, k, h, h, r);
             Item item2(i, k, h, X, 1);
             chart->update(item2, scorer.score(rule), item, rule, item_score);
@@ -322,6 +327,9 @@ void complete(int i, int k, int h, const Grammar &grammar, const FeatureScorer &
         for (int index2 = 0; index2 < grammar.unary_rules_by_first[Y].size(); ++index2) {
             int X = grammar.unary_rules_by_first[Y][index2].nt_X;
             int r = grammar.unary_rules_by_first[Y][index2].rule_num;
+            if (grammar.pruning && !grammar.rule_head_tags[r][preterms[h]])
+                continue;
+
             AppliedRule rule(i, k, k, h, h, r);
             Item item2(i, k, h, X, 2);
             chart->update(item2, scorer.score(rule), item, rule, item_score);
@@ -353,7 +361,7 @@ double cky(const vector<int> &preterms,
         int Y = preterms[i];
         Item item(i, i, i, Y, 0);
         chart.init(item);
-        complete(i, i, i, grammar, scorer, &chart);
+        complete(i, i, i, preterms, grammar, scorer, &chart);
     }
 
     // Main loop.
@@ -386,6 +394,9 @@ double cky(const vector<int> &preterms,
                             int r = rule.rule_num;
                             int X = rule.nt_X;
                             int Z = rule.nt_Z;
+                            if (grammar.pruning && !grammar.rule_head_tags[rule.rule_num][preterms[h]])
+                                continue;
+
                             if (have_nt[Z]) {
                                 Item other_item(j+1, k, m, Z, 2);
                                 double other_item_score = chart.score(other_item);
@@ -416,6 +427,8 @@ double cky(const vector<int> &preterms,
                             int r = rule.rule_num;
                             int X = rule.nt_X;
                             int Y = rule.nt_Y;
+                            if (grammar.pruning && !grammar.rule_head_tags[rule.rule_num][preterms[h]])
+                                continue;
 
                             if (have_nt[Y]) {
                                 Item other_item(i, j, m, Y, 2);
@@ -433,7 +446,7 @@ double cky(const vector<int> &preterms,
                 }
             }
             for (int h = i; h <= k; ++h) {
-                complete(i, k, h, grammar, scorer, &chart);
+                complete(i, k, h, preterms, grammar, scorer, &chart);
             }
         }
     }

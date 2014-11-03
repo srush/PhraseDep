@@ -1,7 +1,7 @@
 from nltk import Tree
 from copy import deepcopy
 import sys
-# http://www.nltk.org/_modules/nltk/treetransforms.html#chomsky_normal_form 
+# http://www.nltk.org/_modules/nltk/treetransforms.html#chomsky_normal_form
 
 def read_from_ptb(filename):
     ptb_file = open(filename, 'r')
@@ -63,7 +63,7 @@ def findHeaderNormal(parent, child_list):
             # If the last word is tagged POS return (last word)
             if child_list[lastNoPunctChild(child_list)] == "POS":
                 return lastNoPunctChild(child_list)
-            
+
             # Else search from right to left for the first child which is an
             # NN, NNP, NNPS, NNS, NX, POS or JJR
             s = set(["NN", "NNP", "NNPS", "NNS", "NX", "POS", "JJR"])
@@ -71,12 +71,12 @@ def findHeaderNormal(parent, child_list):
             for i in reversed(xrange(len(child_list))):
                 if child_list[i] in s:
                     return i
-            
+
             # Else search from left to right for the first child which is an NP
             for i in xrange(len(child_list)):
                 if child_list[i] == "NP":
                     return i
-            
+
             # Else search from right to left for the first child which is a $,
             # ADJP or PRN.
             s = set(["$", "ADJP", "PRN"])
@@ -98,7 +98,7 @@ def findHeaderNormal(parent, child_list):
 
             # Else return the last word.
             return lastNoPunctChild(child_list)
-        
+
 
         # ADJP -- Left -- NNS QP NN $ ADVP JJ VBN VBG ADJP JJR NP JJS DT FW RBR
         # RBS SBAR RB
@@ -282,7 +282,7 @@ def findHeaderNormal(parent, child_list):
                         return i
             # Nothing found, return leftmost
             return firstNoPunctChild(child_list)
-        
+
         # WHADVP -- Right -- CC WRB
         if parent == "WHADVP":
             plist = ["CC", "WRB"]
@@ -292,7 +292,7 @@ def findHeaderNormal(parent, child_list):
                         return i
             # Nothing found, return rightmost
             return lastNoPunctChild(child_list);
-        
+
         # WHNP -- Left -- WDT WP WP$ WHADJP WHPP WHNP
         if parent == "WHNP":
             plist = ["WDT", "WP", "WP$", "WHADJP", "WHPP", "WHNP"]
@@ -312,7 +312,7 @@ def findHeaderNormal(parent, child_list):
                         return i
             # Nothing found, return rightmost
             return lastNoPunctChild(child_list)
-        
+
         # No rule found, return leftmost
         return firstNoPunctChild(child_list)
 
@@ -398,7 +398,7 @@ def generateDep(ot, labelChar='^'):
 def print_conll_lines(clines, wt):
     # 1 Influential _   JJ  JJ  _   2   _   _
     for l in clines:
-        wt.write(l[0] + "\t" + l[1] + "\t_\t" + l[2] + "\t" + l[2] + "\t_\t" + l[3] + "\t_\t_\n") 
+        wt.write(l[0] + "\t" + l[1] + "\t_\t" + l[2] + "\t" + l[2] + "\t_\t" + l[3] + "\t_\t_\n")
 
 def chomsky_normal_form(tree, horzMarkov=None, vertMarkov=0, childChar="|", parentChar="#"):
     # assume all subtrees have homogeneous children
@@ -416,7 +416,7 @@ def chomsky_normal_form(tree, horzMarkov=None, vertMarkov=0, childChar="|", pare
 
     nodeList = [(tree, [tree.label()])]
     # print nodeList
-    
+
     while nodeList != []:
         node, parent = nodeList.pop()
 
@@ -440,9 +440,9 @@ def chomsky_normal_form(tree, horzMarkov=None, vertMarkov=0, childChar="|", pare
             originalNode = node.label()
             if vertMarkov != 0 and node != tree and isinstance(node[0],Tree):
                 parentString = "%s<%s>" % (parentChar, "-".join(parent))
-                node.set_label(node.label() + parentString)      
+                node.set_label(node.label() + parentString)
                 # Attach the higher level parent to the parent list and then pass the into the agenda later
-                # The originalNode here is the direct parent of the child node      
+                # The originalNode here is the direct parent of the child node
                 parent = [originalNode] + parent[:vertMarkov - 1]
 
             # add children to the agenda before we mess with them
@@ -481,7 +481,7 @@ def chomsky_normal_form(tree, horzMarkov=None, vertMarkov=0, childChar="|", pare
                             newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "r-") + "-".join(childNodes[max(0,len(childNodes)-horzMarkov):]),parentString) # create new head
                         newNode = Tree(newHead, [])
                         curNode[0:] = [newNode, nodeCopy.pop()]
-                        
+
 
                     curNode = newNode
 
@@ -594,7 +594,7 @@ def binarize_lex(otree, labelChar='^'):
         if isinstance(t, str):
             continue
         else:
-            t.set_label(t.label() + labelChar + find_lex_head_bin(t, parent_dic)) 
+            t.set_label(t.label() + labelChar + find_lex_head_bin(t, parent_dic))
     print work_tree
 
 def find_lex_head_bin(nt, parent_dic, labelChar='^'):
@@ -626,7 +626,7 @@ def demo():
     A demonstration showing how each tree transform can be used.
     """
 
-    from nltk.draw.tree import draw_trees
+    # from nltk.draw.tree import draw_trees
     from nltk import tree, treetransforms
     from copy import deepcopy
 
@@ -650,7 +650,7 @@ def demo():
     sentence = """(S (NP (NP (JJ Influential) (NNS members)) (PP (IN of) (NP (DT the) (NNP House) (NNP Ways) (CC and) (NNP Means) (NNP Committee)))) (VP (VBD introduced) (NP (NP (NN legislation)) (SBAR (WHNP (WDT that)) (S (VP (MD would) (VP (VB restrict) (SBAR (WHADVP (WRB how)) (S (NP (DT the) (JJ new) (NN savings-and-loan) (NN bailout) (NN agency)) (VP (MD can) (VP (VB raise) (NP (NN capital)))))) (, ,) (S (VP (VBG creating) (NP (NP (DT another) (JJ potential) (NN obstacle)) (PP (TO to) (NP (NP (NP (DT the) (NN government) (POS 's)) (NN sale)) (PP (IN of) (NP (JJ sick) (NNS thrifts)))))))))))))) (. .))"""
     # sentence = """(M (S (A (B (B1 b1) (B2 b2) (B3 (BB1 bb1) (BB2 bb2) (BB3 bb3) ) (B4 b4)) (C (C1 c1) (C2 c2)  ) (D d) (E e) (F f) (G g)) (W w)))"""
     t = tree.Tree.fromstring(sentence, remove_empty_top_bracketing=True)
-    
+
     # collapse subtrees with only one child
     lTree = deepcopy(t)
     lexLabel(lTree)

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <stdio.h>
+#include <time.h>
 
 struct Arg: public option::Arg
 {
@@ -29,7 +30,7 @@ struct Arg: public option::Arg
     }
 };
 
-enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, MODEL, TEST, SENTENCE_TEST };
+enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, MODEL, TEST, SENTENCE_TEST, PRUNING };
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , ""    , option::Arg::None, "USAGE: example [options]\n\n"
@@ -41,6 +42,7 @@ const option::Descriptor usage[] =
     {EPOCH,    0,"e", "epochs", Arg::Numeric, "  --epochs, -e  \nNumber of epochs." },
     {MODEL,    0,"m", "model", Arg::Required, "  --model, -m  \nModel path ." },
     {TEST,    0,"t", "test", option::Arg::None, "  --test, -m  \n ." },
+    {PRUNING,    0,"p", "pruning", Arg::Required, "  --pruning, -p  \n ." },
     {UNKNOWN, 0,"" ,  ""   , option::Arg::None, "\nExamples:\n"
                                                   "  example --unknown -- --this_is_no_option\n"
      "  example -unk --plus -ppp file1 file2\n" },
@@ -64,6 +66,10 @@ int main(int argc, char* argv[])
 
 
     Grammar *grammar = read_rule_set(string(options[GRAMMAR].arg));
+    if (options[PRUNING]) {
+        read_pruning(options[PRUNING].arg, grammar);
+    }
+
     vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
     for (int i = 0; i < sentences->size(); ++i) {
         for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
@@ -90,6 +96,8 @@ int main(int argc, char* argv[])
         }
         in.close();
 
+        clock_t t = clock();
+        cerr << "start" << endl;
         for (int i = 0; i < sentences->size(); ++i) {
             const Sentence *sentence = &(*sentences)[i];
             scorer.set_sentence(sentence);
@@ -97,6 +105,9 @@ int main(int argc, char* argv[])
             cky(sentence->int_tags, sentence->words, sentence->deps, *grammar, scorer, &best_rules, true);
             cout << endl;
         }
+
+        t = clock() - t;
+        cerr << "(" << ((float)t)/CLOCKS_PER_SEC << ")" << endl;
 
     } else {
 

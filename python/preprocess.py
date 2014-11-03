@@ -2,7 +2,7 @@ import argparse
 from encoder import LexicalizedCFGEncoder
 import train, tree
 from grammar import read_rule_set
-
+from collections import defaultdict
 
 def make_bounds(dep_matrix):
     head = {}
@@ -38,6 +38,7 @@ def main():
     parser.add_argument('--original_rules', type=str, help='Original rule file')
     parser.add_argument('--parse_output', type=str, help='Binarized rule file')
     parser.add_argument('--rule_output', type=str, help='Binarized rule file')
+    parser.add_argument('--pruning', type=str, help='Pruning  file')
 
 
     args = parser.parse_args()
@@ -46,7 +47,7 @@ def main():
                                args.training_ps,
                                args.limit)
 
-    # X is, 
+    # X is,
     # ParseInput = namedtuple("ParseInput", ["words", "tags", "deps", "index"])
     # index is the index of the sentence, and deps is a matrix encode the dependencies
     # Y is,
@@ -76,14 +77,15 @@ def main():
 
 
     out = open(args.parse_output, "w")
+    counts = defaultdict(lambda:defaultdict(lambda:0))
     for x, y in zip(X, Y):
         # if len(x.tags) > 50:  continue
         encoder = LexicalizedCFGEncoder(x.words, x.tags, grammar)
-        
+
         # y is lex (^index) ps tree
         # bin_y is bin lex (^index) ps tree
         # they are all instances of ImmutableTree
-        
+
         bounds = make_bounds(x.deps)
         bin_y, _, _ = tree.binarize(orules, bounds, y)
 
@@ -105,7 +107,10 @@ def main():
 
         for p in parts:
             print >>out, " ".join(map(str, p))
+            counts[p[5]][x.tags[p[3]]] += 1
 
-
+    out = open(args.pruning, "w")
+    for k in range(rule_num):
+        print >>out, k, len(counts[k]), " ".join(("%s"%(c) for c, v in counts[k].iteritems()))
 if __name__ == "__main__":
     main()

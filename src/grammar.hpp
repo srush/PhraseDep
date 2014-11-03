@@ -49,12 +49,14 @@ struct AppliedRule {
 };
 
 
+
 class Grammar {
   public:
 
     Grammar() {
         n_nonterms = 0;
         n_words = 0;
+        pruning = false;
     }
 
     int to_word(string word) {
@@ -77,6 +79,8 @@ class Grammar {
             return n_nonterms-1;
         }
     }
+
+
 
     void add_rule(BinaryRule rule) {
         if (rules_by_first.size() <= n_nonterms) {
@@ -115,8 +119,6 @@ class Grammar {
         is_unary.push_back(1);
         unary_rules_by_first[rule.nt_Y].push_back(rule);
         n_rules++;
-
-
     }
 
     void finish(const vector<int> &roots_) {
@@ -131,6 +133,10 @@ class Grammar {
 
         if (unary_rules_by_first.size() <= n_nonterms) {
             unary_rules_by_first.resize(n_nonterms + 1);
+        }
+        rule_head_tags.resize(n_rules + 1);
+        for (int i = 0; i < n_rules; ++i) {
+            rule_head_tags[i].resize(n_nonterms, 0);
         }
     }
 
@@ -152,9 +158,13 @@ class Grammar {
     map<string, int> nonterm_map;
     map<int, string> rev_nonterm_map;
 
+
+    vector<vector<bool> > rule_head_tags;
+    bool pruning;
 };
 
 
 Grammar *read_rule_set(string file);
+void read_pruning(string file, Grammar *grammar);
 
 #endif  // GRAMMAR_H_

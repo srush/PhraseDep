@@ -77,7 +77,7 @@ class Double {
 // Replicated from python training code.
 class FeatureGen {
   public:
-    FeatureGen(const Grammar *grammar);
+FeatureGen(const Grammar *grammar, bool delex);
 
     double generate(const Sentence &sentence,
                         const AppliedRule &rule,
@@ -87,12 +87,13 @@ class FeatureGen {
     vector <Triple> triples;
     vector <Double> doubles;
     const Grammar *grammar_;
+bool delex_;
 };
 
 class FeatureScorer {
   public:
-    FeatureScorer(const Grammar *grammar)
-            : perceptron_(n_size), feature_gen_(grammar) {}
+    FeatureScorer(const Grammar *grammar, bool delex)
+            : perceptron_(n_size), feature_gen_(grammar, delex) {}
 
     void set_sentence(const Sentence *sentence) {
         sentence_ = sentence;
@@ -103,7 +104,8 @@ class FeatureScorer {
     void update(const vector<AppliedRule> &rules, int direction);
 
     Perceptron perceptron_;
-  private:
+
+private:
 
     FeatureGen feature_gen_;
     const Sentence *sentence_;

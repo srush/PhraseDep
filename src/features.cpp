@@ -24,7 +24,7 @@ void FeatureScorer::update(const vector<AppliedRule> &rules,
     }
 }
 
-FeatureGen::FeatureGen(const Grammar *grammar) : grammar_(grammar) {
+FeatureGen::FeatureGen(const Grammar *grammar, bool delex) : grammar_(grammar), delex_(delex) {
 
     triples.push_back(Triple(grammar_->n_nonterms, n_tags, n_tags));
     triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, n_tags));
@@ -93,11 +93,19 @@ double FeatureGen::generate(const Sentence &sentence,
     inc3(triples[1], X, Y, h_tag, base, &tally, weights, &score);
     inc3(triples[2], X, Z, h_tag, base, &tally, weights, &score);
     inc3(triples[3], rule.rule, h_tag, m_tag, base, &tally, weights, &score);
-    inc3(triples[4], rule.rule, h_word, m_tag, base, &tally, weights, &score);
+    if (!delex_) {
+        inc3(triples[4], rule.rule, h_word, m_tag, base, &tally, weights, &score);
+    } else {
+        tally += triples[4]._total_size;
+    }
 
     inc2(doubles[0], X, h_tag, base, &tally, weights, &score);
-    inc2(doubles[1], X, h_word, base, &tally, weights, &score);
-    inc2(doubles[2], rule.rule, h_word, base, &tally, weights, &score);
+    if (!delex_) {
+        inc2(doubles[1], X, h_word, base, &tally, weights, &score);
+        inc2(doubles[2], rule.rule, h_word, base, &tally, weights, &score);
+    } else {
+        tally += doubles[1]._total_size + doubles[2]._total_size;
+    }
     inc2(doubles[3], X, Y, base, &tally, weights, &score);
     inc2(doubles[4], X, Z, base, &tally, weights, &score);
     inc2(doubles[5], is_unary, h_tag, base, &tally, weights, &score);

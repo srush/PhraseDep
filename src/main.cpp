@@ -30,7 +30,7 @@ struct Arg: public option::Arg
     }
 };
 
-enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, MODEL, TEST, SENTENCE_TEST, PRUNING };
+enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX };
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , ""    , option::Arg::None, "USAGE: example [options]\n\n"
@@ -43,6 +43,7 @@ const option::Descriptor usage[] =
     {MODEL,    0,"m", "model", Arg::Required, "  --model, -m  \nModel path ." },
     {TEST,    0,"t", "test", option::Arg::None, "  --test, -m  \n ." },
     {PRUNING,    0,"p", "pruning", Arg::Required, "  --pruning, -p  \n ." },
+    {DELEX,    0,"p", "delex", option::Arg::None, "  --delex, -d  \n ." },
     {UNKNOWN, 0,"" ,  ""   , option::Arg::None, "\nExamples:\n"
                                                   "  example --unknown -- --this_is_no_option\n"
      "  example -unk --plus -ppp file1 file2\n" },
@@ -79,7 +80,7 @@ int main(int argc, char* argv[])
     }
 
     // Make scorer.
-    FeatureScorer scorer(grammar);
+    FeatureScorer scorer(grammar, options[DELEX]);
     if (options[TEST]) {
         vector<Sentence> *sentences = read_sentence(string(options[SENTENCE_TEST].arg));
         for (int i = 0; i < sentences->size(); ++i) {

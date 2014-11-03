@@ -1,6 +1,7 @@
 #include <vector>
 #include <iostream>
 #include <assert.h>
+#include <sstream>
 #include "grammar.hpp"
 #include "features.hpp"
 
@@ -227,26 +228,28 @@ class Chart {
         }
     }
 
-    void to_tree(const Item &item, const Grammar &grammar,
-                 vector<AppliedRule> *best_rules, bool output) {
+    bool to_tree(const Item &item, const Grammar &grammar,
+                 vector<AppliedRule> *best_rules, bool output,
+                 stringstream &out) {
         int index = index_item(item);
         BackPointer &bp = bps_[index][item.nt];
+        bool success = true;
         if (bp.terminal) {
             assert(item.i == item.k);
-            if (item.i != item.k) return;
+            if (item.i != item.k) return false;
             if (output)
-                cout << " (" << grammar.rev_nonterm_map.find(item.nt)->second
+                out << " (" << grammar.rev_nonterm_map.find(item.nt)->second
                      << " " << (*words_)[item.i] << ") ";
 
         } else if (bp.single) {
             best_rules->push_back(bp.rule);
             if (output)
-                cout << " (" << grammar.rev_nonterm_map.find(item.nt)->second << " ";
-            to_tree(bp.item1, grammar, best_rules, output);
+                out << " (" << grammar.rev_nonterm_map.find(item.nt)->second << " ";
+            success &= to_tree(bp.item1, grammar, best_rules, output, out);
             if (output)
-                cout << ") ";
+                out << ") ";
         } else if (bp.promotion) {
-            to_tree(bp.item1, grammar, best_rules, output);
+            success &= to_tree(bp.item1, grammar, best_rules, output, out);
         } else {
             best_rules->push_back(bp.rule);
             string nt = grammar.rev_nonterm_map.find(item.nt)->second;
@@ -254,14 +257,16 @@ class Chart {
 
 
             if (output && !binarized)
-                cout << " (" << nt << " ";
-            to_tree(bp.item1, grammar, best_rules, output);
+                out << " (" << nt << " ";
+            success &= to_tree(bp.item1, grammar, best_rules, output, out);
             if (output)
-                cout << " ";
-            to_tree(bp.item2, grammar, best_rules, output);
+                out << " ";
+            success &= to_tree(bp.item2, grammar, best_rules, output, out);
             if (output && !binarized)
-                cout << ") ";
+                out << ") ";
         }
+        return success;
+
     }
 
     vector<vector<vector<vector<vector<int> > > > > span_nts;
@@ -446,7 +451,11 @@ double cky(const vector<int> &preterms,
             chart.promote(item, item1);
         }
     }
-    chart.to_tree(item, grammar, best_rules, output);
+    stringstream out;
+    bool success = chart.to_tree(item, grammar, best_rules, output, out);
+    if (success && out) {
+        cout << out.str();
+    }
     return chart.score(item);
 }
 

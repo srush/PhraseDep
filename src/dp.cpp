@@ -233,6 +233,7 @@ class Chart {
         BackPointer &bp = bps_[index][item.nt];
         if (bp.terminal) {
             assert(item.i == item.k);
+            if (item.i != item.k) return;
             if (output)
                 cout << " (" << grammar.rev_nonterm_map.find(item.nt)->second
                      << " " << (*words_)[item.i] << ") ";

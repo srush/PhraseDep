@@ -90,12 +90,13 @@ class Grammar {
         left_symbol.push_back(rule.nt_Y);
         right_symbol.push_back(rule.nt_Z);
         is_unary.push_back(0);
-        n_rules++;
+
         if (rule.dir == 0) {
             rules_by_first[rule.nt_Y].push_back(rule);
         } else {
             rules_by_second[rule.nt_Z].push_back(rule);
         }
+        n_rules++;
     }
 
     double score(const AppliedRule &rule) const {
@@ -111,9 +112,10 @@ class Grammar {
         head_symbol.push_back(rule.nt_X);
         left_symbol.push_back(rule.nt_Y);
         right_symbol.push_back(0);
-        is_unary.push_back(0);
+        is_unary.push_back(1);
+        unary_rules_by_first[rule.nt_Y].push_back(rule);
         n_rules++;
-        return unary_rules_by_first[rule.nt_Y].push_back(rule);
+
 
     }
 

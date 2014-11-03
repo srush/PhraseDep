@@ -37,6 +37,7 @@ class Triple {
             base->push_back(index);
         }
         (*tally) += _total_size;
+//(*tally) += _total_size;
 
     }
 

@@ -61,6 +61,7 @@ inline void inc3(const Triple &t, int a, int b, int c, vector<int> *base, int *t
 
 inline void inc2(const Double &t, int a, int b,  vector<int> *base, int *tally,
                  const vector<double> *weights, double *score)  {
+
     int index = *tally + (a * t._size_b + b);
     if (weights != NULL) {
         *score += (*weights)[((int)abs(index)) % n_size];
@@ -104,8 +105,8 @@ double FeatureGen::generate(const Sentence &sentence,
     inc2(doubles[7], is_unary, rule.rule, base, &tally, weights, &score);
     inc2(doubles[8], rule.rule, h_tag, base, &tally, weights, &score);
     inc2(doubles[9], rule.rule, m_tag, base, &tally, weights, &score);
-    inc2(doubles[10], is_unary, (size == 0), base, &tally, weights, &score);
-    inc2(doubles[11], X, (size == sentence_size), base, &tally, weights, &score);
+    inc2(doubles[10], is_unary, (size == 0) ? 1: 0, base, &tally, weights, &score);
+    inc2(doubles[11], X, (size == sentence_size)? 1:0, base, &tally, weights, &score);
 
     return score;
 }

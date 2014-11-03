@@ -29,7 +29,7 @@ struct Arg: public option::Arg
     }
 };
 
-enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, MODEL, TEST };
+enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, MODEL, TEST, SENTENCE_TEST };
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , ""    , option::Arg::None, "USAGE: example [options]\n\n"
@@ -37,6 +37,7 @@ const option::Descriptor usage[] =
     {HELP,    0,"" , "help", option::Arg::None, "  --help  \tPrint usage and exit." },
     {GRAMMAR,    0,"g", "grammar", Arg::Required, "  --grammar, -g  \nGrammar file." },
     {SENTENCE,    0,"s", "sentence", Arg::Required, "  --sentence, -g  \nSentence file." },
+    {SENTENCE_TEST,    0,"t", "sentence_test", Arg::Required, "  --sentence_test, -t  \nSentence test file." },
     {EPOCH,    0,"e", "epochs", Arg::Numeric, "  --epochs, -e  \nNumber of epochs." },
     {MODEL,    0,"m", "model", Arg::Required, "  --model, -m  \nModel path ." },
     {TEST,    0,"t", "test", option::Arg::None, "  --test, -m  \n ." },
@@ -63,7 +64,6 @@ int main(int argc, char* argv[])
 
 
     Grammar *grammar = read_rule_set(string(options[GRAMMAR].arg));
-    FeatureScorer scorer(grammar);
     vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
     for (int i = 0; i < sentences->size(); ++i) {
         for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
@@ -71,7 +71,18 @@ int main(int argc, char* argv[])
             (*sentences)[i].int_words.push_back(grammar->to_word((*sentences)[i].words[j]));
         }
     }
+
+    // Make scorer.
+    FeatureScorer scorer(grammar);
     if (options[TEST]) {
+        vector<Sentence> *sentences = read_sentence(string(options[SENTENCE_TEST].arg));
+        for (int i = 0; i < sentences->size(); ++i) {
+            for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
+                (*sentences)[i].int_tags.push_back(grammar->to_nonterm((*sentences)[i].tags[j]));
+                (*sentences)[i].int_words.push_back(grammar->to_word((*sentences)[i].words[j]));
+            }
+        }
+
         ifstream in;
         in.open(options[MODEL].arg);
         for (int i = 0; i < scorer.perceptron_.weights.size(); ++i) {

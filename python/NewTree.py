@@ -3,6 +3,9 @@ from copy import deepcopy
 import sys
 # http://www.nltk.org/_modules/nltk/treetransforms.html#chomsky_normal_form
 
+HORZMARKOV = 1
+VERTMARKOV = 1
+
 def read_from_ptb(filename):
     ptb_file = open(filename, 'r')
     for l in ptb_file:
@@ -11,19 +14,21 @@ def read_from_ptb(filename):
         #     print "*" + st.pprint()
         original = deepcopy(tree)
         #print tree.pprint()
-        chomsky_normal_form(tree, horzMarkov=2, vertMarkov=2, childChar='|', parentChar='#')
+        chomsky_normal_form(tree, horzMarkov=HORZMARKOV, vertMarkov=VERTMARKOV, childChar='|', parentChar='#')
         #un_chomsky_normal_form(tree)
         #print tree.pprint()
         #print original.pprint() == tree.pprint()
     ptb_file.close()
 
-# RuleChecker: Check the head rules to match in each case
+# Check the head rules to match in each case
 # (Now a re-implementation of (Collins, 1999) thesis)
 # Lingpeng Kong, lingpenk@cs.cmu.edu
 
 PUNCTSET = set([".", ",", ":", "``", "''"])
 
 def remove_labelChar(n, labelChar = '^'):
+    # print n
+    # print type(n).__name__
     if isinstance(n, str):
         return n[:(n.rfind(labelChar) if n.rfind(labelChar) > 0 else len(n))]
     else:
@@ -343,28 +348,51 @@ def lexLabel(tree, labelChar="^"):
         preterminals[i][0] = preterminals[i][0] + labelChar + str(i+1)
     #     leaves[i] = leaves[i] + "-" + str(i+1)
     # print leaves
-    for t in tree.subtrees():
-        if isinstance(t, str):
+
+    for pos in tree.treepositions(order='postorder'):
+        st = tree[pos]
+        # print st
+        # print type(st).__name__
+        if isinstance(st, str):
             continue
         else:
-            t.set_label(t.label() + labelChar + getLexLabelNT(t))
+            # print "*" + str(st)
+            if len(st) == 1:
+                # print st.label() + labelChar + findIndex(st[0])
+                st.set_label(st.label() + labelChar + findIndex(st[0]))
+            else:
+                child_list_str = [n.label() if isinstance(n, Tree) else n for n in st]
+                child_list = [n for n in st]
+                index = findIndex(child_list[findHead(st.label(), child_list_str)])
+                st.set_label(st.label() + labelChar + findIndex(index))
+
+    # for t in tree.subtrees():
+    #     if isinstance(t, str):
+    #         continue
+    #     else:
+    #         t.set_label(t.label() + labelChar + getLexLabelNT(t))
+    #     #print "*" + str(tree)
 
 # return a string representing a int as index
-def getLexLabelNT(node, labelChar='^'):
-    # print "we are at " + str(node)
-    if isinstance(node, str):
-        return findIndex(node, labelChar)
-    if isinstance(node,Tree):
-        if node.height() == 2:
-            return findIndex(node[0])
-        else:
-            child_list_str = [n.label() if isinstance(n, Tree) else n for n in node]
-            child_list = [n for n in node]
-            return getLexLabelNT(child_list[findHead(node.label(), child_list_str)], labelChar)
+# def getLexLabelNT(node, labelChar='^'):
+#     # print "we are at " + str(node)
+#     if isinstance(node, str):
+#         return findIndex(node, labelChar)
+#     if isinstance(node,Tree):
+#         if node.height() == 2:
+#             return findIndex(node[0])
+#         else:
+#             child_list_str = [n.label() if isinstance(n, Tree) else n for n in node]
+#             child_list = [n for n in node]
+#             return getLexLabelNT(child_list[findHead(node.label(), child_list_str)], labelChar)
 
 # e.g. for "word^3" return '3'
 def findIndex(s, labelChar='^'):
-    return s[s.rfind(labelChar)+1:]
+    if isinstance(s, str):
+        return s[s.rfind(labelChar)+1:]
+    else:
+        m = s.label()
+        return m[m.rfind(labelChar)+1:]
 
 def getParentDic(lexTree, labelChar='^'):
     # build a parent set
@@ -577,25 +605,43 @@ def flat_print(t):
     return t._pprint_flat(nodesep='', parens='()', quotes=False)
 
 # this actually assumes that every bin rule contains one dep, like we assumed in the paper.
-def binarize_lex(otree, labelChar='^'):
+def get_binarize_lex(otree, labelChar='^'):
     work_tree = deepcopy(otree)
     lexLabel(work_tree)
+    # print work_tree
     parent_dic = getParentDic(work_tree)
     # for x in parent_dic:
     #     print x, parent_dic[x]
     work_tree = deepcopy(otree)
-    chomsky_normal_form(work_tree, horzMarkov=2, vertMarkov=2)
+    chomsky_normal_form(work_tree, horzMarkov=HORZMARKOV, vertMarkov=VERTMARKOV)
+
 
     preterminals = [t for t in work_tree.subtrees(lambda t: t.height() == 2)]
     for i in xrange(len(preterminals)):
         preterminals[i][0] = preterminals[i][0] + labelChar + str(i+1)
-    print work_tree
-    for t in work_tree.subtrees():
+    # print work_tree
+
+    for pos in work_tree.treepositions(order='postorder'):
+        t = work_tree[pos]
         if isinstance(t, str):
             continue
         else:
-            t.set_label(t.label() + labelChar + find_lex_head_bin(t, parent_dic))
-    print work_tree
+            if len(t) == 1:
+                t.set_label(t.label() + labelChar + findIndex(t[0]))
+            else:
+                x_ind = findIndex(t[0])
+                y_ind = findIndex(t[1])
+                if parent_dic[x_ind] == y_ind:
+                    t.set_label(t.label() + labelChar + y_ind)
+                else:
+                    t.set_label(t.label() + labelChar + x_ind)
+
+    # for t in work_tree.subtrees():
+    #     if isinstance(t, str):
+    #         continue
+    #     else:
+    #         t.set_label(t.label() + labelChar + find_lex_head_bin(t, parent_dic))
+    return work_tree
 
 def find_lex_head_bin(nt, parent_dic, labelChar='^'):
     if isinstance(nt, str):
@@ -614,6 +660,41 @@ def find_lex_head_bin(nt, parent_dic, labelChar='^'):
                         return find_lex_head_bin(nt[0], parent_dic)
                 else:
                     return find_lex_head_bin(nt[1], parent_dic)
+
+# The function take a lex bin tree and return all the bin (and unary) rules as a set
+# the rule is represented as {unary?} {X} {Y} {Z} {DIR}, we will add the {id} later
+def generate_rules(lex_bin_tree):
+    rule_set = set([])
+    for st in lex_bin_tree.subtrees():
+        if isinstance(st, str):
+            # these are leaves, just skip
+            continue
+        if isinstance(st, Tree):
+            if st.height() == 2:
+                # preterminals also don't generate rules
+                continue
+            else:
+                if len(st) == 1:
+                    # unary rule
+                    X = remove_labelChar(st.label())
+                    Y = remove_labelChar(st[0].label())
+                    rule = "1 " + X + " " + Y 
+                    rule_set.add(rule)
+                else:
+                    # not unary rule
+                    X = remove_labelChar(st.label())
+                    Y = remove_labelChar(st[0].label())
+                    Z = remove_labelChar(st[1].label())
+
+                    X_ind = findIndex(st.label())
+                    Y_ind = findIndex(st[0].label())
+
+                    d = ('0' if X_ind == Y_ind else '1')
+                    rule = "0 " + X + " " + Y + " " + Z + " " + d
+                    rule_set.add(rule)
+    return rule_set
+
+
 
 
 
@@ -669,7 +750,7 @@ def demo():
 
     # convert the tree to CNF with parent annotation (one level) and horizontal smoothing of order two
     parentTree = deepcopy(collapsedTree)
-    chomsky_normal_form(parentTree, horzMarkov=2, vertMarkov=2)
+    chomsky_normal_form(parentTree, horzMarkov=HORZMARKOV, vertMarkov=VERTMARKOV)
 
     # convert the tree back to its original form (used to make CYK results comparable)
     original = deepcopy(parentTree)
@@ -685,10 +766,12 @@ def demo():
     #print t, collapsedTree, cnfTree, parentTree, original
     print parentTree
 
-    binarize_lex(t)
-
-
-
+    collapse_unary(t)
+    t = get_binarize_lex(t)
+    print "*" + str(t)
+    rule_set = generate_rules(t)
+    for x in rule_set:
+        print x
 
 if __name__ == '__main__':
     demo()

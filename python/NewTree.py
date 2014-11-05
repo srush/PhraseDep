@@ -622,6 +622,7 @@ def get_binarize_lex(otree, labelChar='^'):
     # print work_tree
 
     for pos in work_tree.treepositions(order='postorder'):
+        # print pos
         t = work_tree[pos]
         if isinstance(t, str):
             continue
@@ -643,23 +644,23 @@ def get_binarize_lex(otree, labelChar='^'):
     #         t.set_label(t.label() + labelChar + find_lex_head_bin(t, parent_dic))
     return work_tree
 
-def find_lex_head_bin(nt, parent_dic, labelChar='^'):
-    if isinstance(nt, str):
-        return findIndex(nt)
-    if isinstance(nt, Tree):
-        if nt.height() == 2:
-            return findIndex(nt[0])
-        else:
-            if len(nt) == 1:
-                return find_lex_head_bin(nt[0], parent_dic)
-            else:
-                if find_lex_head_bin(nt[0], parent_dic) in parent_dic:
-                    if parent_dic[find_lex_head_bin(nt[0], parent_dic)] == find_lex_head_bin(nt[1], parent_dic):
-                        return find_lex_head_bin(nt[1], parent_dic)
-                    else:
-                        return find_lex_head_bin(nt[0], parent_dic)
-                else:
-                    return find_lex_head_bin(nt[1], parent_dic)
+# def find_lex_head_bin(nt, parent_dic, labelChar='^'):
+#     if isinstance(nt, str):
+#         return findIndex(nt)
+#     if isinstance(nt, Tree):
+#         if nt.height() == 2:
+#             return findIndex(nt[0])
+#         else:
+#             if len(nt) == 1:
+#                 return find_lex_head_bin(nt[0], parent_dic)
+#             else:
+#                 if find_lex_head_bin(nt[0], parent_dic) in parent_dic:
+#                     if parent_dic[find_lex_head_bin(nt[0], parent_dic)] == find_lex_head_bin(nt[1], parent_dic):
+#                         return find_lex_head_bin(nt[1], parent_dic)
+#                     else:
+#                         return find_lex_head_bin(nt[0], parent_dic)
+#                 else:
+#                     return find_lex_head_bin(nt[1], parent_dic)
 
 # The function take a lex bin tree and return all the bin (and unary) rules as a set
 # the rule is represented as {unary?} {X} {Y} {Z} {DIR}, we will add the {id} later
@@ -674,25 +675,66 @@ def generate_rules(lex_bin_tree):
                 # preterminals also don't generate rules
                 continue
             else:
-                if len(st) == 1:
-                    # unary rule
-                    X = remove_labelChar(st.label())
-                    Y = remove_labelChar(st[0].label())
-                    rule = "1 " + X + " " + Y 
-                    rule_set.add(rule)
-                else:
-                    # not unary rule
-                    X = remove_labelChar(st.label())
-                    Y = remove_labelChar(st[0].label())
-                    Z = remove_labelChar(st[1].label())
-
-                    X_ind = findIndex(st.label())
-                    Y_ind = findIndex(st[0].label())
-
-                    d = ('0' if X_ind == Y_ind else '1')
-                    rule = "0 " + X + " " + Y + " " + Z + " " + d
-                    rule_set.add(rule)
+                rule = get_rule_for_nt(st)[0]
+                rule_set.add(rule)
     return rule_set
+
+def get_rule_for_nt(st):
+    if len(st) == 1:
+        # unary rule
+        X = remove_labelChar(st.label())
+        Y = remove_labelChar(st[0].label())
+        X_ind = findIndex(st.label())
+        rule = "1 " + X + " " + Y
+        h = str(int(X_ind) - 1)
+        m = str(int(X_ind) - 1)
+    else:
+        # not unary rule
+        X = remove_labelChar(st.label())
+        Y = remove_labelChar(st[0].label())
+        Z = remove_labelChar(st[1].label())
+
+        X_ind = findIndex(st.label())
+        Y_ind = findIndex(st[0].label())
+        Z_ind = findIndex(st[1].label())
+
+        d = ('0' if X_ind == Y_ind else '1')
+        rule = "0 " + X + " " + Y + " " + Z + " " + d
+        h = str(int(X_ind) - 1)
+        m = str(int(Z_ind) - 1) if X_ind == Y_ind else str(int(Y_ind) - 1)
+    return (rule, h, m)
+
+def get_span_info(nt, rule_to_ind_dict):
+    # Given a non-terminal form a indexed tree (^index), generate it's span information
+    # Concretely, i, j, k, h, m and rule_num (lookup from the rule_to_ind_dict)
+    # Assume it is a tree here and is not a preterminal.
+
+    # First, go all the way down to the left to see the left boundary
+    pointer = nt
+    while not isinstance(pointer,str):
+        pointer = pointer[0]
+    span_left = str(int(findIndex(pointer)) - 1)
+    # All the way right to find the right boundary
+    pointer = nt
+    while not isinstance(pointer,str):
+        if len(pointer) > 1:
+            pointer = pointer[1]
+        else:
+            # unary
+            pointer = pointer[0]
+    span_right = str(int(findIndex(pointer)) - 1)
+    pointer = nt[0]
+    while not isinstance(pointer,str):
+        if len(pointer) > 1:
+            pointer = pointer[1]
+        else:
+            # unary
+            pointer = pointer[0]
+    span_split = str(int(findIndex(pointer)) - 1)
+
+    # we will find the h and m and the rule_num
+    rule, h, m = get_rule_for_nt(nt)
+    return (span_left, span_split, span_right, h, m, rule_to_ind_dict[rule])
 
 
 
@@ -729,6 +771,7 @@ def demo():
   (. .))"""
 
     sentence = """(S (NP (NP (JJ Influential) (NNS members)) (PP (IN of) (NP (DT the) (NNP House) (NNP Ways) (CC and) (NNP Means) (NNP Committee)))) (VP (VBD introduced) (NP (NP (NN legislation)) (SBAR (WHNP (WDT that)) (S (VP (MD would) (VP (VB restrict) (SBAR (WHADVP (WRB how)) (S (NP (DT the) (JJ new) (NN savings-and-loan) (NN bailout) (NN agency)) (VP (MD can) (VP (VB raise) (NP (NN capital)))))) (, ,) (S (VP (VBG creating) (NP (NP (DT another) (JJ potential) (NN obstacle)) (PP (TO to) (NP (NP (NP (DT the) (NN government) (POS 's)) (NN sale)) (PP (IN of) (NP (JJ sick) (NNS thrifts)))))))))))))) (. .))"""
+    sentence = """(S (PP (IN In) (NP (NP (DT an) (NNP Oct.) (CD 19) (NN review)) (PP (IN of) (NP (`` ``) (NP (DT The) (NN Misanthrope)) ('' '') (PP (IN at) (NP (NP (NNP Chicago) (POS 's)) (NNP Goodman) (NNP Theatre))))) (PRN (-LRB- -LRB-) (`` ``) (S (NP (VBN Revitalized) (NNS Classics)) (VP (VBP Take) (NP (DT the) (NN Stage)) (PP (IN in) (NP (NNP Windy) (NNP City))))) (, ,) ('' '') (NP (NN Leisure) (CC &) (NNS Arts)) (-RRB- -RRB-)))) (, ,) (NP (NP (NP (DT the) (NN role)) (PP (IN of) (NP (NNP Celimene)))) (, ,) (VP (VBN played) (PP (IN by) (NP (NNP Kim) (NNP Cattrall)))) (, ,)) (VP (VBD was) (VP (ADVP (RB mistakenly)) (VBN attributed) (PP (TO to) (NP (NNP Christina) (NNP Haag))))) (. .))"""
     # sentence = """(M (S (A (B (B1 b1) (B2 b2) (B3 (BB1 bb1) (BB2 bb2) (BB3 bb3) ) (B4 b4)) (C (C1 c1) (C2 c2)  ) (D d) (E e) (F f) (G g)) (W w)))"""
     t = tree.Tree.fromstring(sentence, remove_empty_top_bracketing=True)
 
@@ -743,7 +786,7 @@ def demo():
 
     collapsedTree = deepcopy(t)
     collapse_unary(collapsedTree)
-
+    
     # convert the tree to CNF
     # cnfTree = deepcopy(collapsedTree)
     # chomsky_normal_form(cnfTree)
@@ -772,6 +815,9 @@ def demo():
     rule_set = generate_rules(t)
     for x in rule_set:
         print x
+
+    chomsky_normal_form(collapsedTree, horzMarkov=HORZMARKOV, vertMarkov=VERTMARKOV)
+    print "**" + str(collapsedTree)
 
 if __name__ == '__main__':
     demo()

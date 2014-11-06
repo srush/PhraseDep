@@ -45,6 +45,16 @@ FeatureGen::FeatureGen(const Grammar *grammar, bool delex) : grammar_(grammar), 
     doubles.push_back(Double(2, 2));
     doubles.push_back(Double(grammar_->n_nonterms, 2));
 
+    doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_nonterms));
+    doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_nonterms));
+    doubles.push_back(Double(grammar_->n_nonterms, n_tags));
+    doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_words));
+    doubles.push_back(Double(grammar_->n_nonterms, 2));
+
+    triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, grammar_->n_nonterms));
+
+
+
 }
 
 
@@ -81,6 +91,11 @@ double FeatureGen::generate(const Sentence &sentence,
     int X = grammar_->head_symbol[rule.rule];
     int Y = grammar_->left_symbol[rule.rule];
     int Z = grammar_->right_symbol[rule.rule];
+    const NonTerminal &nt_X = grammar_->non_terminals_[X];
+    const NonTerminal &nt_Y = grammar_->non_terminals_[Y];
+    const NonTerminal &nt_Z = grammar_->non_terminals_[Z];
+
+
     int m_tag = sentence.int_tags[rule.m];
     int h_tag = sentence.int_tags[rule.h];
     int h_word = sentence.int_words[rule.h];
@@ -99,6 +114,9 @@ double FeatureGen::generate(const Sentence &sentence,
         tally += triples[4]._total_size;
     }
 
+
+
+
     inc2(doubles[0], X, h_tag, base, &tally, weights, &score);
     if (!delex_) {
         inc2(doubles[1], X, h_word, base, &tally, weights, &score);
@@ -115,6 +133,16 @@ double FeatureGen::generate(const Sentence &sentence,
     inc2(doubles[9], rule.rule, m_tag, base, &tally, weights, &score);
     inc2(doubles[10], is_unary, (size == 0) ? 1: 0, base, &tally, weights, &score);
     inc2(doubles[11], X, (size == sentence_size)? 1:0, base, &tally, weights, &score);
+
+    // New features.
+    inc2(doubles[12], nt_X.int_main, nt_Y.int_main, base, &tally, weights, &score);
+    inc2(doubles[13], nt_X.int_main, nt_Z.int_main, base, &tally, weights, &score);
+    inc2(doubles[14], nt_X.int_main, h_tag, base, &tally, weights, &score);
+    inc2(doubles[15], nt_X.int_main, h_word, base, &tally, weights, &score);
+    inc2(doubles[16], nt_X.int_main, is_unary, base, &tally, weights, &score);
+
+
+    inc3(triples[5], nt_X.int_main, nt_Y.int_main, nt_Z.int_main, base, &tally, weights, &score);
 
     return score;
 }

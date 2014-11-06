@@ -41,7 +41,7 @@ def generate_rule(treebank_file):
         #sys.stderr.write( "finish adding\n")
 
     f.close()
-    ind = 1
+    ind = 0
     for r in full_rule_set:
         print str(ind) + " " + r
         ind += 1
@@ -51,7 +51,11 @@ def generate_part(treebank_file, rule_file):
     # This generate the gold parts file for the use of C++
     rule_dic = read_rule_file(rule_file)
     f = open(treebank_file, "r")
+    s_ind = 0
     for sentence in f:
+        s_ind += 1
+        if s_ind % 10 == 0:
+            sys.stderr.write(str(s_ind) + "\n")
         parts = []
         t = Tree.fromstring(sentence, remove_empty_top_bracketing=True)
         bt = NewTree.get_binarize_lex(t)
@@ -80,7 +84,6 @@ def generate_part(treebank_file, rule_file):
         print " ".join(parent_list)
         for p in parts:
             print " ".join(p)
-        print ""
     f.close()
 
 def read_rule_file(rulef):

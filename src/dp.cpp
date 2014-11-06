@@ -245,25 +245,38 @@ class Chart {
         } else if (bp.single) {
             best_rules->push_back(bp.rule);
             NonTerminal nt = grammar.non_terminals_[item.nt];
-            if (output)
-                out << " (" << nt.main << " ";
+            if (output) {
+                for (int i = 0; i < nt.split.size(); ++i) {
+                    out << " (" << nt.split[i] << " ";
+                }
+            }
             success &= to_tree(bp.item1, grammar, best_rules, output, out);
-            if (output)
-                out << ") ";
+            if (output) {
+                for (int i = 0; i < nt.split.size(); ++i) {
+                    out << ") ";
+                }
+            }
         } else if (bp.promotion) {
             success &= to_tree(bp.item1, grammar, best_rules, output, out);
         } else {
             best_rules->push_back(bp.rule);
             NonTerminal nt = grammar.non_terminals_[item.nt];
 
-            if (output && !nt.removable)
-                out << " (" << nt.main << " ";
+            if (output && !nt.removable) {
+                for (int i = 0; i < nt.split.size(); ++i) {
+                    out << " (" << nt.split[i] << " ";
+                }
+            }
+
             success &= to_tree(bp.item1, grammar, best_rules, output, out);
             if (output)
                 out << " ";
             success &= to_tree(bp.item2, grammar, best_rules, output, out);
-            if (output && !nt.removable)
-                out << ") ";
+            if (output && !nt.removable) {
+                for (int i = 0; i < nt.split.size(); ++i) {
+                    out << ") ";
+                }
+            }
         }
         return success;
 

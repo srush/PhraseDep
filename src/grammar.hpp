@@ -69,6 +69,8 @@ struct NonTerminal {
         NonTerminal nt;
         nt.full = nt_str;
         nt.removable = false;
+        nt.split.resize(1);
+        int split = 0;
         int mode = 0;
         for (int i = 0; i < nt_str.size(); ++i) {
             char cur = nt_str[i];
@@ -80,6 +82,12 @@ struct NonTerminal {
             } else {
                 if (mode == 0) {
                     nt.main += cur;
+                    if (cur == '+') {
+                        split += 1;
+                        nt.split.resize(split + 1);
+                    } else {
+                        nt.split[split] += cur;
+                    }
                 } else if (mode ==1) {
                     nt.vert_mark += cur;
                 } else if (mode ==2) {
@@ -104,6 +112,8 @@ struct NonTerminal {
 
     string horiz_mark;
     int int_horiz_mark;
+
+    vector<string> split;
 
     bool removable;
 };

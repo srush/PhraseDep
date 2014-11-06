@@ -99,6 +99,6 @@ if __name__ == '__main__':
     # for pos in t.treepositions(order='postorder'):
     #     print t[pos]
 
-    #generate_rule(A.inputf)
+    generate_rule(A.inputf)
 
-    generate_part(A.inputf,A.rulef)
+    # generate_part(A.inputf,A.rulef)

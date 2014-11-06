@@ -21,7 +21,7 @@ int Grammar::to_nonterm(string nonterm) {
         rev_nonterm_map[n_nonterms] = nonterm;
 
 
-        NonTerminal non_terminal = NonTerminal::build(nonterm);
+        NonTerminal non_terminal = NonTerminal::build(nonterm, &nt_indices);
         non_terminals_.push_back(non_terminal);
         n_nonterms++;
         return n_nonterms-1;

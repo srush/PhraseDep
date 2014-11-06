@@ -405,7 +405,7 @@ double cky(const vector<int> &preterms,
                                 double score = scorer.score(rule);
                                 chart.update(new_item, score, item, other_item, rule,
                                              item_score, other_item_score);
-                                assert(r < G);
+                                // assert(r < G);
                             }
                         }
                     }
@@ -439,7 +439,7 @@ double cky(const vector<int> &preterms,
 
                                 chart.update(new_item, score, other_item, item, rule, item_score,
                                              other_item_score);
-                                assert(r < G);
+                                // assert(r < G);
                             }
                         }
                     }

@@ -49,10 +49,23 @@ struct AppliedRule {
 };
 
 
+struct Index {
+    int fget(string item) {
+        return fmap[item];
+    }
+
+    string rget(int index) {
+        return rmap[index];
+    }
+
+    map<string, int> fmap;
+    map<int, string> rmap;
+};
+
 struct NonTerminal {
     NonTerminal() {}
 
-    static NonTerminal build(string nt_str) {
+    static NonTerminal build(string nt_str, vector<Index> *nt_indices) {
         NonTerminal nt;
         nt.full = nt_str;
         nt.removable = false;
@@ -74,22 +87,34 @@ struct NonTerminal {
                 }
             }
         }
+        nt.int_main = (*nt_indices)[0].fget(nt.main);
+        nt.int_vert_mark = (*nt_indices)[1].fget(nt.vert_mark);
+        nt.int_horiz_mark = (*nt_indices)[2].fget(nt.horiz_mark);
+
         return nt;
     }
 
     string full;
+
     string main;
+    int int_main;
+
     string vert_mark;
+    int int_vert_mark;
+
     string horiz_mark;
+    int int_horiz_mark;
+
     bool removable;
 };
 
 class Grammar {
   public:
 
-    Grammar() {
+    Grammar() : nt_indices(3) {
         n_nonterms = 0;
         n_words = 0;
+
         pruning = false;
     }
 
@@ -125,6 +150,8 @@ class Grammar {
     map<string, int> word_map;
     map<string, int> nonterm_map;
     map<int, string> rev_nonterm_map;
+
+    vector<Index> nt_indices;
 
     vector<NonTerminal> non_terminals_;
 

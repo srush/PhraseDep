@@ -49,6 +49,40 @@ struct AppliedRule {
 };
 
 
+struct NonTerminal {
+    NonTerminal() {}
+
+    static NonTerminal build(string nt_str) {
+        NonTerminal nt;
+        nt.full = nt_str;
+        nt.removable = false;
+        int mode = 0;
+        for (int i = 0; i < nt_str.size(); ++i) {
+            char cur = nt_str[i];
+            if (cur == '#') {
+                mode = 1;
+            } else if (cur == '|') {
+                mode = 2;
+                nt.removable = true;
+            } else {
+                if (mode == 0) {
+                    nt.main += cur;
+                } else if (mode ==1) {
+                    nt.vert_mark += cur;
+                } else if (mode ==2) {
+                    nt.horiz_mark += cur;
+                }
+            }
+        }
+        return nt;
+    }
+
+    string full;
+    string main;
+    string vert_mark;
+    string horiz_mark;
+    bool removable;
+};
 
 class Grammar {
   public:
@@ -59,86 +93,19 @@ class Grammar {
         pruning = false;
     }
 
-    int to_word(string word) {
-        if (word_map.find(word) != word_map.end()) {
-            return word_map[word];
-        } else {
-            word_map[word] = n_words;
-            n_words++;
-            return n_words-1;
-        }
-    }
+    int to_word(string word);
 
-    int to_nonterm(string nonterm) {
-        if (nonterm_map.find(nonterm) != nonterm_map.end()) {
-            return nonterm_map[nonterm];
-        } else {
-            nonterm_map[nonterm] = n_nonterms;
-            rev_nonterm_map[n_nonterms] = nonterm;
-            n_nonterms++;
-            return n_nonterms-1;
-        }
-    }
+    int to_nonterm(string nonterm);
 
-
-
-    void add_rule(BinaryRule rule) {
-        if (rules_by_first.size() <= n_nonterms) {
-            rules_by_first.resize(n_nonterms + 1);
-        }
-        if (rules_by_second.size() <= n_nonterms) {
-            rules_by_second.resize(n_nonterms + 1);
-        }
-
-        head_symbol.push_back(rule.nt_X);
-        left_symbol.push_back(rule.nt_Y);
-        right_symbol.push_back(rule.nt_Z);
-        is_unary.push_back(0);
-
-        if (rule.dir == 0) {
-            rules_by_first[rule.nt_Y].push_back(rule);
-        } else {
-            rules_by_second[rule.nt_Z].push_back(rule);
-        }
-        n_rules++;
-    }
+    void add_rule(BinaryRule rule);
 
     double score(const AppliedRule &rule) const {
         return 0.0;
     }
 
-    void add_unary_rule(UnaryRule rule) {
-        assert(rule.nt_X < n_nonterms);
-        assert(rule.nt_Y < n_nonterms);
-        if (unary_rules_by_first.size() <= n_nonterms) {
-            unary_rules_by_first.resize(n_nonterms + 1);
-        }
-        head_symbol.push_back(rule.nt_X);
-        left_symbol.push_back(rule.nt_Y);
-        right_symbol.push_back(0);
-        is_unary.push_back(1);
-        unary_rules_by_first[rule.nt_Y].push_back(rule);
-        n_rules++;
-    }
+    void add_unary_rule(UnaryRule rule);
 
-    void finish(const vector<int> &roots_) {
-        roots = roots_;
-        if (rules_by_first.size() <= n_nonterms) {
-            rules_by_first.resize(n_nonterms + 1);
-        }
-
-        if (rules_by_second.size() <= n_nonterms) {
-            rules_by_second.resize(n_nonterms + 1);
-        }
-
-        if (unary_rules_by_first.size() <= n_nonterms) {
-            unary_rules_by_first.resize(n_nonterms + 1);
-        }
-        rule_head_tags.resize(n_rules + 1);
-        for (int i = 0; i < n_rules; ++i) {
-            rule_head_tags[i].resize(n_nonterms, 0);
-        }
-    }
+    void finish(const vector<int> &roots_);
 
     int n_nonterms;
     int n_rules;
@@ -154,10 +121,12 @@ class Grammar {
     vector<vector<UnaryRule> > unary_rules_by_first;
     vector<vector<BinaryRule> > rules_by_first;
     vector<vector<BinaryRule> > rules_by_second;
+
     map<string, int> word_map;
     map<string, int> nonterm_map;
     map<int, string> rev_nonterm_map;
 
+    vector<NonTerminal> non_terminals_;
 
     vector<vector<bool> > rule_head_tags;
     bool pruning;

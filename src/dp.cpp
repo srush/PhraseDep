@@ -237,14 +237,16 @@ class Chart {
         if (bp.terminal) {
             assert(item.i == item.k);
             if (item.i != item.k) return false;
+            NonTerminal nt = grammar.non_terminals_[item.nt];
             if (output)
-                out << " (" << grammar.rev_nonterm_map.find(item.nt)->second
+                out << " (" << grammar.non_terminals_[item.nt].main
                      << " " << (*words_)[item.i] << ") ";
 
         } else if (bp.single) {
             best_rules->push_back(bp.rule);
+            NonTerminal nt = grammar.non_terminals_[item.nt];
             if (output)
-                out << " (" << grammar.rev_nonterm_map.find(item.nt)->second << " ";
+                out << " (" << nt.main << " ";
             success &= to_tree(bp.item1, grammar, best_rules, output, out);
             if (output)
                 out << ") ";
@@ -252,17 +254,15 @@ class Chart {
             success &= to_tree(bp.item1, grammar, best_rules, output, out);
         } else {
             best_rules->push_back(bp.rule);
-            string nt = grammar.rev_nonterm_map.find(item.nt)->second;
-            bool binarized =  (nt[0] == 'Z');
+            NonTerminal nt = grammar.non_terminals_[item.nt];
 
-
-            if (output && !binarized)
-                out << " (" << nt << " ";
+            if (output && !nt.removable)
+                out << " (" << nt.main << " ";
             success &= to_tree(bp.item1, grammar, best_rules, output, out);
             if (output)
                 out << " ";
             success &= to_tree(bp.item2, grammar, best_rules, output, out);
-            if (output && !binarized)
+            if (output && !nt.removable)
                 out << ") ";
         }
         return success;

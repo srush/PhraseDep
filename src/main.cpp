@@ -189,8 +189,8 @@ int main(int argc, char* argv[])
                 // }
 
 
-                if (i % 100 == 0) {
-                    cout << i << endl;
+                if (i % 500 == 0) {
+                    cout << i << " " << sentence->words[0] << endl;
                 }
                 scorer.perceptron_.next_round();
             }

@@ -8,7 +8,7 @@
 
 
 const int n_tags = 1000;
-const int n_size = 10000000;
+const int n_size = 100000000;
 
 class FeatureGen;
 class Double;

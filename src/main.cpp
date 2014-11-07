@@ -71,14 +71,6 @@ int main(int argc, char* argv[])
         read_pruning(options[PRUNING].arg, grammar);
     }
 
-    vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
-    for (int i = 0; i < sentences->size(); ++i) {
-        for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
-            (*sentences)[i].int_tags.push_back(grammar->to_nonterm((*sentences)[i].tags[j]));
-            (*sentences)[i].int_words.push_back(grammar->to_word((*sentences)[i].words[j]));
-        }
-    }
-
     // Make scorer.
     FeatureScorer scorer(grammar, options[DELEX]);
     if (options[TEST]) {
@@ -111,7 +103,13 @@ int main(int argc, char* argv[])
         cerr << "(" << ((float)t)/CLOCKS_PER_SEC << ")" << endl;
 
     } else {
-
+        vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
+        for (int i = 0; i < sentences->size(); ++i) {
+            for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
+                (*sentences)[i].int_tags.push_back(grammar->to_nonterm((*sentences)[i].tags[j]));
+                (*sentences)[i].int_words.push_back(grammar->to_word((*sentences)[i].words[j]));
+            }
+        }
         char *temp = 0;
         int epochs = strtol(options[EPOCH].arg, &temp, 10);
         char epoch_char = '1';

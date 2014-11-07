@@ -9,7 +9,7 @@ VERTMARKOV = 1
 def read_from_ptb(filename):
     ptb_file = open(filename, 'r')
     for l in ptb_file:
-        tree = Tree.fromstring(l)
+        tree = Tree.fromstring(l, remove_empty_top_bracketing=False)
         # for st in tree.subtrees():
         #     print "*" + st.pprint()
         original = deepcopy(tree)
@@ -559,7 +559,7 @@ def un_chomsky_normal_form(tree, expandUnary = True, childChar = "|", parentChar
         #print "#" + str(tree)
 
 
-def collapse_unary(tree, collapsePOS = False, collapseRoot = True, joinChar = "+"):
+def collapse_unary(tree, collapsePOS = False, collapseRoot = False, joinChar = "+"):
     """
     Collapse subtrees with a single child (ie. unary productions)
     into a new non-terminal (Tree node) joined by 'joinChar'.
@@ -773,8 +773,9 @@ def demo():
     sentence = """(S (NP (NP (JJ Influential) (NNS members)) (PP (IN of) (NP (DT the) (NNP House) (NNP Ways) (CC and) (NNP Means) (NNP Committee)))) (VP (VBD introduced) (NP (NP (NN legislation)) (SBAR (WHNP (WDT that)) (S (VP (MD would) (VP (VB restrict) (SBAR (WHADVP (WRB how)) (S (NP (DT the) (JJ new) (NN savings-and-loan) (NN bailout) (NN agency)) (VP (MD can) (VP (VB raise) (NP (NN capital)))))) (, ,) (S (VP (VBG creating) (NP (NP (DT another) (JJ potential) (NN obstacle)) (PP (TO to) (NP (NP (NP (DT the) (NN government) (POS 's)) (NN sale)) (PP (IN of) (NP (JJ sick) (NNS thrifts)))))))))))))) (. .))"""
     sentence = """(S (PP (IN In) (NP (NP (DT an) (NNP Oct.) (CD 19) (NN review)) (PP (IN of) (NP (`` ``) (NP (DT The) (NN Misanthrope)) ('' '') (PP (IN at) (NP (NP (NNP Chicago) (POS 's)) (NNP Goodman) (NNP Theatre))))) (PRN (-LRB- -LRB-) (`` ``) (S (NP (VBN Revitalized) (NNS Classics)) (VP (VBP Take) (NP (DT the) (NN Stage)) (PP (IN in) (NP (NNP Windy) (NNP City))))) (, ,) ('' '') (NP (NN Leisure) (CC &) (NNS Arts)) (-RRB- -RRB-)))) (, ,) (NP (NP (NP (DT the) (NN role)) (PP (IN of) (NP (NNP Celimene)))) (, ,) (VP (VBN played) (PP (IN by) (NP (NNP Kim) (NNP Cattrall)))) (, ,)) (VP (VBD was) (VP (ADVP (RB mistakenly)) (VBN attributed) (PP (TO to) (NP (NNP Christina) (NNP Haag))))) (. .))"""
     sentence = """(S (NP (NNP Ms.) (NNP Haag)) (VP (VBZ plays) (NP (NNP Elianti))) (. .))"""
+    sentence = """(PRN (S (VP (VB See))))"""
     # sentence = """(M (S (A (B (B1 b1) (B2 b2) (B3 (BB1 bb1) (BB2 bb2) (BB3 bb3) ) (B4 b4)) (C (C1 c1) (C2 c2)  ) (D d) (E e) (F f) (G g)) (W w)))"""
-    t = tree.Tree.fromstring(sentence, remove_empty_top_bracketing=True)
+    t = tree.Tree.fromstring(sentence, remove_empty_top_bracketing=False)
 
     # collapse subtrees with only one child
     lTree = deepcopy(t)

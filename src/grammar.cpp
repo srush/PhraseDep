@@ -121,6 +121,7 @@ Grammar *read_rule_set(string file) {
             in_file >>  is_unary;
             if (!is_unary) {
                 in_file >> X >> Y >> Z >> dir;
+                // cout << "[reading rule]: " << X << " " << Y << " " << Z << " " << dir << endl;
                 int nt_X = grammar->to_nonterm(X);
                 int nt_Y = grammar->to_nonterm(Y);
                 int nt_Z = grammar->to_nonterm(Z);
@@ -137,23 +138,25 @@ Grammar *read_rule_set(string file) {
         }
     }
     vector<int> roots;
-    roots.push_back(grammar->to_nonterm("FRAG"));
-    roots.push_back(grammar->to_nonterm("PP"));
-    roots.push_back(grammar->to_nonterm("SBAR"));
-    roots.push_back(grammar->to_nonterm("UCP"));
-    roots.push_back(grammar->to_nonterm("SINV"));
-    roots.push_back(grammar->to_nonterm("ADJP"));
-    roots.push_back(grammar->to_nonterm("SQ"));
-    roots.push_back(grammar->to_nonterm("PRN"));
-    roots.push_back(grammar->to_nonterm("SBARQ"));
-    roots.push_back(grammar->to_nonterm("INTJ"));
-    roots.push_back(grammar->to_nonterm("VP"));
-    roots.push_back(grammar->to_nonterm("S"));
+    // roots.push_back(grammar->to_nonterm("FRAG"));
+    // roots.push_back(grammar->to_nonterm("PP"));
+    // roots.push_back(grammar->to_nonterm("SBAR"));
+    // roots.push_back(grammar->to_nonterm("UCP"));
+    // roots.push_back(grammar->to_nonterm("SINV"));
+    // roots.push_back(grammar->to_nonterm("ADJP"));
+    // roots.push_back(grammar->to_nonterm("SQ"));
+    // roots.push_back(grammar->to_nonterm("PRN"));
+    // roots.push_back(grammar->to_nonterm("SBARQ"));
+    // roots.push_back(grammar->to_nonterm("INTJ"));
+    // roots.push_back(grammar->to_nonterm("VP"));
+    // roots.push_back(grammar->to_nonterm("S"));
 
-    roots.push_back(grammar->to_nonterm("NP"));
+    // roots.push_back(grammar->to_nonterm("NP"));
 
-    roots.push_back(grammar->to_nonterm("X"));
-    roots.push_back(grammar->to_nonterm("ADVP"));
+    // roots.push_back(grammar->to_nonterm("X"));
+    // roots.push_back(grammar->to_nonterm("ADVP"));
+
+    roots.push_back(grammar->to_nonterm("TOP"));
 
 
 

@@ -121,6 +121,7 @@ Grammar *read_rule_set(string file) {
             in_file >>  is_unary;
             if (!is_unary) {
                 in_file >> X >> Y >> Z >> dir;
+                // cout << "[reading rule]: " << X << " " << Y << " " << Z << " " << dir << endl;
                 int nt_X = grammar->to_nonterm(X);
                 int nt_Y = grammar->to_nonterm(Y);
                 int nt_Z = grammar->to_nonterm(Z);

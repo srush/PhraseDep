@@ -8,7 +8,7 @@ import re
 import sys
 
 parser = argparse.ArgumentParser(description='')
-parser.add_argument('gr_or_gp', type=int, metavar='',help='Generate Rules -- 0, Generate Parts -- 1')
+parser.add_argument('gr_or_gp', type=int, metavar='',help='Generate Rules -- 0, Generate Parts -- 1, generate from conll -- 2')
 parser.add_argument('--inputf', type=str, metavar='', help='')
 parser.add_argument('--rulef', type=str, metavar='', help='')
 # parser.add_argument('--rulef', required=False, type=str, metavar='', help='')
@@ -104,6 +104,37 @@ def read_rule_file(rulef):
     f.close()
     return rule_dic
 
+def read_corpus(filename):
+    f = open(filename, "r")
+    corpus = []
+    sentence = []
+    for line in f:
+        if line.strip() == "":
+            corpus.append(sentence)
+            sentence = []
+            continue
+        else:
+            line = line.strip()
+            cline = line.split("\t")
+            sentence.append(cline)
+    f.close()
+    return corpus
+
+def generate_from_conll(inputf):
+    corpus = read_corpus(inputf)
+    for sentence in corpus:
+        word_list = [line[1] for line in sentence]
+        pos_list = [line[4] for line in sentence]
+        parent_list = [str(int(line[6])-1) for line in sentence]
+        # print " ".join(word_list)
+        print len(word_list), '0'
+        print " ".join(word_list)
+        print " ".join(pos_list)
+        print " ".join(parent_list)
+
+
+
+
 if __name__ == '__main__':
     # sentence = """(S (NP (NP (JJ Influential) (NNS members)) (PP (IN of) (NP (DT the) (NNP House) (NNP Ways) (CC and) (NNP Means) (NNP Committee)))) (VP (VBD introduced) (NP (NP (NN legislation)) (SBAR (WHNP (WDT that)) (S (VP (MD would) (VP (VB restrict) (SBAR (WHADVP (WRB how)) (S (NP (DT the) (JJ new) (NN savings-and-loan) (NN bailout) (NN agency)) (VP (MD can) (VP (VB raise) (NP (NN capital)))))) (, ,) (S (VP (VBG creating) (NP (NP (DT another) (JJ potential) (NN obstacle)) (PP (TO to) (NP (NP (NP (DT the) (NN government) (POS 's)) (NN sale)) (PP (IN of) (NP (JJ sick) (NNS thrifts)))))))))))))) (. .))"""
     # t = Tree.fromstring(sentence, remove_empty_top_bracketing=False)
@@ -111,5 +142,7 @@ if __name__ == '__main__':
     #     print t[pos]
     if A.gr_or_gp == 0:
         generate_rule(A.inputf)
-    else:
+    elif A.gr_or_gp == 1:
         generate_part(A.inputf,A.rulef)
+    else:
+        generate_from_conll(A.inputf)

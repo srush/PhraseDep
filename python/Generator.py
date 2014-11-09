@@ -11,12 +11,16 @@ parser = argparse.ArgumentParser(description='')
 parser.add_argument('gr_or_gp', type=int, metavar='',help='Generate Rules -- 0, Generate Parts -- 1, generate from conll -- 2')
 parser.add_argument('--inputf', type=str, metavar='', help='')
 parser.add_argument('--rulef', type=str, metavar='', help='')
+parser.add_argument('--hm', type=int, metavar='', help='')
+parser.add_argument('--vm', type=int, metavar='', help='')
+parser.add_argument('--unary_collapse', action='store_true', help='')
+
 # parser.add_argument('--rulef', required=False, type=str, metavar='', help='')
 # parser.add_argument('--rulef', action='store_true', help='')
 
 A = parser.parse_args()
 
-unary_collapse = True
+unary_collapse = A.unary_collapse
 
 def generate_rule(treebank_file):
     # if you use unicode here, there is a bug...
@@ -26,8 +30,8 @@ def generate_rule(treebank_file):
     for sentence in f:
         s_ind += 1
         if s_ind % 10 == 0:
-            sys.stderr.write(str(s_ind) + "\n")
-            sys.stderr.write(str(len(full_rule_set)) + "\n")
+            sys.stderr.write("Sentence:\t" + str(s_ind) + "\n")
+            sys.stderr.write("Rule number:\t" + str(len(full_rule_set)) + "\n")
         t = Tree.fromstring(sentence, remove_empty_top_bracketing=False)
         # sys.stderr.write(t.pprint())
         # First, collapse the unary, notice that the POS tags should not be affected
@@ -140,6 +144,11 @@ if __name__ == '__main__':
     # t = Tree.fromstring(sentence, remove_empty_top_bracketing=False)
     # for pos in t.treepositions(order='postorder'):
     #     print t[pos]
+    
+
+    NewTree.HORZMARKOV = A.hm
+    NewTree.VERTMARKOV = A.vm
+
     if A.gr_or_gp == 0:
         generate_rule(A.inputf)
     elif A.gr_or_gp == 1:

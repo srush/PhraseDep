@@ -16,7 +16,7 @@ parser.add_argument('--rulef', type=str, metavar='', help='')
 
 A = parser.parse_args()
 
-unary_collapse = True
+unary_collapse = False
 
 def generate_rule(treebank_file):
     # if you use unicode here, there is a bug...

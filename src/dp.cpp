@@ -302,7 +302,6 @@ class Chart {
 
 
 
-
 void complete(int i, int k, int h, const vector<int> &preterms,
               const Grammar &grammar, const FeatureScorer &scorer,  Chart *chart) {
     // Fill in the unary rules.

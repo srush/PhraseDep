@@ -74,7 +74,8 @@ int main(int argc, char* argv[])
     vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
     for (int i = 0; i < sentences->size(); ++i) {
         for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
-            (*sentences)[i].int_tags.push_back(grammar->to_nonterm((*sentences)[i].tags[j]));
+            (*sentences)[i].int_tags.push_back(grammar->tag_index.fget((*sentences)[i].tags[j]));
+            (*sentences)[i].preterms.push_back(grammar->to_nonterm((*sentences)[i].tags[j]));
             (*sentences)[i].int_words.push_back(grammar->to_word((*sentences)[i].words[j]));
         }
     }
@@ -85,7 +86,8 @@ int main(int argc, char* argv[])
         vector<Sentence> *sentences = read_sentence(string(options[SENTENCE_TEST].arg));
         for (int i = 0; i < sentences->size(); ++i) {
             for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
-                (*sentences)[i].int_tags.push_back(grammar->to_nonterm((*sentences)[i].tags[j]));
+                (*sentences)[i].int_tags.push_back(grammar->tag_index.fget((*sentences)[i].tags[j]));
+                (*sentences)[i].preterms.push_back(grammar->to_nonterm((*sentences)[i].tags[j]));
                 (*sentences)[i].int_words.push_back(grammar->to_word((*sentences)[i].words[j]));
             }
         }
@@ -103,7 +105,7 @@ int main(int argc, char* argv[])
             const Sentence *sentence = &(*sentences)[i];
             scorer.set_sentence(sentence);
             vector<AppliedRule> best_rules;
-            cky(sentence->int_tags, sentence->words, sentence->deps, *grammar, scorer, &best_rules, true);
+            cky(sentence->preterms, sentence->words, sentence->deps, *grammar, scorer, &best_rules, true);
             cout << endl;
         }
 
@@ -124,7 +126,8 @@ int main(int argc, char* argv[])
                 scorer.set_sentence(sentence);
                 vector<AppliedRule> best_rules;
                 double dp_score =
-                        cky(sentence->int_tags, sentence->words, sentence->deps, *grammar, scorer, &best_rules, false);
+                        cky(sentence->preterms, sentence->words, sentence->deps,
+                            *grammar, scorer, &best_rules, false);
 
                 // cout << "RULES: " << best_rules.size() << endl;
 
@@ -171,7 +174,13 @@ int main(int argc, char* argv[])
                     total_score2 += correct / (double)best_rules.size();
                     total += 1;
                     tscore = correct / (double)best_rules.size();
-                    if (tscore < 0.05) cout << "bad score" << endl;
+                    if (tscore < 0.15) cout << "bad score "
+                                            << best_rules.size()
+                                            << " "
+                                            << correct
+                                            << " "
+                                            << sentence->words[0]
+                                            << endl;
                 }
 
 

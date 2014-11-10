@@ -20,7 +20,6 @@ int Grammar::to_nonterm(string nonterm) {
         nonterm_map[nonterm] = n_nonterms;
         rev_nonterm_map[n_nonterms] = nonterm;
 
-
         NonTerminal non_terminal = NonTerminal::build(nonterm, &nt_indices);
         non_terminals_.push_back(non_terminal);
         n_nonterms++;
@@ -46,6 +45,10 @@ void Grammar::add_rule(BinaryRule rule) {
     } else {
         rules_by_second[rule.nt_Z].push_back(rule);
     }
+
+    string simple_rule = non_terminals_[rule.nt_X].main + "->" + non_terminals_[rule.nt_Y].main + " " +non_terminals_[rule.nt_Z].main;
+    sparse_rule_index.push_back(sparse_rules.fget(simple_rule));
+
     n_rules++;
 }
 
@@ -61,6 +64,10 @@ void Grammar::add_unary_rule(UnaryRule rule) {
     right_symbol.push_back(0);
     is_unary.push_back(1);
     unary_rules_by_first[rule.nt_Y].push_back(rule);
+
+    string simple_rule = non_terminals_[rule.nt_X].main + "->" + non_terminals_[rule.nt_Y].main;
+    sparse_rule_index.push_back(sparse_rules.fget(simple_rule));
+
     n_rules++;
 }
 
@@ -138,27 +145,8 @@ Grammar *read_rule_set(string file) {
         }
     }
     vector<int> roots;
-    // roots.push_back(grammar->to_nonterm("FRAG"));
-    // roots.push_back(grammar->to_nonterm("PP"));
-    // roots.push_back(grammar->to_nonterm("SBAR"));
-    // roots.push_back(grammar->to_nonterm("UCP"));
-    // roots.push_back(grammar->to_nonterm("SINV"));
-    // roots.push_back(grammar->to_nonterm("ADJP"));
-    // roots.push_back(grammar->to_nonterm("SQ"));
-    // roots.push_back(grammar->to_nonterm("PRN"));
-    // roots.push_back(grammar->to_nonterm("SBARQ"));
-    // roots.push_back(grammar->to_nonterm("INTJ"));
-    // roots.push_back(grammar->to_nonterm("VP"));
-    // roots.push_back(grammar->to_nonterm("S"));
-
-    // roots.push_back(grammar->to_nonterm("NP"));
-
-    // roots.push_back(grammar->to_nonterm("X"));
-    // roots.push_back(grammar->to_nonterm("ADVP"));
 
     roots.push_back(grammar->to_nonterm("TOP"));
-
-
 
     grammar->finish(roots);
     return grammar;

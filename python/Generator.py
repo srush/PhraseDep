@@ -84,16 +84,21 @@ def generate_part(treebank_file, rule_file):
 
         work_tree = deepcopy(t)
         NewTree.lexLabel(work_tree)
-        parent_dic = NewTree.getParentDic(work_tree)
+        parent_dic, dep_label_set = NewTree.getParentDic(work_tree)
 
         print len(t.leaves()), len(parts)
         print " ".join(t.leaves())
         print " ".join([x.label() for x in t.subtrees(lambda t: t.height() == 2)])
         parent_list = []
+        label_list = []
         for ind in xrange(1, (len(t.leaves()) + 1)):
             p = str(int(parent_dic[str(ind)]) - 1)
             parent_list.append(p)
         print " ".join(parent_list)
+        for ind in xrange(1, (len(t.leaves()) + 1)):
+            l = dep_label_set[str(ind)]
+            label_list.append(l)
+        print " ".join(label_list)
         for p in parts:
             print " ".join(p)
     f.close()
@@ -130,13 +135,26 @@ def generate_from_conll(inputf):
         word_list = [line[1] for line in sentence]
         pos_list = [line[4] for line in sentence]
         parent_list = [str(int(line[6])-1) for line in sentence]
+        label_list = [line[7] for line in sentence]
         # print " ".join(word_list)
         print len(word_list), '0'
         print " ".join(word_list)
         print " ".join(pos_list)
         print " ".join(parent_list)
+        print " ".join(label_list)
 
-
+def generate_conll(inputf):
+    f = open(inputf, "r")
+    s_ind = 0
+    for sentence in f:
+        s_ind += 1
+        if s_ind % 10 == 0:
+            sys.stderr.write("Sentence:\t" + str(s_ind) + "\n")
+        t = Tree.fromstring(sentence, remove_empty_top_bracketing=False)
+        deps = NewTree.generateDep(t)
+        NewTree.print_conll_lines(deps,sys.stdout)
+        sys.stdout.write("\n")
+    f.close()
 
 
 if __name__ == '__main__':
@@ -153,5 +171,7 @@ if __name__ == '__main__':
         generate_rule(A.inputf)
     elif A.gr_or_gp == 1:
         generate_part(A.inputf,A.rulef)
-    else:
+    elif A.gr_or_gp == 2:
         generate_from_conll(A.inputf)
+    else:
+        generate_conll(A.inputf)

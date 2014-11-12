@@ -395,23 +395,44 @@ def findIndex(s, labelChar='^'):
         return m[m.rfind(labelChar)+1:]
 
 def getParentDic(lexTree, labelChar='^'):
+    lt = deepcopy(lexTree)
+    # remove the TOP label
+    if lt.label().startswith('TOP'):
+        lt = lt[0]
+    # print lt.pprint()
+
     # build a parent set
     dep_set = {}
+    label_set = {}
     # add root to the tree
-    dep_set[findIndex(lexTree.label())] = '0'
-    for nt in lexTree.subtrees():
-        if isinstance(nt, Tree):
+    dep_set[findIndex(lt.label())] = '0'
+    # label for the root is just ROOT
+    label_set[findIndex(lt.label())] = 'ROOT'
+    for pos in lt.treepositions(order='preorder'):
+        # print pos
+        nt = lt[pos]
+        if isinstance(nt, Tree) and nt.height() != 2 and len(nt) > 1:
             ind_p = findIndex(nt.label())
+            phrase_label = remove_labelChar(nt.label())
+            head_label = '*'
+            for c in nt:
+                ind_c = findIndex(c.label() if isinstance(c, Tree) else c)
+                if ind_c == ind_p and isinstance(c, Tree) and c.height()!=2:
+                    head_label = remove_labelChar(c.label())
             for c in nt:
                 ind_c = findIndex(c.label() if isinstance(c, Tree) else c)
                 if not ind_c == ind_p:
+                    dependent_label = '*'
+                    if isinstance(c, Tree) and c.height()!=2:
+                        dependent_label = remove_labelChar(c.label())
                     dep_set[ind_c] = ind_p
-    return dep_set
+                    label_set[ind_c] = phrase_label + "+" + head_label + "+" + dependent_label
+    return dep_set, label_set
 
 def generateDep(ot, labelChar='^'):
     lt = deepcopy(ot)
     lexLabel(lt, labelChar)
-    dep_set = getParentDic(lt, labelChar)
+    dep_set, dep_label_set = getParentDic(lt, labelChar)
 
     conll_lines = []
     preterminals = [t for t in lt.subtrees(lambda t: t.height() == 2)]
@@ -420,13 +441,14 @@ def generateDep(ot, labelChar='^'):
         pos = remove_labelChar(preterminals[i].label(), labelChar)
         index = findIndex(preterminals[i][0], labelChar)
         parent = dep_set[index]
-        conll_lines.append([index, word, pos, parent])
+        label = dep_label_set[index]
+        conll_lines.append([index, word, pos, parent, label])
     return conll_lines
 
 def print_conll_lines(clines, wt):
     # 1 Influential _   JJ  JJ  _   2   _   _
     for l in clines:
-        wt.write(l[0] + "\t" + l[1] + "\t_\t" + l[2] + "\t" + l[2] + "\t_\t" + l[3] + "\t_\t_\n")
+        wt.write(l[0] + "\t" + l[1] + "\t_\t" + l[2] + "\t" + l[2] + "\t_\t" + l[3] + "\t"+ l[4] +"\t_\t_\n")
 
 def chomsky_normal_form(tree, horzMarkov=None, vertMarkov=0, childChar="|", parentChar="#"):
     # assume all subtrees have homogeneous children
@@ -609,7 +631,7 @@ def get_binarize_lex(otree, labelChar='^'):
     work_tree = deepcopy(otree)
     lexLabel(work_tree)
     # print work_tree
-    parent_dic = getParentDic(work_tree)
+    parent_dic, dep_label_set = getParentDic(work_tree)
     # for x in parent_dic:
     #     print x, parent_dic[x]
     work_tree = deepcopy(otree)
@@ -770,8 +792,8 @@ def demo():
   (VP (AUX do) (NP (NP (RB little)) (ADJP (RB right))))
   (. .))"""
 
-    sentence = """(S (NP (NP (JJ Influential) (NNS members)) (PP (IN of) (NP (DT the) (NNP House) (NNP Ways) (CC and) (NNP Means) (NNP Committee)))) (VP (VBD introduced) (NP (NP (NN legislation)) (SBAR (WHNP (WDT that)) (S (VP (MD would) (VP (VB restrict) (SBAR (WHADVP (WRB how)) (S (NP (DT the) (JJ new) (NN savings-and-loan) (NN bailout) (NN agency)) (VP (MD can) (VP (VB raise) (NP (NN capital)))))) (, ,) (S (VP (VBG creating) (NP (NP (DT another) (JJ potential) (NN obstacle)) (PP (TO to) (NP (NP (NP (DT the) (NN government) (POS 's)) (NN sale)) (PP (IN of) (NP (JJ sick) (NNS thrifts)))))))))))))) (. .))"""
-    sentence = """(S (PP (IN In) (NP (NP (DT an) (NNP Oct.) (CD 19) (NN review)) (PP (IN of) (NP (`` ``) (NP (DT The) (NN Misanthrope)) ('' '') (PP (IN at) (NP (NP (NNP Chicago) (POS 's)) (NNP Goodman) (NNP Theatre))))) (PRN (-LRB- -LRB-) (`` ``) (S (NP (VBN Revitalized) (NNS Classics)) (VP (VBP Take) (NP (DT the) (NN Stage)) (PP (IN in) (NP (NNP Windy) (NNP City))))) (, ,) ('' '') (NP (NN Leisure) (CC &) (NNS Arts)) (-RRB- -RRB-)))) (, ,) (NP (NP (NP (DT the) (NN role)) (PP (IN of) (NP (NNP Celimene)))) (, ,) (VP (VBN played) (PP (IN by) (NP (NNP Kim) (NNP Cattrall)))) (, ,)) (VP (VBD was) (VP (ADVP (RB mistakenly)) (VBN attributed) (PP (TO to) (NP (NNP Christina) (NNP Haag))))) (. .))"""
+    sentence = """(TOP (S (NP (NP (JJ Influential) (NNS members)) (PP (IN of) (NP (DT the) (NNP House) (NNP Ways) (CC and) (NNP Means) (NNP Committee)))) (VP (VBD introduced) (NP (NP (NN legislation)) (SBAR (WHNP (WDT that)) (S (VP (MD would) (VP (VB restrict) (SBAR (WHADVP (WRB how)) (S (NP (DT the) (JJ new) (NN savings-and-loan) (NN bailout) (NN agency)) (VP (MD can) (VP (VB raise) (NP (NN capital)))))) (, ,) (S (VP (VBG creating) (NP (NP (DT another) (JJ potential) (NN obstacle)) (PP (TO to) (NP (NP (NP (DT the) (NN government) (POS 's)) (NN sale)) (PP (IN of) (NP (JJ sick) (NNS thrifts)))))))))))))) (. .)))"""
+    #sentence = """(S (PP (IN In) (NP (NP (DT an) (NNP Oct.) (CD 19) (NN review)) (PP (IN of) (NP (`` ``) (NP (DT The) (NN Misanthrope)) ('' '') (PP (IN at) (NP (NP (NNP Chicago) (POS 's)) (NNP Goodman) (NNP Theatre))))) (PRN (-LRB- -LRB-) (`` ``) (S (NP (VBN Revitalized) (NNS Classics)) (VP (VBP Take) (NP (DT the) (NN Stage)) (PP (IN in) (NP (NNP Windy) (NNP City))))) (, ,) ('' '') (NP (NN Leisure) (CC &) (NNS Arts)) (-RRB- -RRB-)))) (, ,) (NP (NP (NP (DT the) (NN role)) (PP (IN of) (NP (NNP Celimene)))) (, ,) (VP (VBN played) (PP (IN by) (NP (NNP Kim) (NNP Cattrall)))) (, ,)) (VP (VBD was) (VP (ADVP (RB mistakenly)) (VBN attributed) (PP (TO to) (NP (NNP Christina) (NNP Haag))))) (. .))"""
     #sentence = """(S (NP (NNP Ms.) (NNP Haag)) (VP (VBZ plays) (NP (NNP Elianti))) (. .))"""
     #sentence = """(PRN (S (VP (VB See))))"""
     # sentence = """(M (S (A (B (B1 b1) (B2 b2) (B3 (BB1 bb1) (BB2 bb2) (BB3 bb3) ) (B4 b4)) (C (C1 c1) (C2 c2)  ) (D d) (E e) (F f) (G g)) (W w)))"""

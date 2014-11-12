@@ -14,6 +14,8 @@ struct Sentence {
     vector<int> int_words;
     vector<int> deps;
     vector<AppliedRule> gold_rules;
+    vector<int> preterms;
+
 };
 
 vector<Sentence> *read_sentence(string file);

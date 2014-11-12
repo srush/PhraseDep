@@ -50,14 +50,32 @@ struct AppliedRule {
 
 
 struct Index {
+    Index() : cur_index(0) {}
+
     int fget(string item) {
-        return fmap[item];
+        if (fmap.find(item) != fmap.end()) {
+            return fmap[item];
+        } else {
+            fmap[item] = cur_index;
+            rmap[cur_index] = item;
+            cur_index++;
+            return cur_index - 1;
+        }
     }
 
-    string rget(int index) {
-        return rmap[index];
+    int fget(string item) const {
+        return fmap.at(item);
     }
 
+    string rget(int index) const {
+        return rmap.at(index);
+    }
+
+    int size() const {
+        return cur_index;
+    }
+
+    int cur_index;
     map<string, int> fmap;
     map<int, string> rmap;
 };
@@ -79,6 +97,7 @@ struct NonTerminal {
             } else if (cur == '|') {
                 mode = 2;
                 nt.removable = true;
+                nt.main += '|';
             } else {
                 if (mode == 0) {
                     nt.main += cur;
@@ -92,6 +111,7 @@ struct NonTerminal {
                     nt.vert_mark += cur;
                 } else if (mode ==2) {
                     nt.horiz_mark += cur;
+                    nt.main += cur;
                 }
             }
         }
@@ -142,6 +162,8 @@ class Grammar {
 
     void finish(const vector<int> &roots_);
 
+    Index tag_index;
+
     int n_nonterms;
     int n_rules;
     int n_words;
@@ -167,6 +189,10 @@ class Grammar {
 
     vector<vector<bool> > rule_head_tags;
     bool pruning;
+
+
+    vector<int> sparse_rule_index;
+    Index sparse_rules;
 };
 
 

@@ -1,13 +1,14 @@
 #include "features.hpp"
 #include <cmath>
+#include <iostream>
 
 double FeatureScorer::score(const AppliedRule &rule) const {
     double score = 0.0;
-    vector<int> features;
+    vector<long> features;
     return feature_gen_.generate(*sentence_, rule, &features, &perceptron_.weights);
-    // for (int i = 0; i < features.size(); ++i) {
-    //     int val = features[i];
-    //     score += perceptron_.weights[((int)abs(val)) % 1000000];
+    // for (long i = 0; i < features.size(); ++i) {
+    //     long val = features[i];
+    //     score += perceptron_.weights[((long)abs(val)) % 1000000];
     // }
     // return score;
 }
@@ -15,66 +16,82 @@ double FeatureScorer::score(const AppliedRule &rule) const {
 void FeatureScorer::update(const vector<AppliedRule> &rules,
                            int direction) {
     for (int i = 0; i < rules.size(); ++i) {
-        vector<int> features;
+        vector<long> features;
         feature_gen_.generate(*sentence_, rules[i], &features, NULL);
         for (int j = 0; j < features.size(); ++j) {
-            int val = features[j];
-            perceptron_.update((int)abs(val) % n_size, direction);
+            long val = features[j];
+            perceptron_.update((long)abs(val) % n_size, direction);
         }
     }
 }
 
 FeatureGen::FeatureGen(const Grammar *grammar, bool delex) : grammar_(grammar), delex_(delex) {
 
-    triples.push_back(Triple(grammar_->n_nonterms, n_tags, n_tags));
-    triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, n_tags));
-    triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, n_tags));
-    triples.push_back(Triple(grammar_->n_rules, n_tags, n_tags));
-    triples.push_back(Triple(grammar_->n_rules, grammar_->n_words, n_tags));
+    triples.push_back(Triple(grammar_->n_nonterms, grammar->tag_index.size(), grammar->tag_index.size()));
+    triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, grammar->tag_index.size()));
+    triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, grammar->tag_index.size()));
+    triples.push_back(Triple(grammar_->n_rules, grammar->tag_index.size(), grammar->tag_index.size()));
+    triples.push_back(Triple(grammar_->n_rules, grammar_->n_words, grammar->tag_index.size()));
 
-    doubles.push_back(Double(grammar_->n_nonterms, n_tags));
+    doubles.push_back(Double(grammar_->n_nonterms, grammar->tag_index.size()));
     doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_words));
     doubles.push_back(Double(grammar_->n_rules, grammar_->n_words));
     doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_nonterms));
     doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_nonterms));
-    doubles.push_back(Double(2, n_tags));
+    doubles.push_back(Double(2, grammar->tag_index.size()));
     doubles.push_back(Double(2, grammar_->n_nonterms));
     doubles.push_back(Double(2, grammar_->n_rules));
-    doubles.push_back(Double(grammar_->n_rules, n_tags));
-    doubles.push_back(Double(grammar_->n_rules, n_tags));
+    doubles.push_back(Double(grammar_->n_rules, grammar->tag_index.size()));
+    doubles.push_back(Double(grammar_->n_rules, grammar->tag_index.size()));
     doubles.push_back(Double(2, 2));
     doubles.push_back(Double(grammar_->n_nonterms, 2));
 
     doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_nonterms));
     doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_nonterms));
-    doubles.push_back(Double(grammar_->n_nonterms, n_tags));
+    doubles.push_back(Double(grammar_->n_nonterms, grammar->tag_index.size()));
+    doubles.push_back(Double(grammar_->n_nonterms, grammar->tag_index.size()));
+    doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_words));
     doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_words));
     doubles.push_back(Double(grammar_->n_nonterms, 2));
 
     triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, grammar_->n_nonterms));
 
 
+    triples.push_back(Triple(grammar_->n_rules, grammar->tag_index.size(), grammar->tag_index.size()));
+    triples.push_back(Triple(grammar_->n_rules, grammar->n_words, grammar->tag_index.size()));
+    triples.push_back(Triple(grammar_->n_rules, grammar->n_words, grammar->tag_index.size()));
+
+    // triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, grammar_->n_nonterms));
+    // triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, grammar_->n_nonterms));
+
+
 
 }
 
 
-inline void inc3(const Triple &t, int a, int b, int c, vector<int> *base, int *tally,
+inline void inc3(const Triple &t, long a, long b, long c, vector<long> *base, long *tally,
                  const vector<double> *weights, double *score)  {
-    int index = *tally + (a * t._size_b * t._size_c + b * t._size_c + c);
+    long app = (a * t._size_b * t._size_c + b * t._size_c + c);
+    long index = *tally + app;
+    assert(app < t._total_size);
+
     if (weights != NULL) {
-        *score += (*weights)[((int)abs(index)) % n_size];
+        *score += (*weights)[((long)abs(index)) % n_size];
     } else {
         base->push_back(index);
     }
     (*tally) += t._total_size;
 }
 
-inline void inc2(const Double &t, int a, int b,  vector<int> *base, int *tally,
+inline void inc2(const Double &t, long a, long b,  vector<long> *base, long *tally,
                  const vector<double> *weights, double *score)  {
 
-    int index = *tally + (a * t._size_b + b);
+    long app = (a * t._size_b + b);
+    long index = *tally + app;
+    assert(app < t._total_size);
+
     if (weights != NULL) {
-        *score += (*weights)[((int)abs(index)) % n_size];
+        *score += (*weights)[((long)abs(index)) % n_size];
     } else {
         base->push_back(index);
     }
@@ -85,24 +102,37 @@ inline void inc2(const Double &t, int a, int b,  vector<int> *base, int *tally,
 
 double FeatureGen::generate(const Sentence &sentence,
                             const AppliedRule &rule,
-                            vector<int> *base,
+                            vector<long> *base,
                             const vector<double> *weights) const {
 
-    int X = grammar_->head_symbol[rule.rule];
-    int Y = grammar_->left_symbol[rule.rule];
-    int Z = grammar_->right_symbol[rule.rule];
+
+    long X = grammar_->head_symbol[rule.rule];
+    long Y = grammar_->left_symbol[rule.rule];
+    long Z = grammar_->right_symbol[rule.rule];
     const NonTerminal &nt_X = grammar_->non_terminals_[X];
     const NonTerminal &nt_Y = grammar_->non_terminals_[Y];
     const NonTerminal &nt_Z = grammar_->non_terminals_[Z];
 
 
-    int m_tag = sentence.int_tags[rule.m];
-    int h_tag = sentence.int_tags[rule.h];
-    int h_word = sentence.int_words[rule.h];
+    long m_tag = sentence.int_tags[rule.m];
+    long h_tag = sentence.int_tags[rule.h];
+    long h_word = sentence.int_words[rule.h];
+    long m_word = sentence.int_words[rule.m];
+
     bool is_unary = grammar_->is_unary[rule.rule];
-    int sentence_size = sentence.int_tags.size();
+    long sentence_size = sentence.int_tags.size();
     int size = (rule.k - rule.i);
-    int tally = 0;
+
+    int simple_rule = grammar_->sparse_rule_index[rule.rule];
+    int simple_X = nt_X.int_main;
+    int simple_Y = nt_Y.int_main;
+    int simple_Z = nt_Z.int_main;
+
+
+    // cout << X << " " << Y << " " << Z << " " << nt_X.int_main << " "
+    //      << nt_Y.int_main << " " << nt_Z.int_main << " " << h_tag << " " << h_word << " " << m_tag << " " << is_unary << " " << rule.rule << endl;
+
+    long tally = 0;
     double score = 0.0;
     inc3(triples[0], X, h_tag, m_tag, base, &tally, weights, &score);
     inc3(triples[1], X, Y, h_tag, base, &tally, weights, &score);
@@ -113,9 +143,6 @@ double FeatureGen::generate(const Sentence &sentence,
     } else {
         tally += triples[4]._total_size;
     }
-
-
-
 
     inc2(doubles[0], X, h_tag, base, &tally, weights, &score);
     if (!delex_) {
@@ -135,14 +162,26 @@ double FeatureGen::generate(const Sentence &sentence,
     inc2(doubles[11], X, (size == sentence_size)? 1:0, base, &tally, weights, &score);
 
     // New features.
-    inc2(doubles[12], nt_X.int_main, nt_Y.int_main, base, &tally, weights, &score);
-    inc2(doubles[13], nt_X.int_main, nt_Z.int_main, base, &tally, weights, &score);
-    inc2(doubles[14], nt_X.int_main, h_tag, base, &tally, weights, &score);
-    inc2(doubles[15], nt_X.int_main, h_word, base, &tally, weights, &score);
-    inc2(doubles[16], nt_X.int_main, is_unary, base, &tally, weights, &score);
+    inc2(doubles[12], simple_X, simple_Y, base, &tally, weights, &score);
+    inc2(doubles[13], simple_X, simple_Z, base, &tally, weights, &score);
+    inc2(doubles[14], simple_X, h_tag, base, &tally, weights, &score);
+    inc2(doubles[15], simple_X, m_tag, base, &tally, weights, &score);
+    inc2(doubles[16], simple_X, m_word, base, &tally, weights, &score);
+    inc2(doubles[17], simple_X, h_word, base, &tally, weights, &score);
+    inc2(doubles[18], simple_X, is_unary, base, &tally, weights, &score);
 
 
     inc3(triples[5], nt_X.int_main, nt_Y.int_main, nt_Z.int_main, base, &tally, weights, &score);
+
+    // Sparse rules
+    inc3(triples[6], simple_rule, h_tag, m_tag, base, &tally, weights, &score);
+    inc3(triples[7], simple_rule, h_word, m_tag, base, &tally, weights, &score);
+    inc3(triples[8], simple_rule, m_word, h_tag, base, &tally, weights, &score);
+    // inc3(triples[8], nt_X.int_main, nt_Y.int_main, , base, &tally, weights, &score);
+
+
+
+
 
     return score;
 }

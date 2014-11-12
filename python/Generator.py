@@ -162,7 +162,7 @@ if __name__ == '__main__':
     # t = Tree.fromstring(sentence, remove_empty_top_bracketing=False)
     # for pos in t.treepositions(order='postorder'):
     #     print t[pos]
-    
+
 
     NewTree.HORZMARKOV = A.hm
     NewTree.VERTMARKOV = A.vm

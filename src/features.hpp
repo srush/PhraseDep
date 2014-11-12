@@ -7,8 +7,8 @@
 #include <cmath>
 
 
-const int n_tags = 1000;
-const int n_size = 10000000;
+// const int n_tags = 1000;
+const int n_size = 100000000;
 
 class FeatureGen;
 class Double;
@@ -19,58 +19,63 @@ class Triple;
 class Triple {
   public:
     Triple() {}
-    Triple(int size_a, int size_b, int size_c)
+Triple(const Triple &o) :
+        _size_a(o._size_a), _size_b(o._size_b), _size_c(o._size_c), _total_size(o._total_size) {}
+
+Triple(long size_a, long size_b, long size_c)
             : _size_a(size_a), _size_b(size_b), _size_c(size_c),
               _total_size(size_a * size_b * size_c) {}
 
-    int apply(int a, int b, int c) const {
-        return a * _size_b * _size_c + b * _size_c + c;
-    }
+    // int apply(int a, int b, int c) const {
+    //     return a * _size_b * _size_c + b * _size_c + c;
+    // }
 
 
-    inline void inc(int a, int b, int c, vector<int> *base, int *tally,
-                    const vector<double> *weights, double *score) const {
-        int index = *tally + apply(a, b, c);
-        if (weights != NULL) {
-            *score += (*weights)[((int)abs(index)) % n_size];
-        } else {
-            base->push_back(index);
-        }
-        (*tally) += _total_size;
-//(*tally) += _total_size;
+//     inline void inc(int a, int b, int c, vector<int> *base, int *tally,
+//                     const vector<double> *weights, double *score) const {
+//         int index = *tally + apply(a, b, c);
+//         if (weights != NULL) {
+//             *score += (*weights)[((int)abs(index)) % n_size];
+//         } else {
+//             base->push_back(index);
+//         }
+//         (*tally) += _total_size;
+// //(*tally) += _total_size;
 
-    }
+//     }
 
-    int _size_a;
-    int _size_b;
-    int _size_c;
-    long int _total_size;
+    long _size_a;
+    long _size_b;
+    long _size_c;
+    long _total_size;
 };
 
 class Double {
   public:
     Double() {}
-    Double(int size_a, int size_b)
+Double(const Double &o) :
+        _size_a(o._size_a), _size_b(o._size_b), _total_size(o._total_size) {}
+    Double(long size_a, long size_b)
             : _size_a(size_a), _size_b(size_b), _total_size(size_a * size_b) {}
 
-    int apply(int a, int b) const {
-        return a * _size_b + b;
-    }
+    // int apply(int a, int b) const {
+    //     return a * _size_b + b;
+    // }
 
-    void inc(int a, int b, vector<int> *base, int *tally, const vector<double> *weights, double *score) const {
-        int index = *tally + apply(a, b);
-        if (weights != NULL) {
-            *score += (*weights)[((int)abs(index)) % n_size];
-        } else {
-            base->push_back(index);
-        }
-        (*tally) += _total_size;
-    }
+    // void inc(int a, int b, vector<int> *base, int *tally, const vector<double> *weights, double *score) const {
+    //     int index = *tally + apply(a, b);
+    //     if (weights != NULL) {
+    //         *score += (*weights)[((int)abs(index)) % n_size];
+    //     } else {
+    //         base->push_back(index);
+    //     }
+    //     (*tally) += _total_size;
+    // }
 
-    long int _total_size;
+    long  _total_size;
 
-    int _size_a;
-    int _size_b;
+    long _size_a;
+    long _size_b;
 
 };
 
@@ -81,7 +86,7 @@ FeatureGen(const Grammar *grammar, bool delex);
 
     double generate(const Sentence &sentence,
                         const AppliedRule &rule,
-                        vector<int> *base,
+                        vector<long> *base,
                         const vector<double> *weights) const;
   private:
     vector <Triple> triples;

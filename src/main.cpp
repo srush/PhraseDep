@@ -77,6 +77,7 @@ int main(int argc, char* argv[])
             (*sentences)[i].int_tags.push_back(grammar->tag_index.fget((*sentences)[i].tags[j]));
             (*sentences)[i].preterms.push_back(grammar->to_nonterm((*sentences)[i].tags[j]));
             (*sentences)[i].int_words.push_back(grammar->to_word((*sentences)[i].words[j]));
+            (*sentences)[i].int_deplabels.push_back(grammar->to_deplabel((*sentences)[i].deplabels[j]));
         }
     }
 
@@ -89,6 +90,7 @@ int main(int argc, char* argv[])
                 (*sentences)[i].int_tags.push_back(grammar->tag_index.fget((*sentences)[i].tags[j]));
                 (*sentences)[i].preterms.push_back(grammar->to_nonterm((*sentences)[i].tags[j]));
                 (*sentences)[i].int_words.push_back(grammar->to_word((*sentences)[i].words[j]));
+                (*sentences)[i].int_deplabels.push_back(grammar->to_deplabel((*sentences)[i].deplabels[j]));
             }
         }
 

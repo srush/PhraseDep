@@ -31,6 +31,12 @@ vector<Sentence> *read_sentence(string file) {
             sentence.deps.push_back(dep);
         }
 
+        for (int i = 0; i < n_words; ++i) {
+            string deplabel;
+            in_file >> deplabel;
+            sentence.deplabels.push_back(deplabel);
+        }
+
         for (int i = 0; i < n_rules; ++i) {
             AppliedRule rule;
             in_file >> rule.i >> rule.j >> rule.k >> rule.h >> rule.m >> rule.rule;

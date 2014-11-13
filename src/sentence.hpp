@@ -12,6 +12,9 @@ struct Sentence {
     vector<int> int_tags;
     vector<string> words;
     vector<int> int_words;
+    vector<string> deplabels;
+    vector<int> int_deplabels;
+
     vector<int> deps;
     vector<AppliedRule> gold_rules;
     vector<int> preterms;

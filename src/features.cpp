@@ -64,8 +64,15 @@ FeatureGen::FeatureGen(const Grammar *grammar, bool delex) : grammar_(grammar), 
     // triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, grammar_->n_nonterms));
     // triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, grammar_->n_nonterms));
 
+    // Adding features for dependency labels
+    doubles.push_back(Double(grammar_->n_nonterms, grammar->n_deplabel));
+    doubles.push_back(Double(grammar_->n_nonterms, grammar->n_deplabel));
+    doubles.push_back(Double(grammar_->n_nonterms, grammar->n_deplabel));
+    doubles.push_back(Double(grammar_->n_rules, grammar->n_deplabel));
 
-
+    triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, grammar->n_deplabel));
+    triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, grammar->n_deplabel));
+    
 }
 
 
@@ -118,6 +125,8 @@ double FeatureGen::generate(const Sentence &sentence,
     long h_tag = sentence.int_tags[rule.h];
     long h_word = sentence.int_words[rule.h];
     long m_word = sentence.int_words[rule.m];
+
+    long m_deplabel = sentence.int_deplabels[rule.m];
 
     bool is_unary = grammar_->is_unary[rule.rule];
     long sentence_size = sentence.int_tags.size();
@@ -179,6 +188,14 @@ double FeatureGen::generate(const Sentence &sentence,
     inc3(triples[8], simple_rule, m_word, h_tag, base, &tally, weights, &score);
     // inc3(triples[8], nt_X.int_main, nt_Y.int_main, , base, &tally, weights, &score);
 
+    // Adding features for dependency labels
+    inc2(doubles[19], X, m_deplabel, base, &tally, weights, &score);
+    inc2(doubles[20], Y, m_deplabel, base, &tally, weights, &score);
+    inc2(doubles[21], Z, m_deplabel, base, &tally, weights, &score);
+    inc2(doubles[22], rule.rule, m_deplabel, base, &tally, weights, &score);
+
+    inc3(triples[9], X, Y, m_deplabel, base, &tally, weights, &score);
+    inc3(triples[10], X, Z, m_deplabel, base, &tally, weights, &score);
 
 
 

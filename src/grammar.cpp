@@ -13,6 +13,16 @@ int Grammar::to_word(string word) {
     }
 }
 
+int Grammar::to_deplabel(string deplabel) {
+    if (deplabel_map.find(deplabel) != deplabel_map.end()) {
+        return deplabel_map[deplabel];
+    } else {
+        deplabel_map[deplabel] = n_deplabel;
+        n_deplabel++;
+        return n_deplabel-1;
+    }
+}
+
 int Grammar::to_nonterm(string nonterm) {
     if (nonterm_map.find(nonterm) != nonterm_map.end()) {
         return nonterm_map[nonterm];

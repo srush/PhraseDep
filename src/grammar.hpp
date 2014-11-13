@@ -149,6 +149,7 @@ class Grammar {
     }
 
     int to_word(string word);
+    int to_deplabel(string deplabel);
 
     int to_nonterm(string nonterm);
 
@@ -167,6 +168,7 @@ class Grammar {
     int n_nonterms;
     int n_rules;
     int n_words;
+    int n_deplabel;
 
     vector<int> roots;
 
@@ -182,6 +184,8 @@ class Grammar {
     map<string, int> word_map;
     map<string, int> nonterm_map;
     map<int, string> rev_nonterm_map;
+
+    map<string, int> deplabel_map;
 
     vector<Index> nt_indices;
 

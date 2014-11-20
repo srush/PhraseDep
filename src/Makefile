@@ -25,3 +25,7 @@ features.o: features.cpp features.hpp
 
 sentence.o: sentence.cpp sentence.hpp
 	g++ $(CPPFLAGS) -c sentence.cpp
+
+clean :
+	rm *.o
+	rm parser

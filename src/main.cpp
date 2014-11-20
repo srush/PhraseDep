@@ -71,6 +71,9 @@ int main(int argc, char* argv[])
         read_pruning(options[PRUNING].arg, grammar);
     }
 
+    grammar->to_word("#START#");
+    grammar->to_word("#END#");
+
     vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
     for (int i = 0; i < sentences->size(); ++i) {
         for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
@@ -84,6 +87,7 @@ int main(int argc, char* argv[])
     // Make scorer.
     FeatureScorer scorer(grammar, options[DELEX]);
     if (options[TEST]) {
+        scorer.is_cost_augmented_ = false;
         vector<Sentence> *sentences = read_sentence(string(options[SENTENCE_TEST].arg));
         for (int i = 0; i < sentences->size(); ++i) {
             for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
@@ -115,7 +119,8 @@ int main(int argc, char* argv[])
         cerr << "(" << ((float)t)/CLOCKS_PER_SEC << ")" << endl;
 
     } else {
-
+        scorer.is_cost_augmented_ = true;
+        cerr << "begin training" << endl;
         char *temp = 0;
         int epochs = strtol(options[EPOCH].arg, &temp, 10);
         char epoch_char = '1';

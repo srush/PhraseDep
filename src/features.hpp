@@ -89,6 +89,7 @@ FeatureGen(const Grammar *grammar, bool delex);
                         vector<long> *base,
                         const vector<double> *weights) const;
   private:
+    vector <int> singles;
     vector <Triple> triples;
     vector <Double> doubles;
     const Grammar *grammar_;
@@ -109,6 +110,8 @@ class FeatureScorer {
     void update(const vector<AppliedRule> &rules, int direction);
 
     Perceptron perceptron_;
+    bool is_cost_augmented_;
+
 
 private:
 

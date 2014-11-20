@@ -1,0 +1,21 @@
+python /home/lingpenk/research/scripts/SplitDataSet.py /media/lingpenk/Data/PhraseDep/treebank/Train_Dep.tagging 10 /media/lingpenk/Data/PhraseDep/treebank/Train_Dep_tagging
+
+cat Train_Dep_tagging1 Train_Dep_tagging2 Train_Dep_tagging3 Train_Dep_tagging4 Train_Dep_tagging5 Train_Dep_tagging6 Train_Dep_tagging7 Train_Dep_tagging8 Train_Dep_tagging9 > Train_Dep_tagging_no10
+cat Train_Dep_tagging2 Train_Dep_tagging3 Train_Dep_tagging4 Train_Dep_tagging5 Train_Dep_tagging6 Train_Dep_tagging7 Train_Dep_tagging8 Train_Dep_tagging9 Train_Dep_tagging10 > Train_Dep_tagging_no1
+cat Train_Dep_tagging1 Train_Dep_tagging3 Train_Dep_tagging4 Train_Dep_tagging5 Train_Dep_tagging6 Train_Dep_tagging7 Train_Dep_tagging8 Train_Dep_tagging9 Train_Dep_tagging10 > Train_Dep_tagging_no2
+cat Train_Dep_tagging1 Train_Dep_tagging2 Train_Dep_tagging4 Train_Dep_tagging5 Train_Dep_tagging6 Train_Dep_tagging7 Train_Dep_tagging8 Train_Dep_tagging9 Train_Dep_tagging10 > Train_Dep_tagging_no3
+cat Train_Dep_tagging1 Train_Dep_tagging2 Train_Dep_tagging3 Train_Dep_tagging5 Train_Dep_tagging6 Train_Dep_tagging7 Train_Dep_tagging8 Train_Dep_tagging9 Train_Dep_tagging10 > Train_Dep_tagging_no4
+cat Train_Dep_tagging1 Train_Dep_tagging2 Train_Dep_tagging3 Train_Dep_tagging4 Train_Dep_tagging6 Train_Dep_tagging7 Train_Dep_tagging8 Train_Dep_tagging9 Train_Dep_tagging10 > Train_Dep_tagging_no5
+cat Train_Dep_tagging1 Train_Dep_tagging2 Train_Dep_tagging3 Train_Dep_tagging4 Train_Dep_tagging5 Train_Dep_tagging7 Train_Dep_tagging8 Train_Dep_tagging9 Train_Dep_tagging10 > Train_Dep_tagging_no6
+cat Train_Dep_tagging1 Train_Dep_tagging2 Train_Dep_tagging3 Train_Dep_tagging4 Train_Dep_tagging5 Train_Dep_tagging6 Train_Dep_tagging8 Train_Dep_tagging9 Train_Dep_tagging10 > Train_Dep_tagging_no7
+cat Train_Dep_tagging1 Train_Dep_tagging2 Train_Dep_tagging3 Train_Dep_tagging4 Train_Dep_tagging5 Train_Dep_tagging6 Train_Dep_tagging7 Train_Dep_tagging9 Train_Dep_tagging10 > Train_Dep_tagging_no8
+cat Train_Dep_tagging1 Train_Dep_tagging2 Train_Dep_tagging3 Train_Dep_tagging4 Train_Dep_tagging5 Train_Dep_tagging6 Train_Dep_tagging7 Train_Dep_tagging8 Train_Dep_tagging10 > Train_Dep_tagging_no9
+
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:`pwd;`/deps/local/lib:"
+for i in {1..10}
+do 
+./TurboTagger --train --file_train=/media/lingpenk/Data/PhraseDep/treebank/jacktagging/Train_Dep_tagging_no$i --file_model=/media/lingpenk/Data/PhraseDep/treebank/jacktagging/model_no$i --form_cutoff=1 --logtostderr
+./TurboTagger --test --evaluate --file_model=/media/lingpenk/Data/PhraseDep/treebank/jacktagging/model_no$i --file_test=/media/lingpenk/Data/PhraseDep/treebank/jacktagging/Train_Dep_tagging$i --file_prediction=/media/lingpenk/Data/PhraseDep/treebank/jacktagging/Train_Dep_tagging$i.pred --logtostderr
+done
+
+cat Train_Dep_tagging1.pred Train_Dep_tagging2.pred Train_Dep_tagging3.pred Train_Dep_tagging4.pred Train_Dep_tagging5.pred Train_Dep_tagging6.pred Train_Dep_tagging7.pred Train_Dep_tagging8.pred Train_Dep_tagging9.pred Train_Dep_tagging10.pred > Train_Dep_tagging_jack

@@ -34,7 +34,7 @@ struct Arg: public option::Arg
 };
 
 enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH,
-                    MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE };
+                    MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE };
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , "", option::Arg::None, "USAGE: example [options]\n\n"
@@ -49,6 +49,7 @@ const option::Descriptor usage[] =
     {PRUNING,    0,"p", "pruning", Arg::Required, "  --pruning, -p  \n ." },
     {DELEX,    0,"p", "delex", option::Arg::None, "  --delex, -d  \n ." },
     {ORACLE,    0,"o", "oracle", option::Arg::None, "  --oracle, -o  \n ." },
+    {ORACLE_TREE,    0,"z", "oracle_tree", option::Arg::None, "  --oracle_tree, -z  \n ." },
     {UNKNOWN, 0,"" ,  ""   , option::Arg::None, "\nExamples:\n"
                                                   "  example --unknown -- --this_is_no_option\n"
      "  example -unk --plus -ppp file1 file2\n" },
@@ -133,14 +134,20 @@ int main(int argc, char* argv[])
             Sentence *sentence = &(*sentences)[i];
             vector<AppliedRule> best_rules;
             OracleScorer oracle(&sentence->gold_rules);
-            double dp_score =
-                    cky(sentence->preterms, sentence->words, sentence->deps,
-                        *grammar, oracle, &best_rules, false);
+            if (options[ORACLE_TREE]) {
+                cky(sentence->preterms, sentence->words, sentence->deps,
+                    *grammar, oracle, &best_rules, true);
+                cout << endl;
+            } else {
+                cky(sentence->preterms, sentence->words, sentence->deps,
+                    *grammar, oracle, &best_rules, false);
+
+                sentence->gold_rules = best_rules;
+                output_sentence(*sentence);
+            }
+
             // cerr << "NUMBER OF RULES: " << best_rules.size()
             //      << " " << dp_score << " " << sentence->words.size() <<  endl;
-
-            sentence->gold_rules = best_rules;
-            output_sentence(*sentence);
         }
     } else {
         scorer.is_cost_augmented_ = true;

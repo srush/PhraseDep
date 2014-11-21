@@ -31,7 +31,7 @@ struct AppliedRule {
     AppliedRule(int i_, int j_, int k_, int h_, int m_, int rule_)
             : i(i_), j(j_), k(k_), h(h_), m(m_), rule(rule_) {}
 
-    bool same(const AppliedRule &other) {
+    bool same(const AppliedRule &other) const{
         return other.i == i &&
                 other.j == j &&
                 other.k == k &&

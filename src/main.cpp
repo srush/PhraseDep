@@ -2,6 +2,7 @@
 #include "features.hpp"
 #include "sentence.hpp"
 #include "dp.hpp"
+#include "oracle.hpp"
 #include "optionparser.h"
 #include <iostream>
 #include <fstream>
@@ -21,19 +22,22 @@ struct Arg: public option::Arg
     static option::ArgStatus Numeric(const option::Option& option, bool msg)
     {
         char* endptr = 0;
-        if (option.arg != 0 && strtol(option.arg, &endptr, 10)) {};
+        if (option.arg != 0 && strtol(option.arg, &endptr, 10)) {}
         if (endptr != option.arg && *endptr == 0)
             return option::ARG_OK;
 
-        if (msg) cerr << "Option '" << option << "' requires a numeric argument\n";
+        if (msg) {
+            cerr << "Option '" << option << "' requires a numeric argument" << endl;
+        }
         return option::ARG_ILLEGAL;
     }
 };
 
-enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX };
+enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH,
+                    MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE };
 const option::Descriptor usage[] =
 {
-    {UNKNOWN, 0,"" , ""    , option::Arg::None, "USAGE: example [options]\n\n"
+    {UNKNOWN, 0,"" , "", option::Arg::None, "USAGE: example [options]\n\n"
      "Options:" },
     {HELP,    0,"" , "help", option::Arg::None, "  --help  \tPrint usage and exit." },
     {GRAMMAR,    0,"g", "grammar", Arg::Required, "  --grammar, -g  \nGrammar file." },
@@ -44,6 +48,7 @@ const option::Descriptor usage[] =
     {TEST,    0,"t", "test", option::Arg::None, "  --test, -m  \n ." },
     {PRUNING,    0,"p", "pruning", Arg::Required, "  --pruning, -p  \n ." },
     {DELEX,    0,"p", "delex", option::Arg::None, "  --delex, -d  \n ." },
+    {ORACLE,    0,"o", "oracle", option::Arg::None, "  --oracle, -o  \n ." },
     {UNKNOWN, 0,"" ,  ""   , option::Arg::None, "\nExamples:\n"
                                                   "  example --unknown -- --this_is_no_option\n"
      "  example -unk --plus -ppp file1 file2\n" },
@@ -77,10 +82,14 @@ int main(int argc, char* argv[])
     vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
     for (int i = 0; i < sentences->size(); ++i) {
         for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
-            (*sentences)[i].int_tags.push_back(grammar->tag_index.fget((*sentences)[i].tags[j]));
-            (*sentences)[i].preterms.push_back(grammar->to_nonterm((*sentences)[i].tags[j]));
-            (*sentences)[i].int_words.push_back(grammar->to_word((*sentences)[i].words[j]));
-            (*sentences)[i].int_deplabels.push_back(grammar->to_deplabel((*sentences)[i].deplabels[j]));
+            (*sentences)[i].int_tags.push_back(
+                grammar->tag_index.fget((*sentences)[i].tags[j]));
+            (*sentences)[i].preterms.push_back(
+                grammar->to_nonterm((*sentences)[i].tags[j]));
+            (*sentences)[i].int_words.push_back(
+                grammar->to_word((*sentences)[i].words[j]));
+            (*sentences)[i].int_deplabels.push_back(
+                grammar->to_deplabel((*sentences)[i].deplabels[j]));
         }
     }
 
@@ -111,13 +120,28 @@ int main(int argc, char* argv[])
             const Sentence *sentence = &(*sentences)[i];
             scorer.set_sentence(sentence);
             vector<AppliedRule> best_rules;
-            cky(sentence->preterms, sentence->words, sentence->deps, *grammar, scorer, &best_rules, true);
+            cky(sentence->preterms, sentence->words, sentence->deps,
+                *grammar, scorer, &best_rules, true);
             cout << endl;
         }
 
         t = clock() - t;
         cerr << "(" << ((float)t)/CLOCKS_PER_SEC << ")" << endl;
+    } else if (options[ORACLE]) {
+        cerr << "ORACLE mode";
+        for (int i = 0; i < sentences->size(); ++i) {
+            Sentence *sentence = &(*sentences)[i];
+            vector<AppliedRule> best_rules;
+            OracleScorer oracle(&sentence->gold_rules);
+            double dp_score =
+                    cky(sentence->preterms, sentence->words, sentence->deps,
+                        *grammar, oracle, &best_rules, false);
+            // cerr << "NUMBER OF RULES: " << best_rules.size()
+            //      << " " << dp_score << " " << sentence->words.size() <<  endl;
 
+            sentence->gold_rules = best_rules;
+            output_sentence(*sentence);
+        }
     } else {
         scorer.is_cost_augmented_ = true;
         cerr << "begin training" << endl;
@@ -211,9 +235,12 @@ int main(int argc, char* argv[])
                 scorer.perceptron_.next_round();
             }
             scorer.perceptron_.finish();
-            cout << "EPOCH: " << epoch << " " << total_score / (float)total << " " << total_score2 / (float)total << endl;
-            scorer.perceptron_.write(string(options[MODEL].arg) + (char)(epoch_char + epoch), false);
-            scorer.perceptron_.write(string(options[MODEL].arg) + (char)(epoch_char + epoch) + ".average", true);
+            cout << "EPOCH: " << epoch << " " << total_score / (float)total
+                 << " " << total_score2 / (float)total << endl;
+            scorer.perceptron_.write(string(options[MODEL].arg)
+                                     + (char)(epoch_char + epoch), false);
+            scorer.perceptron_.write(string(options[MODEL].arg)
+                                     + (char)(epoch_char + epoch) + ".average", true);
         }
 
         // Output model.

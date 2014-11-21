@@ -1,7 +1,36 @@
 #include <fstream>
+#include <iostream>
 #include "sentence.hpp"
 
 using namespace std;
+
+void output_sentence(const Sentence &sentence) {
+    cout << sentence.words.size() << " " << sentence.gold_rules.size() << endl;
+
+    for (int i = 0; i < sentence.words.size(); ++i) {
+        cout << sentence.words[i] << " ";
+    }
+    cout << endl;
+    for (int i = 0; i < sentence.tags.size(); ++i) {
+        cout << sentence.tags[i] << " ";
+    }
+    cout << endl;
+    for (int i = 0; i < sentence.deps.size(); ++i) {
+        cout << sentence.deps[i] << " ";
+    }
+    cout << endl;
+    for (int i = 0; i < sentence.deplabels.size(); ++i) {
+        cout << sentence.deplabels[i] << " ";
+    }
+    cout << endl;
+    for (int i = 0; i < sentence.gold_rules.size(); ++i) {
+        const AppliedRule &rule = sentence.gold_rules[i];
+        cout << rule.i << " " << rule.j << " " << rule.k
+             << " " << rule.h << " " << rule.m << " " << rule.rule << endl;
+    }
+    cout << endl;
+}
+
 
 vector<Sentence> *read_sentence(string file) {
     ifstream in_file;

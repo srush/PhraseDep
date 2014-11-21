@@ -15,7 +15,6 @@ class Double;
 class Triple;
 
 
-
 class Triple {
   public:
     Triple() {}
@@ -96,7 +95,7 @@ FeatureGen(const Grammar *grammar, bool delex);
 bool delex_;
 };
 
-class FeatureScorer {
+class FeatureScorer : public Scorer {
   public:
     FeatureScorer(const Grammar *grammar, bool delex)
             : perceptron_(n_size), feature_gen_(grammar, delex) {}

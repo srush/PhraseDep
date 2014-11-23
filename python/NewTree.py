@@ -1,10 +1,14 @@
 from nltk import Tree
 from copy import deepcopy
+import codecs
 import sys
+
 # http://www.nltk.org/_modules/nltk/treetransforms.html#chomsky_normal_form
 
-HORZMARKOV = 1
-VERTMARKOV = 1
+HORZMARKOV = 0
+VERTMARKOV = 0
+
+LANGUAGE = "eng"
 
 def read_from_ptb(filename):
     ptb_file = open(filename, 'r')
@@ -29,13 +33,240 @@ PUNCTSET = set([".", ",", ":", "``", "''"])
 def remove_labelChar(n, labelChar = '^'):
     # print n
     # print type(n).__name__
-    if isinstance(n, str):
+    r_labelChar = labelChar
+    if isinstance(n, str) or isinstance(n, unicode):
+        if isinstance(n, unicode):
+            r_labelChar = labelChar.encode('utf-8')
         return n[:(n.rfind(labelChar) if n.rfind(labelChar) > 0 else len(n))]
     else:
         return [remove_labelChar(x) for x in n]
 
-# Parent is a string, child_list is a list of string
 def findHead(parent,child_list, labelChar='^'):
+    if LANGUAGE == "eng":
+        return findHeadEnglish(parent,child_list, labelChar)
+    else:
+        r_parent = str(parent)
+        r_child_list = [str(c) for c in child_list]
+        x_parent = remove_labelChar(r_parent, labelChar)
+        x_child_list = remove_labelChar(r_child_list, labelChar)
+        return findHeadChinses(x_parent,x_child_list, labelChar)
+
+def findHeadChinses(parent,child_list, labelChar='^'):
+    # print parent, child_list
+    if len(child_list) == 1:
+        #Unary Rule -> the head must be the only one
+        return 0
+    # Chinese HeadRule : http://stp.lingfil.uu.se/~nivre/research/chn_headrules.txt
+    # @inproceedings{ding2005machine,
+    #     title={Machine translation using probabilistic synchronous dependency insertion grammars},
+    #     author={Ding, Yuan and Palmer, Martha},
+    #     booktitle={Proceedings of the 43rd Annual Meeting on Association for Computational Linguistics},
+    #     pages={541--548},
+    #     year={2005},
+    #     organization={Association for Computational Linguistics}
+    # }
+    # ADJP    r ADJP JJ;r AD NN CS;r
+    if parent == "ADJP":
+        s = set(["ADJP", "JJ"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        s = set(["AD", "NN", "CS"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # ADVP    r ADVP AD;r
+    if parent == "ADVP":
+        s = set(["ADVP", "AD"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # CLP r CLP M;r
+    if parent == "CLP":
+        s = set(["CLP", "M"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # CP  r DEC SP;l ADVP CS;r CP IP;r
+    if parent == "CP":
+        s = set(["DEC", "SP"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        s = set(["ADVP", "CS"])
+        for i in xrange(len(child_list)):
+            if child_list[i] in s:
+                return i
+        s = set(["CP", "IP"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # DNP r DNP DEG;r DEC;r
+    if parent == "DNP":
+        s = set(["DNP", "DEG"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        s = set(["DEC"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # DP  l DP DT;l
+    if parent == "DP":
+        s = set(["DP", "DT"])
+        for i in xrange(len(child_list)):
+            if child_list[i] in s:
+                return i
+        return firstNoPunctChild(child_list)
+    # DVP r DVP DEV;r
+    if parent == "DVP":
+        s = set(["DVP", "DEV"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # FRAG    r VV NR NN;r
+    if parent == "FRAG":
+        s = set(["VV", "NR", "NN"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # INTJ    r INTJ IJ;r
+    if parent == "INTJ":
+        s = set(["INTJ", "IJ"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # IP  r IP VP;r VV;r
+    if parent == "IP":
+        s = set(["IP", "VP"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        s = set(["VV"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # LCP r LCP LC;r
+    if parent == "LCP":
+        s = set(["LCP", "LC"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # LST l LST CD OD;l
+    if parent == "LST":
+        s = set(["LST", "CD", "OD"])
+        for i in xrange(len(child_list)):
+            if child_list[i] in s:
+                return i
+        return firstNoPunctChild(child_list)
+    # NP  r NP NN NT NR QP;r
+    if parent == "NP":
+        s = set(["NP", "NN", "NT", "NR", "QP"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # PP  l PP P;l
+    if parent == "PP":
+        s = set(["PP", "P"])
+        for i in xrange(len(child_list)):
+            if child_list[i] in s:
+                return i
+        return firstNoPunctChild(child_list)
+    # PRN r NP IP VP NT NR NN;r
+    if parent == "PRN":
+        s = set(["NP", "IP", "VP", "NT", "NR", "NN"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # QP  r QP CLP CD OD;r
+    if parent == "QP":
+        s = set(["QP", "CLP", "CD", "OD"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # UCP r
+    if parent == "UCP":
+        return lastNoPunctChild(child_list)
+    # VCD r VCD VV VA VC VE;r
+    if parent == "VCD":
+        s = set(["VCD", "VV", "VA", "VC", "VE"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # VCP r VCP VV VA VC VE;r
+    if parent == "VCP":
+        s = set(["VCP", "VV", "VA", "VC", "VE"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # VNV r VNV VV VA VC VE;r
+    if parent == "VNV":
+        s = set(["VNV", "VV", "VA", "VC", "VE"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # VP  l VP VA VC VE VV BA LB VCD VSB VRD VNV VCP;l
+    if parent == "VP":
+        s = set(["VP", "VA", "VC", "VE", "VV", "BA", "LB", "VCD", "VSB", "VRD", "VNV", "VCP"])
+        for i in xrange(len(child_list)):
+            if child_list[i] in s:
+                return i
+        return firstNoPunctChild(child_list)
+    # VPT r VNV VV VA VC VE;r
+    if parent == "VPT":
+        s = set(["VNV", "VV", "VA", "VC", "VE"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # VRD r VRD VV VA VC VE;r
+    if parent == "VRD":
+        s = set(["VRD", "VV", "VA", "VC", "VE"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # VSB r VSB VV VA VC VE;r
+    if parent == "VSB":
+        s = set(["VSB", "VV", "VA", "VC", "VE"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # WHNP    r WHNP NP NN NT NR QP;r
+    if parent == "WHNP":
+        s = set(["WHNP", "NP", "NN", "NT", "NR", "QP"])
+        for i in reversed(xrange(len(child_list))):
+            if child_list[i] in s:
+                return i
+        return lastNoPunctChild(child_list)
+    # WHPP    l WHPP PP P;l
+    if parent == "WHPP":
+        s = set(["WHPP", "PP", "P"])
+        for i in xrange(len(child_list)):
+            if child_list[i] in s:
+                return i
+        return firstNoPunctChild(child_list)
+    return firstNoPunctChild(child_list)
+
+# Parent is a string, child_list is a list of string
+def findHeadEnglish(parent,child_list, labelChar='^'):
     r_parent = remove_labelChar(parent, labelChar)
     r_child_list = remove_labelChar(child_list, labelChar)
     #print r_child_list
@@ -353,7 +584,7 @@ def lexLabel(tree, labelChar="^"):
         st = tree[pos]
         # print st
         # print type(st).__name__
-        if isinstance(st, str):
+        if isinstance(st, str) or isinstance(st, unicode):
             continue
         else:
             # print "*" + str(st)
@@ -367,7 +598,7 @@ def lexLabel(tree, labelChar="^"):
                 st.set_label(st.label() + labelChar + findIndex(index))
 
     # for t in tree.subtrees():
-    #     if isinstance(t, str):
+    #     if isinstance(t, str) or isinstance(n, unicode):
     #         continue
     #     else:
     #         t.set_label(t.label() + labelChar + getLexLabelNT(t))
@@ -376,7 +607,7 @@ def lexLabel(tree, labelChar="^"):
 # return a string representing a int as index
 # def getLexLabelNT(node, labelChar='^'):
 #     # print "we are at " + str(node)
-#     if isinstance(node, str):
+#     if isinstance(node, str) or isinstance(n, unicode):
 #         return findIndex(node, labelChar)
 #     if isinstance(node,Tree):
 #         if node.height() == 2:
@@ -388,8 +619,11 @@ def lexLabel(tree, labelChar="^"):
 
 # e.g. for "word^3" return '3'
 def findIndex(s, labelChar='^'):
-    if isinstance(s, str):
-        return s[s.rfind(labelChar)+1:]
+    r_labelChar = labelChar
+    if isinstance(s, str) or isinstance(s, unicode):
+        if isinstance(s, unicode):
+            r_labelChar = r_labelChar.encode('utf-8')
+        return s[s.rfind(r_labelChar)+1:]
     else:
         m = s.label()
         return m[m.rfind(labelChar)+1:]
@@ -411,9 +645,12 @@ def getParentDic(lexTree, labelChar='^'):
     for pos in lt.treepositions(order='preorder'):
         # print pos
         nt = lt[pos]
+        #print unicode(nt)
         if isinstance(nt, Tree) and nt.height() != 2 and len(nt) > 1:
             ind_p = findIndex(nt.label())
             phrase_label = remove_labelChar(nt.label())
+            #print nt.label()
+            #print phrase_label
             head_label = '*'
             for c in nt:
                 ind_c = findIndex(c.label() if isinstance(c, Tree) else c)
@@ -646,7 +883,7 @@ def get_binarize_lex(otree, labelChar='^'):
     for pos in work_tree.treepositions(order='postorder'):
         # print pos
         t = work_tree[pos]
-        if isinstance(t, str):
+        if isinstance(t, str) or isinstance(t, unicode):
             continue
         else:
             if len(t) == 1:
@@ -660,14 +897,14 @@ def get_binarize_lex(otree, labelChar='^'):
                     t.set_label(t.label() + labelChar + x_ind)
 
     # for t in work_tree.subtrees():
-    #     if isinstance(t, str):
+    #     if isinstance(t, str) or isinstance(n, unicode):
     #         continue
     #     else:
     #         t.set_label(t.label() + labelChar + find_lex_head_bin(t, parent_dic))
     return work_tree
 
 # def find_lex_head_bin(nt, parent_dic, labelChar='^'):
-#     if isinstance(nt, str):
+#     if isinstance(nt, str) or isinstance(n, unicode):
 #         return findIndex(nt)
 #     if isinstance(nt, Tree):
 #         if nt.height() == 2:
@@ -689,7 +926,7 @@ def get_binarize_lex(otree, labelChar='^'):
 def generate_rules(lex_bin_tree):
     rule_set = set([])
     for st in lex_bin_tree.subtrees():
-        if isinstance(st, str):
+        if isinstance(st, str) or isinstance(st, unicode):
             # these are leaves, just skip
             continue
         if isinstance(st, Tree):
@@ -733,12 +970,12 @@ def get_span_info(nt, rule_to_ind_dict):
 
     # First, go all the way down to the left to see the left boundary
     pointer = nt
-    while not isinstance(pointer,str):
+    while not (isinstance(pointer,str) or isinstance(pointer, unicode)):
         pointer = pointer[0]
     span_left = str(int(findIndex(pointer)) - 1)
     # All the way right to find the right boundary
     pointer = nt
-    while not isinstance(pointer,str):
+    while not (isinstance(pointer,str) or isinstance(pointer, unicode)):
         if len(pointer) > 1:
             pointer = pointer[1]
         else:
@@ -746,7 +983,7 @@ def get_span_info(nt, rule_to_ind_dict):
             pointer = pointer[0]
     span_right = str(int(findIndex(pointer)) - 1)
     pointer = nt[0]
-    while not isinstance(pointer,str):
+    while not (isinstance(pointer,str) or isinstance(pointer, unicode)):
         if len(pointer) > 1:
             pointer = pointer[1]
         else:
@@ -767,6 +1004,7 @@ def get_span_info(nt, rule_to_ind_dict):
 #################################################################
 
 def demo():
+
     """
     A demonstration showing how each tree transform can be used.
     """
@@ -792,13 +1030,20 @@ def demo():
   (VP (AUX do) (NP (NP (RB little)) (ADJP (RB right))))
   (. .))"""
 
-    sentence = """(TOP (S (NP (NP (JJ Influential) (NNS members)) (PP (IN of) (NP (DT the) (NNP House) (NNP Ways) (CC and) (NNP Means) (NNP Committee)))) (VP (VBD introduced) (NP (NP (NN legislation)) (SBAR (WHNP (WDT that)) (S (VP (MD would) (VP (VB restrict) (SBAR (WHADVP (WRB how)) (S (NP (DT the) (JJ new) (NN savings-and-loan) (NN bailout) (NN agency)) (VP (MD can) (VP (VB raise) (NP (NN capital)))))) (, ,) (S (VP (VBG creating) (NP (NP (DT another) (JJ potential) (NN obstacle)) (PP (TO to) (NP (NP (NP (DT the) (NN government) (POS 's)) (NN sale)) (PP (IN of) (NP (JJ sick) (NNS thrifts)))))))))))))) (. .)))"""
+    #sentence = """(TOP (S (NP (NP (JJ Influential) (NNS members)) (PP (IN of) (NP (DT the) (NNP House) (NNP Ways) (CC and) (NNP Means) (NNP Committee)))) (VP (VBD introduced) (NP (NP (NN legislation)) (SBAR (WHNP (WDT that)) (S (VP (MD would) (VP (VB restrict) (SBAR (WHADVP (WRB how)) (S (NP (DT the) (JJ new) (NN savings-and-loan) (NN bailout) (NN agency)) (VP (MD can) (VP (VB raise) (NP (NN capital)))))) (, ,) (S (VP (VBG creating) (NP (NP (DT another) (JJ potential) (NN obstacle)) (PP (TO to) (NP (NP (NP (DT the) (NN government) (POS 's)) (NN sale)) (PP (IN of) (NP (JJ sick) (NNS thrifts)))))))))))))) (. .)))"""
     #sentence = """(S (PP (IN In) (NP (NP (DT an) (NNP Oct.) (CD 19) (NN review)) (PP (IN of) (NP (`` ``) (NP (DT The) (NN Misanthrope)) ('' '') (PP (IN at) (NP (NP (NNP Chicago) (POS 's)) (NNP Goodman) (NNP Theatre))))) (PRN (-LRB- -LRB-) (`` ``) (S (NP (VBN Revitalized) (NNS Classics)) (VP (VBP Take) (NP (DT the) (NN Stage)) (PP (IN in) (NP (NNP Windy) (NNP City))))) (, ,) ('' '') (NP (NN Leisure) (CC &) (NNS Arts)) (-RRB- -RRB-)))) (, ,) (NP (NP (NP (DT the) (NN role)) (PP (IN of) (NP (NNP Celimene)))) (, ,) (VP (VBN played) (PP (IN by) (NP (NNP Kim) (NNP Cattrall)))) (, ,)) (VP (VBD was) (VP (ADVP (RB mistakenly)) (VBN attributed) (PP (TO to) (NP (NNP Christina) (NNP Haag))))) (. .))"""
     #sentence = """(S (NP (NNP Ms.) (NNP Haag)) (VP (VBZ plays) (NP (NNP Elianti))) (. .))"""
     #sentence = """(PRN (S (VP (VB See))))"""
     # sentence = """(M (S (A (B (B1 b1) (B2 b2) (B3 (BB1 bb1) (BB2 bb2) (BB3 bb3) ) (B4 b4)) (C (C1 c1) (C2 c2)  ) (D d) (E e) (F f) (G g)) (W w)))"""
-    t = tree.Tree.fromstring(sentence, remove_empty_top_bracketing=False)
+    
+    chinese_sample = open('chinese_sample','r')
+    for x in chinese_sample:
+        sentence = x
+        break
+    sentence = sentence.decode('utf-8')
 
+    t = tree.Tree.fromstring(sentence, remove_empty_top_bracketing=False)
+    print flat_print(t)
     # collapse subtrees with only one child
     lTree = deepcopy(t)
     lexLabel(lTree)
@@ -827,7 +1072,7 @@ def demo():
     sentence2 = original.pprint()
     print(t.pprint())
     print(sentence2)
-    print("Sentences the same? ", str(sentence2) == str(t.pprint()))
+    #print("Sentences the same? ", str(sentence2) == str(t.pprint()))
 
     # draw_trees(t, collapsedTree, cnfTree, parentTree, original)
     #print t, collapsedTree, cnfTree, parentTree, original
@@ -835,13 +1080,13 @@ def demo():
 
     collapse_unary(t)
     t = get_binarize_lex(t)
-    print "*" + str(t)
+    print "*" + unicode(t)
     rule_set = generate_rules(t)
     for x in rule_set:
         print x
 
     chomsky_normal_form(collapsedTree, horzMarkov=HORZMARKOV, vertMarkov=VERTMARKOV)
-    print "**" + str(collapsedTree)
+    print "**" + unicode(collapsedTree)
 
 if __name__ == '__main__':
     demo()

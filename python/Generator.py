@@ -14,6 +14,7 @@ parser.add_argument('--rulef', type=str, metavar='', help='')
 parser.add_argument('--hm', type=int, metavar='', help='')
 parser.add_argument('--vm', type=int, metavar='', help='')
 parser.add_argument('--unary_collapse', action='store_true', help='')
+parser.add_argument('--language', type=str, metavar='', help='')
 
 # parser.add_argument('--rulef', required=False, type=str, metavar='', help='')
 # parser.add_argument('--rulef', action='store_true', help='')
@@ -21,6 +22,7 @@ parser.add_argument('--unary_collapse', action='store_true', help='')
 A = parser.parse_args()
 
 unary_collapse = A.unary_collapse
+language_setting = A.language
 
 def generate_rule(treebank_file):
     # if you use unicode here, there is a bug...
@@ -28,6 +30,8 @@ def generate_rule(treebank_file):
     full_rule_set = set([])
     s_ind = 0
     for sentence in f:
+        if language_setting == "chn":
+            sentence = sentence.decode('utf-8')
         s_ind += 1
         if s_ind % 10 == 0:
             sys.stderr.write("Sentence:\t" + str(s_ind) + "\n")
@@ -63,6 +67,8 @@ def generate_part(treebank_file, rule_file):
     f = open(treebank_file, "r")
     s_ind = 0
     for sentence in f:
+        if language_setting == "chn":
+            sentence = sentence.decode('utf-8')
         s_ind += 1
         if s_ind % 10 == 0:
             sys.stderr.write(str(s_ind) + "\n")
@@ -73,7 +79,7 @@ def generate_part(treebank_file, rule_file):
         bt = NewTree.get_binarize_lex(t)
         for pos in bt.treepositions(order='postorder'):
             nt = bt[pos]
-            if isinstance(nt, str):
+            if isinstance(nt, str) or isinstance(nt, unicode):
                 continue
             elif nt.height() == 2:
                 continue
@@ -132,6 +138,8 @@ def read_corpus(filename):
 def generate_from_conll(inputf):
     corpus = read_corpus(inputf)
     for sentence in corpus:
+        if language_setting == "chn":
+            sentence = sentence.decode('utf-8')
         word_list = [line[1] for line in sentence]
         pos_list = [line[4] for line in sentence]
         parent_list = [str(int(line[6])-1) for line in sentence]
@@ -147,6 +155,8 @@ def generate_conll(inputf):
     f = open(inputf, "r")
     s_ind = 0
     for sentence in f:
+        if language_setting == "chn":
+            sentence = sentence.decode('utf-8')
         s_ind += 1
         if s_ind % 10 == 0:
             sys.stderr.write("Sentence:\t" + str(s_ind) + "\n")
@@ -166,6 +176,11 @@ if __name__ == '__main__':
 
     NewTree.HORZMARKOV = A.hm
     NewTree.VERTMARKOV = A.vm
+
+    if A.language == "chn":
+        NewTree.LANGUAGE = "chn"
+    else:
+        NewTree.LANGUAGE = "eng"
 
     if A.gr_or_gp == 0:
         generate_rule(A.inputf)

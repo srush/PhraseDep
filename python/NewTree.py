@@ -1003,6 +1003,20 @@ def get_span_info(nt, rule_to_ind_dict):
 # Demonstration
 #################################################################
 
+def dep():
+    for l in sys.stdin:
+        t = Tree.fromstring(sentence)
+        g = generateDep(t)
+        for d in g:
+            index = int(d[0])
+            word = d[1]
+            head = int(d[3])
+            if head == 0:
+                print "label(%s-%d, %s-%d)"%("ROOT", -1, word, index-1)
+            else:
+                print "label(%s-%d, %s-%d)"%(g[head-1][1], head-1, word, index-1)
+        print
+
 def demo():
 
     """
@@ -1089,5 +1103,6 @@ def demo():
     print "**" + unicode(collapsedTree)
 
 if __name__ == '__main__':
-    demo()
+    # demo()
+    dep()
     #read_from_ptb('/media/lingpenk/Data/PhraseDep/treebank/dev.1.notraces')

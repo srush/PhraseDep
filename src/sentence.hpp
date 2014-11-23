@@ -22,5 +22,6 @@ struct Sentence {
 };
 
 vector<Sentence> *read_sentence(string file);
+void output_sentence(const Sentence &sentence);
 
 #endif  // SENTENCE_H_

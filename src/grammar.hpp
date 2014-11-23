@@ -26,6 +26,8 @@ struct BinaryRule {
     int dir;
 };
 
+
+
 struct AppliedRule {
     AppliedRule() {}
     AppliedRule(int i_, int j_, int k_, int h_, int m_, int rule_)
@@ -48,6 +50,11 @@ struct AppliedRule {
     int rule;
 };
 
+
+class Scorer {
+  public:
+    virtual double score(const AppliedRule &rule) const = 0;
+};
 
 struct Index {
     Index() : cur_index(0) {}

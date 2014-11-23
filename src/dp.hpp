@@ -7,6 +7,6 @@ double cky(const vector<int> &preterms,
            const vector<string> &words,
            const vector<int> &deps,
            const Grammar &grammar,
-           const FeatureScorer &scorer,
+           const Scorer &scorer,
            vector<AppliedRule> *best_rules,
            bool output);

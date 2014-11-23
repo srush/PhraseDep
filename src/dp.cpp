@@ -109,7 +109,8 @@ const int kLayers = 3;
 
 class Chart {
   public:
-    Chart (int n, int N, const vector<string> *words) : n_(n), N_(N), words_(words) {
+    Chart (int n, int N, const vector<string> *words)
+            : n_(n), N_(N), words_(words) {
         int total_size = n * n * n * kLayers;
         bps_.resize(total_size);
         item_score_.resize(total_size);
@@ -167,7 +168,8 @@ class Chart {
 
     }
 
-    void update(const Item &item, double score, const Item &item1, const AppliedRule &rule,
+    void update(const Item &item, double score,
+                const Item &item1, const AppliedRule &rule,
                 double score1) {
 
         assert(has_item(item1));
@@ -201,7 +203,8 @@ class Chart {
         return item_score_[index][item.nt];
     }
 
-    void update(const Item &item, double score, const Item &item1, const Item &item2,
+    void update(const Item &item, double score,
+                const Item &item1, const Item &item2,
                 const AppliedRule &rule, double score1, double score2) {
 
         int index = index_item(item);
@@ -236,7 +239,10 @@ class Chart {
         bool success = true;
         if (bp.terminal) {
             assert(item.i == item.k);
-            if (item.i != item.k) return false;
+            if (item.i != item.k) {
+                cerr << "FAIL" << endl;
+                return false;
+            }
             NonTerminal nt = grammar.non_terminals_[item.nt];
             if (output)
                 out << " (" << grammar.non_terminals_[item.nt].main
@@ -303,7 +309,8 @@ class Chart {
 
 
 void complete(int i, int k, int h, const vector<int> &preterms,
-              const Grammar &grammar, const FeatureScorer &scorer,  Chart *chart) {
+              const Grammar &grammar, const Scorer &scorer,
+              Chart *chart) {
     // Fill in the unary rules.
     for (int index = 0; index < chart->span_nts[i][k][h][0].size(); ++index) {
         int Y = chart->span_nts[i][k][h][0][index];
@@ -315,7 +322,9 @@ void complete(int i, int k, int h, const vector<int> &preterms,
         double item_score = chart->score(item);
 
 
-        for (int index2 = 0; index2 < grammar.unary_rules_by_first[Y].size(); ++index2) {
+        for (int index2 = 0;
+             index2 < grammar.unary_rules_by_first[Y].size();
+             ++index2) {
             int X = grammar.unary_rules_by_first[Y][index2].nt_X;
             int r = grammar.unary_rules_by_first[Y][index2].rule_num;
             if (grammar.pruning && !grammar.rule_head_tags[r][preterms[h]])
@@ -331,12 +340,16 @@ void complete(int i, int k, int h, const vector<int> &preterms,
         }
     }
 
-    for (int index = 0; index < chart->span_nts[i][k][h][1].size(); ++index) {
+    for (int index = 0;
+         index < chart->span_nts[i][k][h][1].size();
+         ++index) {
         int Y = chart->span_nts[i][k][h][1][index];
         Item item(i, k, h, Y, 1);
         double item_score = chart->score(item);
 
-        for (int index2 = 0; index2 < grammar.unary_rules_by_first[Y].size(); ++index2) {
+        for (int index2 = 0;
+             index2 < grammar.unary_rules_by_first[Y].size();
+             ++index2) {
             int X = grammar.unary_rules_by_first[Y][index2].nt_X;
             int r = grammar.unary_rules_by_first[Y][index2].rule_num;
             if (grammar.pruning && !grammar.rule_head_tags[r][preterms[h]])
@@ -353,7 +366,7 @@ double cky(const vector<int> &preterms,
            const vector<string> &words,
            const vector<int> &deps,
            const Grammar &grammar,
-           const FeatureScorer &scorer,
+           const Scorer &scorer,
            vector<AppliedRule> *best_rules,
            bool output) {
     int n = preterms.size();
@@ -406,7 +419,8 @@ double cky(const vector<int> &preterms,
                             int r = rule.rule_num;
                             int X = rule.nt_X;
                             int Z = rule.nt_Z;
-                            if (grammar.pruning && !grammar.rule_head_tags[rule.rule_num][preterms[h]])
+                            if (grammar.pruning &&
+                                !grammar.rule_head_tags[rule.rule_num][preterms[h]])
                                 continue;
 
                             if (have_nt[Z]) {

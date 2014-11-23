@@ -9,7 +9,9 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{tikz}
+
 \usepackage{tikz-qtree}
+\usepackage{tikz-dependency}
 \usepackage{proof}
 \usepackage{fullpage}
 \usepackage{todonotes}
@@ -446,6 +448,13 @@ Because of these issues is not obvious how to directly perform this conversion w
   \Tree [ .X [ .X $x_1$ ]  [ .X $x_2$ ] ]
   \hspace{0.2cm}
   \Tree [ .X [ .X $x_1$ ]  [ .X $x_2$ ] ]
+
+  \begin{dependency}[text only label]
+    \begin{deptext}
+      My \& dog \& also \& likes \& eating \& sausage \\
+    \end{deptext}
+      \depedge{5}{6}{}
+  \end{dependency}
 
   \caption{While an LCFG parse determines a unique dependency parse, the inverse problem is non-deterministic. The figure show several LCFG parse structures that all correspond to the dependency structure shown. }
 \end{figure}

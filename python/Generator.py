@@ -6,6 +6,7 @@ import argparse
 import os
 import re
 import sys
+import codecs
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('gr_or_gp', type=int, metavar='',help='Generate Rules -- 0, Generate Parts -- 1, generate from conll -- 2')
@@ -14,6 +15,10 @@ parser.add_argument('--rulef', type=str, metavar='', help='')
 parser.add_argument('--hm', type=int, metavar='', help='')
 parser.add_argument('--vm', type=int, metavar='', help='')
 parser.add_argument('--unary_collapse', action='store_true', help='')
+parser.add_argument('--language', type=str, metavar='', help='')
+
+parser.add_argument('--dep_from_conll', action='store_true', help='')
+parser.add_argument('--conll_dep_file', type=str, metavar='', help='')
 
 # parser.add_argument('--rulef', required=False, type=str, metavar='', help='')
 # parser.add_argument('--rulef', action='store_true', help='')
@@ -21,6 +26,8 @@ parser.add_argument('--unary_collapse', action='store_true', help='')
 A = parser.parse_args()
 
 unary_collapse = A.unary_collapse
+language_setting = A.language
+dep_from_conll = A.dep_from_conll
 
 def generate_rule(treebank_file):
     # if you use unicode here, there is a bug...
@@ -28,6 +35,8 @@ def generate_rule(treebank_file):
     full_rule_set = set([])
     s_ind = 0
     for sentence in f:
+        if language_setting == "chn":
+            sentence = sentence.decode('utf-8')
         s_ind += 1
         if s_ind % 10 == 0:
             sys.stderr.write("Sentence:\t" + str(s_ind) + "\n")
@@ -61,8 +70,13 @@ def generate_part(treebank_file, rule_file):
     # This generate the gold parts file for the use of C++
     rule_dic = read_rule_file(rule_file)
     f = open(treebank_file, "r")
-    s_ind = 0
+    s_ind = -1
+    corpus = []
+    if dep_from_conll:
+        corpus = read_corpus(A.conll_dep_file)
     for sentence in f:
+        if language_setting == "chn":
+            sentence = sentence.decode('utf-8')
         s_ind += 1
         if s_ind % 10 == 0:
             sys.stderr.write(str(s_ind) + "\n")
@@ -73,7 +87,7 @@ def generate_part(treebank_file, rule_file):
         bt = NewTree.get_binarize_lex(t)
         for pos in bt.treepositions(order='postorder'):
             nt = bt[pos]
-            if isinstance(nt, str):
+            if isinstance(nt, str) or isinstance(nt, unicode):
                 continue
             elif nt.height() == 2:
                 continue
@@ -85,20 +99,31 @@ def generate_part(treebank_file, rule_file):
         work_tree = deepcopy(t)
         NewTree.lexLabel(work_tree)
         parent_dic, dep_label_set = NewTree.getParentDic(work_tree)
-
         print len(t.leaves()), len(parts)
         print " ".join(t.leaves())
-        print " ".join([x.label() for x in t.subtrees(lambda t: t.height() == 2)])
-        parent_list = []
-        label_list = []
-        for ind in xrange(1, (len(t.leaves()) + 1)):
-            p = str(int(parent_dic[str(ind)]) - 1)
-            parent_list.append(p)
-        print " ".join(parent_list)
-        for ind in xrange(1, (len(t.leaves()) + 1)):
-            l = dep_label_set[str(ind)]
-            label_list.append(l)
-        print " ".join(label_list)
+        if not dep_from_conll:
+            print " ".join([x.label() for x in t.subtrees(lambda t: t.height() == 2)])
+            parent_list = []
+            label_list = []
+            for ind in xrange(1, (len(t.leaves()) + 1)):
+                p = str(int(parent_dic[str(ind)]) - 1)
+                parent_list.append(p)
+            print " ".join(parent_list)
+            for ind in xrange(1, (len(t.leaves()) + 1)):
+                l = dep_label_set[str(ind)]
+                label_list.append(l)
+            print " ".join(label_list)
+        else:
+            dep_sentence = corpus[s_ind]
+            if language_setting == "chn":
+                dep_sentence = dep_sentence.decode('utf-8')
+            pos_list = [line[4] for line in dep_sentence]
+            parent_list = [str(int(line[6])-1) for line in dep_sentence]
+            label_list = [line[7] for line in dep_sentence]
+            # print " ".join(word_list)
+            print " ".join(pos_list)
+            print " ".join(parent_list)
+            print " ".join(label_list)
         for p in parts:
             print " ".join(p)
     f.close()
@@ -118,12 +143,12 @@ def read_corpus(filename):
     corpus = []
     sentence = []
     for line in f:
-        if line.strip() == "":
+        if line[:-1] == "":
             corpus.append(sentence)
             sentence = []
             continue
         else:
-            line = line.strip()
+            line = line[:-1]
             cline = line.split("\t")
             sentence.append(cline)
     f.close()
@@ -132,6 +157,8 @@ def read_corpus(filename):
 def generate_from_conll(inputf):
     corpus = read_corpus(inputf)
     for sentence in corpus:
+        if language_setting == "chn":
+            sentence = sentence.decode('utf-8')
         word_list = [line[1] for line in sentence]
         pos_list = [line[4] for line in sentence]
         parent_list = [str(int(line[6])-1) for line in sentence]
@@ -147,6 +174,8 @@ def generate_conll(inputf):
     f = open(inputf, "r")
     s_ind = 0
     for sentence in f:
+        if language_setting == "chn":
+            sentence = sentence.decode('utf-8')
         s_ind += 1
         if s_ind % 10 == 0:
             sys.stderr.write("Sentence:\t" + str(s_ind) + "\n")
@@ -166,6 +195,13 @@ if __name__ == '__main__':
 
     NewTree.HORZMARKOV = A.hm
     NewTree.VERTMARKOV = A.vm
+
+    if A.language == "chn":
+        NewTree.LANGUAGE = "chn"
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout)
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr)
+    else:
+        NewTree.LANGUAGE = "eng"
 
     if A.gr_or_gp == 0:
         generate_rule(A.inputf)

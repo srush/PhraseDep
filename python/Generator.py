@@ -6,6 +6,7 @@ import argparse
 import os
 import re
 import sys
+import codecs
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('gr_or_gp', type=int, metavar='',help='Generate Rules -- 0, Generate Parts -- 1, generate from conll -- 2')
@@ -179,6 +180,8 @@ if __name__ == '__main__':
 
     if A.language == "chn":
         NewTree.LANGUAGE = "chn"
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout)
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr)
     else:
         NewTree.LANGUAGE = "eng"
 

@@ -17,6 +17,9 @@ parser.add_argument('--vm', type=int, metavar='', help='')
 parser.add_argument('--unary_collapse', action='store_true', help='')
 parser.add_argument('--language', type=str, metavar='', help='')
 
+parser.add_argument('--dep_from_conll', action='store_true', help='')
+parser.add_argument('--conll_dep_file', type=str, metavar='', help='')
+
 # parser.add_argument('--rulef', required=False, type=str, metavar='', help='')
 # parser.add_argument('--rulef', action='store_true', help='')
 
@@ -24,6 +27,7 @@ A = parser.parse_args()
 
 unary_collapse = A.unary_collapse
 language_setting = A.language
+dep_from_conll = A.dep_from_conll
 
 def generate_rule(treebank_file):
     # if you use unicode here, there is a bug...
@@ -66,7 +70,10 @@ def generate_part(treebank_file, rule_file):
     # This generate the gold parts file for the use of C++
     rule_dic = read_rule_file(rule_file)
     f = open(treebank_file, "r")
-    s_ind = 0
+    s_ind = -1
+    corpus = []
+    if dep_from_conll:
+        corpus = read_corpus(A.conll_dep_file)
     for sentence in f:
         if language_setting == "chn":
             sentence = sentence.decode('utf-8')
@@ -92,20 +99,31 @@ def generate_part(treebank_file, rule_file):
         work_tree = deepcopy(t)
         NewTree.lexLabel(work_tree)
         parent_dic, dep_label_set = NewTree.getParentDic(work_tree)
-
         print len(t.leaves()), len(parts)
         print " ".join(t.leaves())
-        print " ".join([x.label() for x in t.subtrees(lambda t: t.height() == 2)])
-        parent_list = []
-        label_list = []
-        for ind in xrange(1, (len(t.leaves()) + 1)):
-            p = str(int(parent_dic[str(ind)]) - 1)
-            parent_list.append(p)
-        print " ".join(parent_list)
-        for ind in xrange(1, (len(t.leaves()) + 1)):
-            l = dep_label_set[str(ind)]
-            label_list.append(l)
-        print " ".join(label_list)
+        if not dep_from_conll:
+            print " ".join([x.label() for x in t.subtrees(lambda t: t.height() == 2)])
+            parent_list = []
+            label_list = []
+            for ind in xrange(1, (len(t.leaves()) + 1)):
+                p = str(int(parent_dic[str(ind)]) - 1)
+                parent_list.append(p)
+            print " ".join(parent_list)
+            for ind in xrange(1, (len(t.leaves()) + 1)):
+                l = dep_label_set[str(ind)]
+                label_list.append(l)
+            print " ".join(label_list)
+        else:
+            dep_sentence = corpus[s_ind]
+            if language_setting == "chn":
+                dep_sentence = dep_sentence.decode('utf-8')
+            pos_list = [line[4] for line in dep_sentence]
+            parent_list = [str(int(line[6])-1) for line in dep_sentence]
+            label_list = [line[7] for line in dep_sentence]
+            # print " ".join(word_list)
+            print " ".join(pos_list)
+            print " ".join(parent_list)
+            print " ".join(label_list)
         for p in parts:
             print " ".join(p)
     f.close()
@@ -125,12 +143,12 @@ def read_corpus(filename):
     corpus = []
     sentence = []
     for line in f:
-        if line.strip() == "":
+        if line[:-1] == "":
             corpus.append(sentence)
             sentence = []
             continue
         else:
-            line = line.strip()
+            line = line[:-1]
             cline = line.split("\t")
             sentence.append(cline)
     f.close()

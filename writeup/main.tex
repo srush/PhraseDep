@@ -63,6 +63,8 @@
 \newcommand{\Root}{root}
 
 
+\newcommand{\TagFN}[1]{\mathrm{tag}({#1})}
+\newcommand{\WordFN}[1]{\mathrm{word}({#1})}
 \newcommand{\Reals}{\mathbb{R}}
 \setlength\titlebox{6.5cm}    % Expanding the titlebox
 
@@ -176,38 +178,91 @@
 \section{Introduction}
 
 
-There has been a surge of recent work on dep parsing
+% There has been a surge of recent work on dep parsing
 
-\cite{}
-\cite{}
-\cite{}
+Over the last two decades there have been two dominant grammatical
+frameworks for statistical syntactic parsing: phrase-structure and
+dependency parsing \cite{}. The two frameworks often offer a practical
+trade-off. Phrase-structure parsing is very accurate and provides a full
+context-free grammatical representation; while dependency parsing is
+much faster, both asymptotically and empirically, while still
+predicting much of the important structural relationships in a
+sentence.
 
-This work has brought the accuracy of dependency parsing much closer to the level
-of powerful constituency parser. For instance the parser of \cite{}
-score \% on dependency UAS whereas the has UAS etc.
+Since statistical phrase-structure parsers often use an internal
+lexicalized representation, it is possible to directly compare the
+performance of the two models in terms of dependency accuracy.
+\cite{kong2014empirical} run this comparison across a wide-range of
+popular freely available parsing models and find that while this
+trade-off is still true, the gap in accuracy has significantly
+narrowed over the last several years. State-of-art dependency parsers
+such as TurboParser \cite{}, and \cite, perform only slightly worse in
+terms of accuracy than large-scale reranking dependency parsers, while
+still maintaining efficient run-time.
+
+Given these improvements, we ask the natural reverse question. How
+much of the phrase-structure is recoverable from the dependency
+representation?  While the transformation from phrase-structure to
+dependencies is deterministic, the inverse is not (see
+Figure~\ref{}). Can we learn to invert this process and recover the
+richer phrase-structure trees from the dependency representation?
+
+\todo[inline]{name?}
+
+To approach this question we present a very simple statistical parser,
+\textsc{Miniparser}.  The parser is a complete exact
+lexicalized parser; except that unlike standard parsers, it takes both
+a sentence and a dependency tree as input. Using this non-standard setup
+has several advantages:
+
+\begin{itemize}
+\item The parser is asymptotically three-orders of magnitude faster than
+standard phrase-structure parsers and practically as efficient as the fastest
+high-accuracy dependency parsers.
+
+\item Despite being constrained to pre-selected dependency decisions,
+the parser is comparably accurate to non-reranked phrase-structure parsers.
+
+\item The framework can be used...
+
+% \cite{}
+% \cite{}
+% \cite{}
+
+\end{itemize}
 
 
-In this paper we ask a simple question: can we invert this process?
-Given the raw skeleton of a dependency parse, is it plausible to obtain
-an accurate phrase-structure parse for a sentence.
 
-To approach this question we build a very simple parser,
-that takes in the fully specified
+
+
+
+% In this paper we ask a simple question: can we invert this process?
+% Given the raw skeleton of a dependency parse, is it plausible to obtain
+% an accurate phrase-structure parse for a sentence.
+
+
+
+
+
+% This work has brought the accuracy of dependency parsing much closer to the level
+% of powerful phrase- parser. For instance the parser of \cite{}
+% score \% on dependency UAS whereas the has UAS etc.
+
 
 
 There has been a series of work that looks at the relationship
-between dependency and constituency parsing. \cite{carraers}
+between dependency and constituency parsing. \cite{carreras2008tag}
 build a powerful dependency parsing-like model that predicts
-adjunctions of the elementary TAG spines. \cite{rush} use
+adjunctions of the elementary TAG spines. \cite{rush2010dual} use
 dual decomposition to combine a powerful dependency parser with
 a simple constituency model.
 
 There have also been several papers that take the idea of
 shift-reduce parsing, popular from dependency parsing, and apply
- it constituency parsing. \cite{zpar} produces a state-of-the-art shift-reduce
-system. \cite{stanford}
+ it constituency parsing. \cite{zhu2013fast} produces a state-of-the-art shift-reduce
+system.
 
-Our work is differs in that it takes on a much more stripped down problem.
+Our work is differs in that it look at a more stripped-down problem.
 We give up entirely on determining the structure of the tree itself and only
 look at  producing the nonterminals of the tree.
 
@@ -440,23 +495,23 @@ Because of these issues is not obvious how to directly perform this conversion w
 
 \begin{figure}
   \centering
-
-  \Tree [ .X [ .X $x_1$ ]  [ .X $x_2$ ] ]
-  \hspace{0.2cm}
-  \Tree [ .X [ .X $x_1$ ]  [ .X $x_2$ ] ]
-  \hspace{0.2cm}
-  \Tree [ .X [ .X $x_1$ ]  [ .X $x_2$ ] ]
-  \hspace{0.2cm}
-  \Tree [ .X [ .X $x_1$ ]  [ .X $x_2$ ] ]
-
-  \begin{dependency}[text only label]
-    \begin{deptext}
-      My \& dog \& also \& likes \& eating \& sausage \\
+  \begin{dependency}[theme=simple]
+    \begin{deptext}[column sep=0.7cm]
+      I$_1$ \& saw$_2$ \& the$_3$ \& man$_4$ \\
     \end{deptext}
-      \depedge{5}{6}{}
+    \deproot{2}{ROOT}
+      \depedge{2}{1}{}
+      \depedge{3}{4}{}
+      \depedge{2}{4}{}
   \end{dependency}
 
-  \caption{While an LCFG parse determines a unique dependency parse, the inverse problem is non-deterministic. The figure show several LCFG parse structures that all correspond to the dependency structure shown. }
+  \scalebox{0.7}{
+    \Tree [ .X(2) [ .X(1) [ .N I$_1$ ] ]  [ .V saw$_2$ ] [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
+    \Tree [ .X(2)  [ .N I$_1$ ] [ .X(2)  [ .V saw$_2$ ] [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ] ]
+    \Tree [ .X(2) [ .X(1) [ .N I$_1$ ]   [ .V saw$_2$ ] ]  [ .X [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
+  }
+
+  \caption{While an LCFG parse determines a unique dependency parse, the inverse problem is non-deterministic. The figure, adapted from \cite{collins1999statistical}, shows several LCFG parse structures that all correspond to the dependency structure shown. }
 \end{figure}
 
 
@@ -721,34 +776,49 @@ The final set of features looks at more structural properties.
 
 \begin{figure}
   \centering
-  For a part $(i, j, k, h, m, A \rightarrow B\ C)$
-  \begin{tabular}{ll}
+  For a part $(\span{i, j, k}, h, m, A \rightarrow B\ C)$
 
-  $A \rightarrow B\ C$\\
-  unary, A B\ C\\
-  A, B \\
-  A, C \\
+  \vspace{0.5cm}
 
-  A, h.tag, m.tag \\
-  A, B, m.tag \\
-  A, C, h.tag \\
-  A, h.tag \\
-  A, h.word \\
-  unary, h.tag \\
 
-  $A \rightarrow B\ C$, h.tag, m.tag \\
-  $A \rightarrow B\ C$, h.word, m.tag \\
-  $A \rightarrow B\ C$, h.word \\
-  $A \rightarrow B\ C$, h.tag \\
-  $A \rightarrow B\ C$, m.word \\
-  $A \rightarrow B\ C$, m.tag \\
+  \begin{tabular}{|l|l}
+
+  \hline
+  Nonterm Features \\
+  \hline
+
+  \hline
+  $(A$, $B)$ \\
+  $(A$, $C)$ \\
+
+  $(A, \TagFN{h}, \TagFN{m}) \\
+  $(A, B, \TagFN{m})$ \\
+  $(A, C, \TagFN{h})$ \\
+  $(A, \TagFN{h})$ \\
+  $(A, \WordFN{h})$ \\
+  \hline
+  \hline
+
+
+  Rule Features \\
+  \hline
+
+  \hline
+  $(A \rightarrow B\ C)$\\
+  $(A \rightarrow B\ C, \TagFN{h}, \TagFN{m})$ \\
+  $(A \rightarrow B\ C, \WordFN{h}, \TagFN{m})$ \\
+  $(A \rightarrow B\ C, \WordFN{h})$ \\
+  $(A \rightarrow B\ C, \TagFN{h})$ \\
+  $(A \rightarrow B\ C, \WordFN{m})$ \\
+  $(A \rightarrow B\ C, \TagFN{m})$ \\
 
   shape\\
-
+  \hline
   \end{tabular}
 
   \label{fig:features}
-  \caption{The features used in our experiments.}
+  \caption{The templates used in the structured model. The functions $\TagFN(i)$ and $\WordFN(i)$ give the part-of-speech tag and word at position $i$.
+  }
 \end{figure}
 
 \subsection{Training}
@@ -900,8 +970,8 @@ remove all rules that were not seen with that tag as a head in training.
 \textbf{Acknowledgment} sections should go as a last (unnumbered) section immediately
 before the references.
 
-% \bibliography{full}
-% \bibliographystyle{naaclhlt2015}
+\bibliography{full}
+\bibliographystyle{naaclhlt2015}
 
 \end{document}
 

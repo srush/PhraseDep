@@ -28,7 +28,7 @@ void output_sentence(const Sentence &sentence) {
         cout << rule.i << " " << rule.j << " " << rule.k
              << " " << rule.h << " " << rule.m << " " << rule.rule << endl;
     }
-    cout << endl;
+    // cout << endl;
 }
 
 

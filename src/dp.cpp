@@ -482,14 +482,16 @@ double cky(const vector<int> &preterms,
             root_word = i;
         }
     }
-    Item item(0, n-1, root_word, 0, 2);
-    for (int i = 0; i < grammar.roots.size(); ++i) {
-        int root = grammar.roots[i];
-        Item item1(0, n-1, root_word, root, 2);
-        if (chart.has_item(item1)) {
-            chart.promote(item, item1);
-        }
-    }
+    // Item item(0, n, root_word, 0, 2);
+    // for (int i = 0; i < grammar.roots.size(); ++i) {
+    int root = grammar.roots[0];
+    Item item(0, n-1, root_word, root, 2);
+    // cerr << "ROOT: " << root << endl;
+    // Item item1(0, n-1, root_word, root, 2);
+    // if (chart.has_item(item1)) {
+    //     chart.promote(item, item1);
+    // }
+    // }
     stringstream out;
     bool success = chart.to_tree(item, grammar, best_rules, output, out);
     if (success && out) {

@@ -33,6 +33,26 @@ struct AppliedRule {
     AppliedRule(int i_, int j_, int k_, int h_, int m_, int rule_)
             : i(i_), j(j_), k(k_), h(h_), m(m_), rule(rule_) {}
 
+    bool same_span(const AppliedRule &other) const{
+        return other.i == i &&
+                other.j == j &&
+                other.k == k;
+    }
+
+    bool same_top(const AppliedRule &other) const{
+        return other.i == i &&
+                other.k == k;
+    }
+
+
+    bool same_non_head(const AppliedRule &other) const{
+        return other.i == i &&
+                other.j == j &&
+                other.k == k &&
+                other.rule == rule;
+    }
+
+
     bool same(const AppliedRule &other) const{
         return other.i == i &&
                 other.j == j &&

@@ -368,7 +368,8 @@ double cky(const vector<int> &preterms,
            const Grammar &grammar,
            const Scorer &scorer,
            vector<AppliedRule> *best_rules,
-           bool output) {
+           bool output,
+           bool *success) {
     int n = preterms.size();
     vector<vector<vector<DepSplit> > > span_pruner;
     // vector<vector<vector<vector<vector <RuleSplit> > > > > cell_rules;
@@ -493,8 +494,8 @@ double cky(const vector<int> &preterms,
     // }
     // }
     stringstream out;
-    bool success = chart.to_tree(item, grammar, best_rules, output, out);
-    if (success && out) {
+    *success = chart.to_tree(item, grammar, best_rules, output, out);
+    if ((*success) && out) {
         cout << out.str();
     }
     return chart.score(item);

@@ -72,6 +72,7 @@
 
 \title{Parsing Dependencies}
 
+\author{}
 % \author{Author 1\\
 % 	    XYZ Company\\
 % 	    111 Anywhere Street\\
@@ -175,16 +176,14 @@
 
 
 
-
-
 \section{Introduction}
 
 
 % There has been a surge of recent work on dep parsing
 
-Over the last two decades there have been two dominant grammatical
-frameworks for statistical syntactic parsing: phrase-structure and
-dependency parsing \cite{}. The two frameworks often offer a practical
+There are two dominant grammatical
+frameworks used for statistical syntactic parsing: phrase-structure and
+dependency parsing \cite{}. The two often offer a practical
 trade-off. Phrase-structure parsing is very accurate and provides a full
 context-free grammatical representation; while dependency parsing is
 much faster, both asymptotically and empirically, while still
@@ -201,6 +200,28 @@ narrowed over the last several years. State-of-art dependency parsers
 such as TurboParser \cite{}, and \cite, perform only slightly worse in
 terms of accuracy than large-scale reranking dependency parsers, while
 still maintaining efficient run-time.
+
+\begin{figure}
+  \centering
+  \begin{dependency}[theme=simple]
+    \begin{deptext}[column sep=0.7cm]
+      I$_1$ \& saw$_2$ \& the$_3$ \& man$_4$ \\
+    \end{deptext}
+    \deproot{2}{ROOT}
+      \depedge{2}{1}{}
+      \depedge{3}{4}{}
+      \depedge{2}{4}{}
+  \end{dependency}
+
+  \scalebox{0.7}{
+    \Tree [ .X(2) [ .X(1) [ .N I$_1$ ] ]  [ .V saw$_2$ ] [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
+    \Tree [ .X(2)  [ .N I$_1$ ] [ .X(2)  [ .V saw$_2$ ] [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ] ]
+    \Tree [ .X(2) [ .X(1) [ .N I$_1$ ]   [ .V saw$_2$ ] ]  [ .X [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
+  }
+  \label{fig:inverse}
+  \caption{While an LCFG parse determines a unique dependency parse, the inverse problem is non-deterministic. The figure, adapted from \cite{collins1999statistical}, shows several LCFG parse structures that all correspond to the dependency structure shown. The parentheses $X(h)$ indicate the head $h$ of each internal vertex. }
+\end{figure}
+
 
 Given these improvements, we ask the natural reverse question. How
 much of the phrase-structure is recoverable from the dependency
@@ -268,10 +289,38 @@ Our work is differs in that it look at a more stripped-down problem.
 We give up entirely on determining the structure of the tree itself and only
 look at  producing the nonterminals of the tree.
 
+\section{Overview}
+
+In recent years there has been a steady progression in the speed and accuracy of dependency parsers \cite{}; however
+there are still many tasks that rely heavily on the full context-free parses \cite{}. It is therefore desirable
+to produce context-free parses directly from dependency structures.
+
+However, while this conversion is deterministic from lexicalized context-free grammars
+to dependency parses, the inverse problem is more difficult. For a given dependency
+graph there may be many different valid context-free parses. This problem is the focus of this work.
+
+
+
+This conversion is challenging in two ways:
+
+\begin{itemize}
+\item The original dependency parse does not contain any information about the symbols at each vertex. From the context we need to
+determine the nonterminals $A$ and the rules used.
+
+\item The dependency structure does not specify the shape of the context-free parse. Even without syntactic symbols many
+context-free trees may be valid for a single dependency parse. This is shown in Figure~\ref{fig:inverse}.
+\end{itemize}
+
+
+Because of these issues is not obvious how to directly perform this conversion without doing search over possible structures.
+
+
+
+
 % \section{Overview}
 
 % The parser
-\section{Preliminaries}
+\section{Background}
 
 We begin by developing notation for a lexicalized phrase-structure formalism and for dependency parsing. The notation aims to highlight the similarity between the two formalisms.
 
@@ -368,13 +417,9 @@ The highest-scoring projective dependency parse under an arc-factored scoring fu
 
 We now give the important property for this work.
 
-\begin{lemma}
 Any lexicalized context-free parse, as defined above, can be converted
 deterministically into a projective dependency tree.
-\end{lemma}
 
-
-Conversion.
 
 For an input symbol $x_m$ with spine $v_1, \ldots, v_p$,
 
@@ -391,55 +436,6 @@ in the induced dependency parse.
 
 The conversion produces a directed tree rooted at $0$, by preserving the tree structure of the original LCFG parse.
 
-
-\section{Overview}
-
-In recent years there has been a steady progression in the speed and accuracy of dependency parsers \cite{}; however
-there are still many tasks that rely heavily on the full context-free parses \cite{}. It is therefore desirable
-to produce context-free parses directly from dependency structures.
-
-However, while this conversion is deterministic from lexicalized context-free grammars
-to dependency parses, the inverse problem is more difficult. For a given dependency
-graph there may be many different valid context-free parses. This problem is the focus of this work.
-
-
-
-This conversion is challenging in two ways:
-
-\begin{itemize}
-\item The original dependency parse does not contain any information about the symbols at each vertex. From the context we need to
-determine the nonterminals $A$ and the rules used.
-
-\item The dependency structure does not specify the shape of the context-free parse. Even without syntactic symbols many
-context-free trees may be valid for a single dependency parse. This is shown in Figure~\ref{fig:inverse}.
-\end{itemize}
-
-
-Because of these issues is not obvious how to directly perform this conversion without doing search over possible structures.
-
-
-
-
-\begin{figure}
-  \centering
-  \begin{dependency}[theme=simple]
-    \begin{deptext}[column sep=0.7cm]
-      I$_1$ \& saw$_2$ \& the$_3$ \& man$_4$ \\
-    \end{deptext}
-    \deproot{2}{ROOT}
-      \depedge{2}{1}{}
-      \depedge{3}{4}{}
-      \depedge{2}{4}{}
-  \end{dependency}
-
-  \scalebox{0.7}{
-    \Tree [ .X(2) [ .X(1) [ .N I$_1$ ] ]  [ .V saw$_2$ ] [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
-    \Tree [ .X(2)  [ .N I$_1$ ] [ .X(2)  [ .V saw$_2$ ] [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ] ]
-    \Tree [ .X(2) [ .X(1) [ .N I$_1$ ]   [ .V saw$_2$ ] ]  [ .X [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
-  }
-  \label{fig:inverse}
-  \caption{While an LCFG parse determines a unique dependency parse, the inverse problem is non-deterministic. The figure, adapted from \cite{collins1999statistical}, shows several LCFG parse structures that all correspond to the dependency structure shown. The parentheses $X(h)$ indicate the head $h$ of each internal vertex. }
-\end{figure}
 
 
 
@@ -630,33 +626,24 @@ In fact, since there are $n$ dependency links $(h, m)$ and $n$ indices $i$ the n
 
 % While the algorithm is virtually identical to the standard lexicalized CKY algorithm, we are now able to fix many of the free indices. 
 
-\begin{figure}
-  \noindent \textbf{Premise:}
-  \[(\Span{i, i}, i, A)\ \ \ \forall i \in \{1 \ldots n\}, A \in {\cal N}\]
+% \begin{figure}
+%   \noindent \textbf{Premise:}
+%   \[(\Span{i, i}, i, A)\ \ \ \forall i \in \{1 \ldots n\}, A \in {\cal N}\]
 
-  \noindent\textbf{Rules:}
+%   \noindent\textbf{Rules:}
 
 
-   For $i\leq m \leq k < h \leq j$,  and  rule  $\langle A \rightarrow \beta_1\ \beta_2, 1\rangle$,
-   \[\infer{( \Span{i, j},  h,  A)}{( \Span{i, k}, h, \beta_1)  &  ( \Span{k+1, j}, m, \beta_2) } \]
+%    For $i\leq m \leq k < h \leq j$,  and  rule  $\langle A \rightarrow \beta_1\ \beta_2, 1\rangle$,
+%    \[\infer{( \Span{i, j},  h,  A)}{( \Span{i, k}, h, \beta_1)  &  ( \Span{k+1, j}, m, \beta_2) } \]
 
-   For $i\leq h \leq k < m \leq j$, rule  $\langle A \rightarrow \beta_1\ \beta_2,  2\rangle$,
-   \[\infer{(\Span{i, j},  h, A)}{(\Span{i, k}, m, \beta_1)  &  (\Span{k+1, j}, h, \beta_2) }  \]
+%    For $i\leq h \leq k < m \leq j$, rule  $\langle A \rightarrow \beta_1\ \beta_2,  2\rangle$,
+%    \[\infer{(\Span{i, j},  h, A)}{(\Span{i, k}, m, \beta_1)  &  (\Span{k+1, j}, h, \beta_2) }  \]
 
-\noindent \textbf{Goal:}\[ (\Span{1, n}, m, \Root) \mathrm{\ for\ any }\ m\]
-\label{fig:cky}
-\caption{Standard CKY algorithm for LCFG parsing stated as inductive rules. Starting from the \textit{premise}, any valid application of \textit{rules} that leads to a \textit{goal} is a valid parse. Finding the optimal parse with dynamic programming is linear in the number of rules. For this algorithm there are $O(n^5|\rules|)$ rules where $n$ is the length of the sentence.}
+% \noindent \textbf{Goal:}\[ (\Span{1, n}, m, \Root) \mathrm{\ for\ any }\ m\]
+% \label{fig:cky}
+% \caption{Standard CKY algorithm for LCFG parsing stated as inductive rules. Starting from the \textit{premise}, any valid application of \textit{rules} that leads to a \textit{goal} is a valid parse. Finding the optimal parse with dynamic programming is linear in the number of rules. For this algorithm there are $O(n^5|\rules|)$ rules where $n$ is the length of the sentence.}
 
-\end{figure}
-
-% For contrast here is an analysis of a variant of our current parsing
-% algorithm. This analysis exploits the following idea. Define
-% $l,r:\{1\ldots n\} \mapsto \{1\ldots n\}$ as functions that return the
-% left and right boundary of the descendants of a head word. These
-% functions can be pre-computed efficiently for a given dep tree.
-
-% In this analysis we only take modifiers $m$ with spans $(l(m), r(m))$
-% since we know that is a requirement. Here I use $\tri$ to indicate a standard CKY item.
+% \end{figure}
 
 \begin{figure}
   \noindent \textbf{Premise:}

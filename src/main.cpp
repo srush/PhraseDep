@@ -101,10 +101,14 @@ int main(int argc, char* argv[])
         vector<Sentence> *sentences = read_sentence(string(options[SENTENCE_TEST].arg));
         for (int i = 0; i < sentences->size(); ++i) {
             for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
-                (*sentences)[i].int_tags.push_back(grammar->tag_index.fget((*sentences)[i].tags[j]));
-                (*sentences)[i].preterms.push_back(grammar->to_nonterm((*sentences)[i].tags[j]));
-                (*sentences)[i].int_words.push_back(grammar->to_word((*sentences)[i].words[j]));
-                (*sentences)[i].int_deplabels.push_back(grammar->to_deplabel((*sentences)[i].deplabels[j]));
+                (*sentences)[i].int_tags.push_back(
+                    grammar->tag_index.fget((*sentences)[i].tags[j]));
+                (*sentences)[i].preterms.push_back(
+                    grammar->to_nonterm((*sentences)[i].tags[j]));
+                (*sentences)[i].int_words.push_back(
+                    grammar->to_word((*sentences)[i].words[j]));
+                (*sentences)[i].int_deplabels.push_back(
+                    grammar->to_deplabel((*sentences)[i].deplabels[j]));
             }
         }
 
@@ -121,8 +125,9 @@ int main(int argc, char* argv[])
             const Sentence *sentence = &(*sentences)[i];
             scorer.set_sentence(sentence);
             vector<AppliedRule> best_rules;
+            bool success;
             cky(sentence->preterms, sentence->words, sentence->deps,
-                *grammar, scorer, &best_rules, true);
+                *grammar, scorer, &best_rules, true, &success);
             cout << endl;
         }
 
@@ -130,22 +135,39 @@ int main(int argc, char* argv[])
         cerr << "(" << ((float)t)/CLOCKS_PER_SEC << ")" << endl;
     } else if (options[ORACLE]) {
         cerr << "ORACLE mode";
+
+        // vector<Sentence> *sentences = read_sentence(string(options[SENTENCE_TEST].arg));
+        // for (int i = 0; i < sentences->size(); ++i) {
+        //     for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
+        //         (*sentences)[i].int_tags.push_back(
+        //             grammar->tag_index.fget((*sentences)[i].tags[j]));
+        //         (*sentences)[i].preterms.push_back(
+        //             grammar->to_nonterm((*sentences)[i].tags[j]));
+        //         (*sentences)[i].int_words.push_back(
+        //             grammar->to_word((*sentences)[i].words[j]));
+        //         (*sentences)[i].int_deplabels.push_back(
+        //             grammar->to_deplabel((*sentences)[i].deplabels[j]));
+        //     }
+        // }
+
         for (int i = 0; i < sentences->size(); ++i) {
             Sentence *sentence = &(*sentences)[i];
             vector<AppliedRule> best_rules;
-            OracleScorer oracle(&sentence->gold_rules);
+            OracleScorer oracle(&sentence->gold_rules, grammar);
+            bool success;
             if (options[ORACLE_TREE]) {
+
                 cky(sentence->preterms, sentence->words, sentence->deps,
-                    *grammar, oracle, &best_rules, true);
+                    *grammar, oracle, &best_rules, true, &success);
                 cout << endl;
             } else {
                 cky(sentence->preterms, sentence->words, sentence->deps,
-                    *grammar, oracle, &best_rules, false);
-
-                sentence->gold_rules = best_rules;
+                    *grammar, oracle, &best_rules, false, &success);
+                if (success) {
+                    sentence->gold_rules = best_rules;
+                }
                 output_sentence(*sentence);
             }
-
             // cerr << "NUMBER OF RULES: " << best_rules.size()
             //      << " " << dp_score << " " << sentence->words.size() <<  endl;
         }
@@ -163,9 +185,10 @@ int main(int argc, char* argv[])
                 const Sentence *sentence = &(*sentences)[i];
                 scorer.set_sentence(sentence);
                 vector<AppliedRule> best_rules;
+                bool success;
                 double dp_score =
                         cky(sentence->preterms, sentence->words, sentence->deps,
-                            *grammar, scorer, &best_rules, false);
+                            *grammar, scorer, &best_rules, false, &success);
 
                 // cout << "RULES: " << best_rules.size() << endl;
 

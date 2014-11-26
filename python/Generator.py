@@ -143,6 +143,8 @@ def read_corpus(filename):
     corpus = []
     sentence = []
     for line in f:
+        if language_setting == "chn":
+            line = line.decode('utf-8')
         if line[:-1] == "":
             corpus.append(sentence)
             sentence = []
@@ -157,8 +159,6 @@ def read_corpus(filename):
 def generate_from_conll(inputf):
     corpus = read_corpus(inputf)
     for sentence in corpus:
-        if language_setting == "chn":
-            sentence = sentence.decode('utf-8')
         word_list = [line[1] for line in sentence]
         pos_list = [line[4] for line in sentence]
         parent_list = [str(int(line[6])-1) for line in sentence]

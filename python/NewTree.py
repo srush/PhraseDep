@@ -631,8 +631,9 @@ def findIndex(s, labelChar='^'):
 def getParentDic(lexTree, labelChar='^'):
     lt = deepcopy(lexTree)
     # remove the TOP label
-    if lt.label().startswith('TOP'):
-        lt = lt[0]
+    #if lt.label().startswith('TOP'):
+        # print lt.label()
+    #    lt = lt[0]
     # print lt.pprint()
 
     # build a parent set
@@ -658,12 +659,14 @@ def getParentDic(lexTree, labelChar='^'):
                     head_label = remove_labelChar(c.label())
             for c in nt:
                 ind_c = findIndex(c.label() if isinstance(c, Tree) else c)
+                #print ind_c
                 if not ind_c == ind_p:
                     dependent_label = '*'
                     if isinstance(c, Tree) and c.height()!=2:
                         dependent_label = remove_labelChar(c.label())
                     dep_set[ind_c] = ind_p
                     label_set[ind_c] = phrase_label + "+" + head_label + "+" + dependent_label
+    print dep_set, label_set
     return dep_set, label_set
 
 def generateDep(ot, labelChar='^'):
@@ -867,7 +870,7 @@ def flat_print(t):
 def get_binarize_lex(otree, labelChar='^'):
     work_tree = deepcopy(otree)
     lexLabel(work_tree)
-    # print work_tree
+    #print work_tree
     parent_dic, dep_label_set = getParentDic(work_tree)
     # for x in parent_dic:
     #     print x, parent_dic[x]
@@ -879,7 +882,7 @@ def get_binarize_lex(otree, labelChar='^'):
     for i in xrange(len(preterminals)):
         preterminals[i][0] = preterminals[i][0] + labelChar + str(i+1)
     # print work_tree
-
+    # print flat_print(work_tree)
     for pos in work_tree.treepositions(order='postorder'):
         # print pos
         t = work_tree[pos]
@@ -889,8 +892,10 @@ def get_binarize_lex(otree, labelChar='^'):
             if len(t) == 1:
                 t.set_label(t.label() + labelChar + findIndex(t[0]))
             else:
+                
                 x_ind = findIndex(t[0])
                 y_ind = findIndex(t[1])
+                #print parent_dic
                 if parent_dic[x_ind] == y_ind:
                     t.set_label(t.label() + labelChar + y_ind)
                 else:

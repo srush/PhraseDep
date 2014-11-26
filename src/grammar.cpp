@@ -56,7 +56,8 @@ void Grammar::add_rule(BinaryRule rule) {
         rules_by_second[rule.nt_Z].push_back(rule);
     }
 
-    string simple_rule = non_terminals_[rule.nt_X].main + "->" + non_terminals_[rule.nt_Y].main + " " +non_terminals_[rule.nt_Z].main;
+    string simple_rule =
+            non_terminals_[rule.nt_X].main + "->" + non_terminals_[rule.nt_Y].main + " " +non_terminals_[rule.nt_Z].main;
     sparse_rule_index.push_back(sparse_rules.fget(simple_rule));
 
     n_rules++;

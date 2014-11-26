@@ -9,4 +9,5 @@ double cky(const vector<int> &preterms,
            const Grammar &grammar,
            const Scorer &scorer,
            vector<AppliedRule> *best_rules,
-           bool output);
+           bool output,
+           bool *success);

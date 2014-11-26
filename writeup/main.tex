@@ -64,7 +64,9 @@
 \newcommand{\Tag}[1]{\texttt{#1}}
 \newcommand{\Root}{r}
 
-
+\newcommand{\Rule}[3]{#1 \rightarrow #2\ #3}
+\newcommand{\RuleA}[3]{#1 \rightarrow #2^*\ #3}
+\newcommand{\RuleB}[3]{#1 \rightarrow #2\ #3^*}
 \newcommand{\TagFN}[1]{\mathrm{tag}({#1})}
 \newcommand{\WordFN}[1]{\mathrm{word}({#1})}
 \newcommand{\Reals}{\mathbb{R}}
@@ -203,6 +205,8 @@ still maintaining efficient run-time.
 
 \begin{figure}
   \centering
+  \vspace{-1cm}
+
   \begin{dependency}[theme=simple]
     \begin{deptext}[column sep=0.7cm]
       I$_1$ \& saw$_2$ \& the$_3$ \& man$_4$ \\
@@ -230,10 +234,27 @@ dependencies is deterministic, the inverse is not (see
 Figure~\ref{}). Can we learn to invert this process and recover the
 richer phrase-structure trees from the dependency representation?
 
+% However, while this conversion is deterministic from lexicalized context-free grammars
+% to dependency parses, the inverse problem is more difficult. For a given dependency
+% graph there may be many different valid context-free parses. This problem is the focus of this work.
+
+
+
+This conversion is challenging in two ways:
+(1) The original dependency parse does not contain any information about the symbols at each vertex. From the context we need to
+determine the nonterminals $A$ and the rules used. (2)  The dependency structure does not specify the shape of the context-free parse. Even without syntactic symbols many
+context-free trees may be valid for a single dependency parse. This is shown in Figure~\ref{fig:inverse}.
+\end{itemize}
+
+
+Because of these issues is not obvious how to directly perform this conversion without doing search over possible structures.
+
+
+
 \todo[inline]{name?}
 
-To approach this question we present a very simple statistical parser,
-\textsc{Miniparser}.  The parser is a complete exact
+% \textsc{Miniparser}
+To approach this question we present a very simple statistical parser. The parser is a complete exact
 lexicalized parser; except that unlike standard parsers, it takes both
 a sentence and a dependency tree as input. Using this non-standard setup
 has several advantages:
@@ -289,30 +310,11 @@ Our work is differs in that it look at a more stripped-down problem.
 We give up entirely on determining the structure of the tree itself and only
 look at  producing the nonterminals of the tree.
 
-\section{Overview}
+% \section{Overview}
 
-In recent years there has been a steady progression in the speed and accuracy of dependency parsers \cite{}; however
-there are still many tasks that rely heavily on the full context-free parses \cite{}. It is therefore desirable
-to produce context-free parses directly from dependency structures.
-
-However, while this conversion is deterministic from lexicalized context-free grammars
-to dependency parses, the inverse problem is more difficult. For a given dependency
-graph there may be many different valid context-free parses. This problem is the focus of this work.
-
-
-
-This conversion is challenging in two ways:
-
-\begin{itemize}
-\item The original dependency parse does not contain any information about the symbols at each vertex. From the context we need to
-determine the nonterminals $A$ and the rules used.
-
-\item The dependency structure does not specify the shape of the context-free parse. Even without syntactic symbols many
-context-free trees may be valid for a single dependency parse. This is shown in Figure~\ref{fig:inverse}.
-\end{itemize}
-
-
-Because of these issues is not obvious how to directly perform this conversion without doing search over possible structures.
+% In recent years there has been a steady progression in the speed and accuracy of dependency parsers \cite{}; however
+% there are still many tasks that rely heavily on the full context-free parses \cite{}. It is therefore desirable
+% to produce context-free parses directly from dependency structures.
 
 
 
@@ -511,7 +513,7 @@ asymptotically faster.
 \subsection{Constrained Lexicalized CKY}
 
 We will assume in this section that the LCFG is in lexicalized Chomsky normal form, 
-with all non-preterminal rules of the form $\langle A \rightarrow \beta_1 \beta_2 \rangle$. 
+with all non-preterminal rules of the form $\Rule{A}{\beta_1}{\beta_2}$. 
 In the next section we show how to convert our original grammar to this form while 
 preserving the head structure. 
 
@@ -522,7 +524,7 @@ Figure~\ref{fig:cky}. These rules compactly encode the set of all
 valid parses for a given sentence under the grammar. For example consider the rule
 
 \[ \infer{(\Span{i, j}, h, A)}{(\Span{i, k}, m, \beta_1) &  (\Span{k+1, j}, h, \beta_2)} \]
- for all rules $\langle A \rightarrow \beta_1\ \beta_2 , 1\rangle\in \rules$ and spans $i \leq k < j$. This rule indicates that grammatical rule $\langle A \rightarrow \beta_1\ \beta_2, 1\rangle$  was applied at a vertex covering $\Span{i, j}$ to produce two vertices covering $\Span{i, k}$ and $\Span{k+1, j}$.
+ for all rules $\RuleA{A}{\beta_1}{\beta_2}\in \rules$ and spans $i \leq k < j$. This rule indicates that grammatical rule $\RuleA{A}{\beta_1}{\beta_2}$  was applied at a vertex covering $\Span{i, j}$ to produce two vertices covering $\Span{i, k}$ and $\Span{k+1, j}$.
 
 
 
@@ -655,10 +657,10 @@ In fact, since there are $n$ dependency links $(h, m)$ and $n$ indices $i$ the n
    % \[ \infer{( \tri, h, A)}{(\Span{\Left{h}, \Right{h}}, h, A) } \]
 
 
-   For all   $i < m, h = d_m$  and rule  $\langle A \rightarrow \beta_1\ \beta_2, 1 \rangle$,
+   For all   $i < m, h = d_m$  and rule  $\RuleA{A}{\beta_1}{\beta_2}$,
   \[\infer{( \Span{ i, \Right{m} }, h, A)}{(\Span{i, \Left{m}-1}, h, \beta_1)  &  (\tri, m, \beta_2) } \]
 
-  For all    $m < j, h = d_m$ and  rule  $\langle A \rightarrow \beta_1\ \beta_2, 2\rangle$,
+  For all    $m < j, h = d_m$ and  rule  $\RuleB{A}{\beta_1}{\beta_2}$,
   \[ \infer{( \Span{\Left{m}, j}, h, A)}{(\tri, m, \beta_1)  &  (\Span{\Right{m}+ 1, j}, h, \beta_2) } \]
 
 
@@ -684,7 +686,7 @@ Standard dependency parsers also predict labels from a set ${\cal L}$ on each de
 In a labeled dependency parser a would be of the form $(i, j, l)$.
 
 This label information can be used to encode further information about the parse structure. For instance
-if we use the label set ${\cal L} = \nonterms \times \nonterms \times \nonterms$, encoding the binary rule decisions $A \rightarrow \beta_1\ \beta_2$.
+if we use the label set ${\cal L} = \nonterms \times \nonterms \times \nonterms$, encoding the binary rule decisions $\Rule{A}{\beta_1}{\beta_2}$.
 
 
 \subsection{Binarization}
@@ -712,25 +714,25 @@ The main transformation is to introduce rules
 \begin{itemize}
 
 \item
-$\langle A^{\Rightarrow}_{\beta_i}  \rightarrow  A^{\Rightarrow}_{\beta_{i-1}} \ \beta_i, 1 \rangle $ for $k > i > m$
+$\RuleA{A^{\Rightarrow}_{\beta_i}}{A^{\Rightarrow}_{\beta_{i-1}}}{\beta_i}$ for $k > i > m$
 
 \item
-$\langle A^{\Leftarrow}_{\beta_i}  \rightarrow \beta_i\ A^{\Leftarrow}_{\beta_{i+1}}, 2 \rangle $ for $1< i < k$
+$\RuleB{A^{\Leftarrow}_{\beta_i}} {\beta_i}{A^{\Leftarrow}_{\beta_{i+1}}} $ for $1< i < k$
 \end{itemize}  
 
 Additionally we introduce several additional rules to handle the boundary cases of starting a new rule, finishing the right side, and completing a rule. (These rules are slightly modified when $k=1$ or $k=m$) .
 
 \begin{itemize}
 
-\item $\langle A^{\Rightarrow}_{\beta_{k+1}} \rightarrow \beta_k \  \beta_{k+1}, 1 \rangle $
+\item $\RuleA{A^{\Rightarrow}_{\beta_{k+1}}}{\beta_k}{\beta_{k+1}} $
 
 \item 
-$\langle A^{\Rightarrow}_{\END}  \rightarrow  A^{\Rightarrow}_{\beta_{m-1}} \ \beta_m, 1 \rangle $
+$\RuleA{A^{\Rightarrow}_{\END}} {A^{\Rightarrow}_{\beta_{m-1}}}{\beta_m}$
 
-\item  $\langle A^{\Leftarrow}_{\beta_{k-1}} \rightarrow \beta_{k-1}\  A^{\Rightarrow}_{\END}, 2 \rangle $
+\item  $\RuleB{ A^{\Leftarrow}_{\beta_{k-1}}}{\beta_{k-1}}{A^{\Rightarrow}_{\END}}$
 
 \item
-$\langle A  \rightarrow \beta_1\ A^{\Leftarrow}_{\beta_{2}}, 2 \rangle $ 
+$\RuleB{A}{\beta_1}{ A^{\Leftarrow}_{\beta_{2}}} $ 
 \end{itemize}
 
 \noindent Each rule contains at most 3 nonterminals so the size of the new binarized rule set is bounded by $O(\nonterms^3)$.    
@@ -776,7 +778,7 @@ where $\theta \in \Reals^D $ is a learned weight vector that will be trained and
 We experimented with several settings of the part features.
 The final features are shown in  Figure~\ref{fig:features}.
 
-The first set of features look at the rule structure $A \rightarrow \beta_1\ \beta_2$.
+The first set of features look at the rule structure $\Rule{A}{\beta_1}{\beta_2}$.
 We have features on several combinations of rule and non-terminals.
 
 The next set of features look at properties of the lexicalization.
@@ -797,7 +799,7 @@ The final set of features looks at more structural properties.
 
 \begin{figure}
   \centering
-  For a part $(\span{i, j, k}, h, m, A \rightarrow \beta_1\ \beta_2)$
+  For a part $(\span{i, j, k}, h, m, \Rule{A}{\beta_1}{\beta_2})$
 
   \vspace{0.5cm}
 
@@ -812,7 +814,7 @@ The final set of features looks at more structural properties.
   $(A$, $\beta_1)$ \\
   $(A$, $\beta_2)$ \\
 
-  $(A, \TagFN{h}, \TagFN{m}) \\
+  $(A, \TagFN{h}, \TagFN{m})$ \\
   $(A, B, \TagFN{m})$ \\
   $(A, C, \TagFN{h})$ \\
   $(A, \TagFN{h})$ \\
@@ -825,13 +827,13 @@ The final set of features looks at more structural properties.
   \hline
 
   \hline
-  $(A \rightarrow \beta_1\ \beta_2)$\\
-  $(A \rightarrow \beta_1\ \beta_2, \TagFN{h}, \TagFN{m})$ \\
-  $(A \rightarrow \beta_1\ \beta_2, \WordFN{h}, \TagFN{m})$ \\
-  $(A \rightarrow \beta_1\ \beta_2, \WordFN{h})$ \\
-  $(A \rightarrow \beta_1\ \beta_2, \TagFN{h})$ \\
-  $(A \rightarrow \beta_1\ \beta_2, \WordFN{m})$ \\
-  $(A \rightarrow \beta_1\ \beta_2, \TagFN{m})$ \\
+  $(\Rule{A}{\beta_1}{\beta_2}  )$\\
+  $(\Rule{A}{\beta_1}{\beta_2}, \TagFN{h}, \TagFN{m})$ \\
+  $(\Rule{A}{\beta_1}{\beta_2}, \WordFN{h}, \TagFN{m})$ \\
+  $(\Rule{A}{\beta_1}{\beta_2}, \WordFN{h})$ \\
+  $(\Rule{A}{\beta_1}{\beta_2}, \TagFN{h})$ \\
+  $(\Rule{A}{\beta_1}{\beta_2}, \WordFN{m})$ \\
+  $(\Rule{A}{\beta_1}{\beta_2}, \TagFN{m})$ \\
 
   shape\\
   \hline

@@ -106,7 +106,7 @@ class FeatureScorer : public Scorer {
 
     double score(const AppliedRule &rule) const;
 
-    void update(const vector<AppliedRule> &rules, int direction);
+    void update(const vector<AppliedRule> &good, const vector<AppliedRule> &bad);
 
     Perceptron perceptron_;
     bool is_cost_augmented_;

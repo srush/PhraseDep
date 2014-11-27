@@ -1,6 +1,7 @@
 #include "features.hpp"
 #include <cmath>
 #include <iostream>
+#include <map>
 
 double FeatureScorer::score(const AppliedRule &rule) const{
     double score = 0.0;
@@ -28,16 +29,51 @@ double FeatureScorer::score(const AppliedRule &rule) const{
     
 }
 
-void FeatureScorer::update(const vector<AppliedRule> &rules,
-                           int direction) {
-    for (int i = 0; i < rules.size(); ++i) {
-        vector<long> features;
-        feature_gen_.generate(*sentence_, rules[i], &features, NULL);
-        for (int j = 0; j < features.size(); ++j) {
-            long val = features[j];
-            perceptron_.update((long)abs(val) % n_size, direction);
+// void FeatureScorer::update(const vector<AppliedRule> &rules,
+//                            int direction) {
+//     for (int i = 0; i < rules.size(); ++i) {
+//         vector<long> features;
+//         feature_gen_.generate(*sentence_, rules[i], &features, NULL);
+//         for (int j = 0; j < features.size(); ++j) {
+//             long val = features[j];
+//             perceptron_.update((long)abs(val) % n_size, direction);
+//         }
+//     }
+// }
+
+void FeatureScorer::update(const vector<AppliedRule> &good, const vector<AppliedRule> &bad){
+        map<long, int> count_map;
+        for (int i = 0; i < good.size(); ++i) {
+            vector<long> good_features;
+            feature_gen_.generate(*sentence_, good[i], &good_features, NULL);
+            for (int j = 0; j < good_features.size(); ++j) {
+                long val = good_features[j];
+                long index = (long)abs(val) % n_size;
+                double orignal_value = 0.0;
+                if (count_map.find(index) != count_map.end()) {
+                    orignal_value = count_map[index];
+                }
+                count_map[index] = orignal_value + 1;
+            }
         }
-    }
+        for (int i = 0; i < bad.size(); ++i) {
+            vector<long> bad_features;
+            feature_gen_.generate(*sentence_, bad[i], &bad_features, NULL);
+            for (int j = 0; j < bad_features.size(); ++j) {
+                long val = bad_features[j];
+                long index = (long)abs(val) % n_size;
+                double orignal_value = 0.0;
+                if (count_map.find(index) != count_map.end()) {
+                    orignal_value = count_map[index];
+                }
+                count_map[index] = orignal_value - 1;
+            }
+        }
+
+        for(auto& iter : count_map) {
+            // cerr << "update " << (long)iter.first << " with " << (int)iter.second << endl;
+            perceptron_.update((long)iter.first, (int)iter.second);
+        }
 }
 
 FeatureGen::FeatureGen(const Grammar *grammar, bool delex) : grammar_(grammar), delex_(delex) {

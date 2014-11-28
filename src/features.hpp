@@ -104,7 +104,7 @@ class FeatureScorer : public Scorer {
                 return iter->second;
             } else {
                 int start = positive_feature_count_;
-                return start  + (((long)abs(val)) % n_size - start);
+                return start + (((long)abs(val)) % (n_size - start));
             }
         }
     }

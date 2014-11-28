@@ -100,7 +100,7 @@ class FeatureScorer : public Scorer {
     void add_feature(long val) {
         assert(dont_hash_features_);
 
-        map<int, int>::const_iterator iter = all_features_.find(val);
+        map<long, int>::const_iterator iter = all_features_.find(val);
         if (iter == all_features_.end()) {
             int start = full_feature_count_;
             all_features_[val] = full_feature_count_;
@@ -110,7 +110,7 @@ class FeatureScorer : public Scorer {
 
     long hashed_feature(long val) const {
         if (dont_hash_features_) {
-            map<int, int>::const_iterator iter = all_features_.find(val);
+            map<long, int>::const_iterator iter = all_features_.find(val);
             if (iter != all_features_.end()) {
                 return iter->second;
             } else {
@@ -119,13 +119,43 @@ class FeatureScorer : public Scorer {
         } else if (!use_positive_features_) {
             return ((long)abs(val)) % n_size;
         } else {
-            map<int, int>::const_iterator iter = positive_features_.find(val);
+            map<long, int>::const_iterator iter = positive_features_.find(val);
             if (iter != positive_features_.end()) {
                 return iter->second;
             } else {
                 int start = positive_feature_count_;
                 return start + (((long)abs(val)) % (n_size - start));
             }
+        }
+    }
+
+    void write(string file) {
+        if (dont_hash_features_) {
+            ofstream out;
+            out.open(file.c_str());
+            for (auto iter : all_features_) {
+                out << iter.first << " " << iter.second << endl;
+            }
+            out << endl;
+            out.close();
+        }
+    }
+
+    void read(string file) {
+        if (dont_hash_features_) {
+
+            ifstream in;
+            in.open(file);
+            while (in.good()) {
+                long index;
+                int feature;
+                in >> index >> feature;
+                all_features_[index] = feature;
+                full_feature_count_ = max(full_feature_count_, feature + 1);
+            }
+            in.close();
+            cout << "Reading Features :  ";
+            cout << full_feature_count_ << endl;
         }
     }
 
@@ -142,11 +172,11 @@ class FeatureScorer : public Scorer {
     const Sentence *sentence_;
 
     bool use_positive_features_;
-    map<int, int> positive_features_;
+    map<long, int> positive_features_;
 
 
     bool dont_hash_features_;
-    mutable map<int, int> all_features_;
+    mutable map<long, int> all_features_;
 };
 
 

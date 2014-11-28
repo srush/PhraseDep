@@ -35,7 +35,7 @@ struct Arg: public option::Arg
 
 enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, LAMBDA,
                     MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE,
-                    LABEL_PRUNING, POSITIVE_FEATURES, NO_HASH};
+                    LABEL_PRUNING, POSITIVE_FEATURES, NO_HASH, FEATURE_FILE};
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , "", option::Arg::None, "USAGE: example [options]\n\n"
@@ -55,6 +55,7 @@ const option::Descriptor usage[] =
     {ORACLE_TREE,    0,"z", "oracle_tree", option::Arg::None, "  --oracle_tree, -z  \n ." },
     {POSITIVE_FEATURES,    0,"f", "positive_features", option::Arg::None, "  --positive_features, -f  \n ." },
     {NO_HASH,    0,"", "no_hash", option::Arg::None, "  --no_hash  \n ." },
+    {FEATURE_FILE,    0,"", "feature_file", Arg::Required, "  --feature_file  \n ." },
     {UNKNOWN, 0,"" ,  ""   , option::Arg::None, "\nExamples:\n"
                                                   "  example --unknown -- --this_is_no_option\n"
      "  example -unk --plus -ppp file1 file2\n" },
@@ -91,6 +92,9 @@ int main(int argc, char* argv[])
 
     vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
     FeatureScorer scorer(grammar, options[DELEX], options[POSITIVE_FEATURES], options[NO_HASH]);
+    if (options[NO_HASH] && options[FEATURE_FILE])  {
+        scorer.read(options[FEATURE_FILE].arg);
+    }
     for (int i = 0; i < sentences->size(); ++i) {
         Sentence &sentence = (*sentences)[i];
         for (int j = 0; j < sentence.tags.size(); ++j) {
@@ -299,11 +303,17 @@ int main(int argc, char* argv[])
                  << " " << total_score2 / (float)total << endl;
             scorer.perceptron_.write(string(options[MODEL].arg)
                                      + (char)(epoch_char + epoch));
+
+            scorer.write(string(options[MODEL].arg)
+                         + (char)(epoch_char + epoch) + ".features");
+
             // scorer.perceptron_.write(string(options[MODEL].arg)
             //                          + (char)(epoch_char + epoch) + ".average", true);
         }
 
         // Output model.
         scorer.perceptron_.write(string(options[MODEL].arg));
+        scorer.write(string(options[MODEL].arg) + ".features");
+
     }
 }

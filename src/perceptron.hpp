@@ -43,11 +43,12 @@ class Perceptron {
 
         // this is l1
 
-        double abs_normalized_averaged_subgradient = ((unnormalized_averaged_subgradient[feature])) / ((double)round_);
+        double abs_normalized_averaged_subgradient =
+                ((unnormalized_averaged_subgradient[feature])) / ((double)round_);
         abs_normalized_averaged_subgradient = abs_normalized_averaged_subgradient >= 0 ? abs_normalized_averaged_subgradient : (-abs_normalized_averaged_subgradient);
         if ( (abs_normalized_averaged_subgradient) <= lambda_){
             weights[feature] = 0;
-        }else{
+        } else {
             weights[feature] = (1.0) * sgn(unnormalized_averaged_subgradient[feature]) * ( ((double)round_) / sqrt(g_square_over_time[feature]) ) * (abs_normalized_averaged_subgradient - lambda_);
         }
 
@@ -55,7 +56,7 @@ class Perceptron {
         // TODO: DO NOT USE THIS, THIS IS BUGGY NOW. STILL FIXING.
         // weights[feature] = ( 1.0 / sqrt(g_square_over_time[feature]) ) * (unnormalized_averaged_subgradient[feature] / lambda_);
 
-        
+
     }
 
     // void finish() {
@@ -82,9 +83,8 @@ class Perceptron {
     void write(string file) {
         ofstream out;
         out.open(file.c_str());
-        for (int i = 0; i < weights.size(); ++i)
-        {
-                out << weights[i] << " ";
+        for (int i = 0; i < weights.size(); ++i) {
+            out << weights[i] << " ";
         }
         out << endl;
         out.close();

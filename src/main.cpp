@@ -35,7 +35,7 @@ struct Arg: public option::Arg
 
 enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, LAMBDA,
                     MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE,
-LABEL_PRUNING};
+                    LABEL_PRUNING, POSITIVE_FEATURES};
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , "", option::Arg::None, "USAGE: example [options]\n\n"
@@ -53,6 +53,8 @@ const option::Descriptor usage[] =
     {DELEX,    0,"p", "delex", option::Arg::None, "  --delex, -d  \n ." },
     {ORACLE,    0,"o", "oracle", option::Arg::None, "  --oracle, -o  \n ." },
     {ORACLE_TREE,    0,"z", "oracle_tree", option::Arg::None, "  --oracle_tree, -z  \n ." },
+    {POSITIVE_FEATURES,    0,"f", "positive_features", option::Arg::None, "  --positive_features, -f  \n ." },
+
     {UNKNOWN, 0,"" ,  ""   , option::Arg::None, "\nExamples:\n"
                                                   "  example --unknown -- --this_is_no_option\n"
      "  example -unk --plus -ppp file1 file2\n" },
@@ -88,25 +90,32 @@ int main(int argc, char* argv[])
     grammar->to_word("#END#");
 
     vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
+    FeatureScorer scorer(grammar, options[DELEX], options[POSITIVE_FEATURES]);
     for (int i = 0; i < sentences->size(); ++i) {
-        for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
-            (*sentences)[i].int_tags.push_back(
-                grammar->tag_index.fget((*sentences)[i].tags[j]));
-            (*sentences)[i].preterms.push_back(
-                grammar->to_nonterm((*sentences)[i].tags[j]));
-            (*sentences)[i].int_words.push_back(
-                grammar->to_word((*sentences)[i].words[j]));
-            (*sentences)[i].int_deplabels.push_back(
-                grammar->to_deplabel((*sentences)[i].deplabels[j]));
+        Sentence &sentence = (*sentences)[i];
+        for (int j = 0; j < sentence.tags.size(); ++j) {
+            sentence.int_tags.push_back(
+                grammar->tag_index.fget(sentence.tags[j]));
+            sentence.preterms.push_back(
+                grammar->to_nonterm(sentence.tags[j]));
+            sentence.int_words.push_back(
+                grammar->to_word(sentence.words[j]));
+            sentence.int_deplabels.push_back(
+                grammar->to_deplabel(sentence.deplabels[j]));
             // (*sentences)[i].struct_deplabels.push_back(
             //     DepLabel::build((*sentences)[i].deplabels[j],
             //                     grammar->nt_indices[0]));
 
         }
+        if (options[POSITIVE_FEATURES]) {
+            for (int j = 0; j < sentence.gold_rules.size(); ++j) {
+                scorer.add_positive_rule(sentence, sentence.gold_rules[j]);
+            }
+        }
     }
 
     // Make scorer.
-    FeatureScorer scorer(grammar, options[DELEX]);
+
     if (options[TEST]) {
         scorer.is_cost_augmented_ = false;
         vector<Sentence> *sentences = read_sentence(string(options[SENTENCE_TEST].arg));

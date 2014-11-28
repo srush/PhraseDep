@@ -21,27 +21,9 @@ class Triple {
 Triple(const Triple &o) :
         _size_a(o._size_a), _size_b(o._size_b), _size_c(o._size_c), _total_size(o._total_size) {}
 
-Triple(long size_a, long size_b, long size_c)
+    Triple(long size_a, long size_b, long size_c)
             : _size_a(size_a), _size_b(size_b), _size_c(size_c),
               _total_size(size_a * size_b * size_c) {}
-
-    // int apply(int a, int b, int c) const {
-    //     return a * _size_b * _size_c + b * _size_c + c;
-    // }
-
-
-//     inline void inc(int a, int b, int c, vector<int> *base, int *tally,
-//                     const vector<double> *weights, double *score) const {
-//         int index = *tally + apply(a, b, c);
-//         if (weights != NULL) {
-//             *score += (*weights)[((int)abs(index)) % n_size];
-//         } else {
-//             base->push_back(index);
-//         }
-//         (*tally) += _total_size;
-// //(*tally) += _total_size;
-
-//     }
 
     long _size_a;
     long _size_b;
@@ -52,25 +34,10 @@ Triple(long size_a, long size_b, long size_c)
 class Double {
   public:
     Double() {}
-Double(const Double &o) :
+    Double(const Double &o) :
         _size_a(o._size_a), _size_b(o._size_b), _total_size(o._total_size) {}
     Double(long size_a, long size_b)
             : _size_a(size_a), _size_b(size_b), _total_size(size_a * size_b) {}
-
-    // int apply(int a, int b) const {
-    //     return a * _size_b + b;
-    // }
-
-    // void inc(int a, int b, vector<int> *base, int *tally, const vector<double> *weights, double *score) const {
-    //     int index = *tally + apply(a, b);
-    //     if (weights != NULL) {
-    //         *score += (*weights)[((int)abs(index)) % n_size];
-    //     } else {
-    //         base->push_back(index);
-    //     }
-    //     (*tally) += _total_size;
-    // }
-
     long  _total_size;
 
     long _size_a;
@@ -81,24 +48,29 @@ Double(const Double &o) :
 // Replicated from python training code.
 class FeatureGen {
   public:
-FeatureGen(const Grammar *grammar, bool delex);
+    FeatureGen(const Grammar *grammar, bool delex);
+
 
     double generate(const Sentence &sentence,
-                        const AppliedRule &rule,
-                        vector<long> *base,
-                        const vector<double> *weights) const;
+                    const AppliedRule &rule,
+                    vector<long> *base,
+                    const vector<double> *weights) const;
+
+
+
   private:
     vector <int> singles;
     vector <Triple> triples;
     vector <Double> doubles;
     const Grammar *grammar_;
-bool delex_;
+    bool delex_;
 };
 
 class FeatureScorer : public Scorer {
   public:
-    FeatureScorer(const Grammar *grammar, bool delex)
-            : perceptron_(n_size), feature_gen_(grammar, delex) {}
+    FeatureScorer(const Grammar *grammar, bool delex, bool positive_features)
+            : perceptron_(n_size), feature_gen_(grammar, delex),
+              use_positive_features_(positive_features) {}
 
     void set_sentence(const Sentence *sentence) {
         sentence_ = sentence;
@@ -108,59 +80,47 @@ class FeatureScorer : public Scorer {
 
     void update(const vector<AppliedRule> &good, const vector<AppliedRule> &bad);
 
+    void add_positive_rule(const Sentence &sentence,
+                           const AppliedRule &positive_rule) {
+        assert(use_positive_features_);
+        vector<long> features;
+
+        feature_gen_.generate(sentence, positive_rule, &features, NULL);
+        for (int i = 0; i < features.size(); ++i) {
+            positive_features_[features[i]] = positive_feature_count_;
+            positive_feature_count_++;
+        }
+    }
+
+    long hashed_feature(long val) const {
+        if (!use_positive_features_) {
+            return ((long)abs(val)) % n_size;
+        } else {
+            map<int, int>::const_iterator iter = positive_features_.find(val);
+            if (iter != positive_features_.end()) {
+                return iter->second;
+            } else {
+                int start = positive_feature_count_;
+                return start  + (((long)abs(val)) % n_size - start);
+            }
+        }
+    }
+
+
     Perceptron perceptron_;
     bool is_cost_augmented_;
 
 
-private:
+  private:
 
     FeatureGen feature_gen_;
     const Sentence *sentence_;
+
+    bool use_positive_features_;
+    int positive_feature_count_ = 0;
+    map<int, int> positive_features_;
+
 };
 
 
-
-
-            // base = [// (X, tags[rule.h]], tags[rule.m]]),
-        //         // (X, p["TAG"][o[:, HEAD]]),
-        //         (X, top),
-        //         // (X, Y),
-        //         // (X, Z),
-        //         (mod_count[o[:, HEAD], 0], o[:, RULE]),
-        //         (mod_count[o[:, HEAD], 1], o[:, RULE]),
-        //         (first_child, o[:, RULE]),
-        //         (last_child, o[:, RULE]),
-        //         (is_unary,),
-        //         // (is_unary, p["TAG"][o[:, HEAD]]),
-        //         // (is_unary, X),
-        //         (is_unary, size == 0),
-        //         (X, Y, p["TAG"][o[:, HEAD]]),
-        //         (X, Z, p["TAG"][o[:, HEAD]]),
-        //         (X, p["WORD"][o[:, HEAD]]),
-        //         (o[:, RULE], p["TAG"][o[:, MOD]]),
-        //         (o[:, RULE], p["TAG"][o[:, HEAD]]),
-        //         (o[:, RULE], p["TAG"][o[:, HEAD]], p["WORD"][o[:, MOD]]),
-        //         (o[:, RULE], p["WORD"][o[:, HEAD]], p["TAG"][o[:, MOD]]),
-        //         (bdist, o[:, RULE]),
-        //         (direction, bdist1, bdist2),
-        //         (o[:, RULE],)];
-
-    //     double score() {
-    //     double score = 0.0;
-    //     vector<vector<int> > features;
-    //     vector<vector<int> > templates;
-    //     generate(&features);
-    //     int base = 0;
-    //     for (int i = 0; i < features.size(); ++i) {
-    //         int val = 0;
-    //         int mult = 1;
-    //         for (int j = 0; j < features[i].size(); ++j) {
-    //             val += features[i][j] * mult;
-    //             mult = templates[i][j];
-    //         }
-    //         score += weights[val + base % 1000000];
-    //         base += mult;
-    //     }
-    //     return base;
-    // }
 #endif  // FEATURES_H_

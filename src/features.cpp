@@ -3,31 +3,41 @@
 #include <iostream>
 #include <map>
 
-double FeatureScorer::score(const AppliedRule &rule) const{
+double FeatureScorer::score(const AppliedRule &rule) const {
     double score = 0.0;
     vector<long> features;
-    if (!is_cost_augmented_){
-        return feature_gen_.generate(*sentence_, rule, &features, &perceptron_.weights);
-    }else{
+    feature_gen_.generate(*sentence_, rule, &features, NULL);
+    for (long i = 0; i < features.size(); ++i) {
+        score += perceptron_.weights[hashed_feature(features[i])];
+    }
+
+    if (!is_cost_augmented_) {
+        return score;
+        // feature_gen_.generate(*sentence_, rule,
+        //                              &features, &perceptron_.weights);
+    } else{
         double cost = 1;
         for (int j = 0; j < sentence_->gold_rules.size(); ++j) {
-            if (rule.same( sentence_->gold_rules[j] ) ) {
+            if (rule.same(sentence_->gold_rules[j])) {
                 cost = 0;
                 break;
             }
         }
+        return score + cost;
         // if(cost == 0){
         //     cerr << "fin " << feature_gen_.generate(*sentence_, rule, &features, &perceptron_.weights) << "cost " << cost << endl;
         // }
-        return feature_gen_.generate(*sentence_, rule, &features, &perceptron_.weights) + cost;  
+
     }
     // for (long i = 0; i < features.size(); ++i) {
     //     long val = features[i];
     //     score += perceptron_.weights[((long)abs(val)) % 1000000];
     // }
     // return score;
-    
+
 }
+
+
 
 // void FeatureScorer::update(const vector<AppliedRule> &rules,
 //                            int direction) {
@@ -41,14 +51,14 @@ double FeatureScorer::score(const AppliedRule &rule) const{
 //     }
 // }
 
-void FeatureScorer::update(const vector<AppliedRule> &good, const vector<AppliedRule> &bad){
+void FeatureScorer::update(const vector<AppliedRule> &good,
+                           const vector<AppliedRule> &bad){
         map<long, int> count_map;
         for (int i = 0; i < good.size(); ++i) {
             vector<long> good_features;
             feature_gen_.generate(*sentence_, good[i], &good_features, NULL);
             for (int j = 0; j < good_features.size(); ++j) {
-                long val = good_features[j];
-                long index = (long)abs(val) % n_size;
+                long index = hashed_feature(good_features[j]);
                 double orignal_value = 0.0;
                 if (count_map.find(index) != count_map.end()) {
                     orignal_value = count_map[index];
@@ -60,8 +70,7 @@ void FeatureScorer::update(const vector<AppliedRule> &good, const vector<Applied
             vector<long> bad_features;
             feature_gen_.generate(*sentence_, bad[i], &bad_features, NULL);
             for (int j = 0; j < bad_features.size(); ++j) {
-                long val = bad_features[j];
-                long index = (long)abs(val) % n_size;
+                long index = hashed_feature(bad_features[j]);
                 double orignal_value = 0.0;
                 if (count_map.find(index) != count_map.end()) {
                     orignal_value = count_map[index];
@@ -70,13 +79,16 @@ void FeatureScorer::update(const vector<AppliedRule> &good, const vector<Applied
             }
         }
 
-        for(auto& iter : count_map) {
+        for (auto& iter : count_map) {
             // cerr << "update " << (long)iter.first << " with " << (int)iter.second << endl;
-            perceptron_.update((long)iter.first, (int)iter.second);
+            perceptron_.update((long)iter.first,
+                               (int)iter.second);
         }
 }
 
-FeatureGen::FeatureGen(const Grammar *grammar, bool delex) : grammar_(grammar), delex_(delex) {
+FeatureGen::FeatureGen(const Grammar *grammar, bool delex)
+        : grammar_(grammar),
+          delex_(delex) {
 
     triples.push_back(Triple(grammar_->n_nonterms, grammar->tag_index.size(), grammar->tag_index.size()));
     triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, grammar->tag_index.size()));
@@ -139,36 +151,38 @@ FeatureGen::FeatureGen(const Grammar *grammar, bool delex) : grammar_(grammar), 
     doubles.push_back(Double(grammar_->n_words, grammar_->n_rules));
     doubles.push_back(Double(grammar_->n_words, grammar_->n_nonterms));
     doubles.push_back(Double(grammar_->n_words, grammar_->n_rules));
-    
+
 }
 
 
-inline void inc3(const Triple &t, long a, long b, long c, vector<long> *base, long *tally,
+inline void inc3(const Triple &t, long a, long b, long c, vector<long> *base,
+                 long *tally,
                  const vector<double> *weights, double *score)  {
     long app = (a * t._size_b * t._size_c + b * t._size_c + c);
     long index = *tally + app;
     assert(app < t._total_size);
 
-    if (weights != NULL) {
-        *score += (*weights)[((long)abs(index)) % n_size];
-    } else {
+    // if (weights != NULL) {
+        // *score += (*weights)[((long)abs(index)) % n_size];
+    // } else {
         base->push_back(index);
-    }
+    // }
     (*tally) += t._total_size;
 }
 
-inline void inc2(const Double &t, long a, long b,  vector<long> *base, long *tally,
+inline void inc2(const Double &t, long a, long b,  vector<long> *base,
+                 long *tally,
                  const vector<double> *weights, double *score)  {
 
     long app = (a * t._size_b + b);
     long index = *tally + app;
     assert(app < t._total_size);
 
-    if (weights != NULL) {
-        *score += (*weights)[((long)abs(index)) % n_size];
-    } else {
+    // if (weights != NULL) {
+    //     *score += (*weights)[((long)abs(index)) % n_size];
+    // } else {
         base->push_back(index);
-    }
+    // }
     (*tally) += t._total_size;
 }
 
@@ -187,12 +201,13 @@ inline void inc2(const Double &t, long a, long b,  vector<long> *base, long *tal
 //     (*tally) += total_size;
 // }
 
-inline long get_word_int(const Grammar* grammar, const Sentence &sentence, int index){
+inline long get_word_int(const Grammar* grammar,
+                         const Sentence &sentence, int index){
     if (index >= 0 && index <= sentence.int_words.size()){
         return sentence.int_words[index];
-    }else if(index == -1){
+    } else if (index == -1) {
         return 0;
-    }else {
+    } else {
         return 1;
     }
 }
@@ -210,7 +225,6 @@ double FeatureGen::generate(const Sentence &sentence,
     // const NonTerminal &nt_X = grammar_->non_terminals_[X];
     // const NonTerminal &nt_Y = grammar_->non_terminals_[Y];
     // const NonTerminal &nt_Z = grammar_->non_terminals_[Z];
-
 
     long m_tag = sentence.int_tags[rule.m];
     long h_tag = sentence.int_tags[rule.h];

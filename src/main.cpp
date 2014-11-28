@@ -34,7 +34,8 @@ struct Arg: public option::Arg
 };
 
 enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH,
-                    MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE };
+                    MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE,
+LABEL_PRUNING };
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , "", option::Arg::None, "USAGE: example [options]\n\n"
@@ -47,6 +48,7 @@ const option::Descriptor usage[] =
     {MODEL,    0,"m", "model", Arg::Required, "  --model, -m  \nModel path ." },
     {TEST,    0,"t", "test", option::Arg::None, "  --test, -m  \n ." },
     {PRUNING,    0,"p", "pruning", Arg::Required, "  --pruning, -p  \n ." },
+    {LABEL_PRUNING,    0,"l", "label_pruning", Arg::Required, "  --label_pruning, -l  \n ." },
     {DELEX,    0,"p", "delex", option::Arg::None, "  --delex, -d  \n ." },
     {ORACLE,    0,"o", "oracle", option::Arg::None, "  --oracle, -o  \n ." },
     {ORACLE_TREE,    0,"z", "oracle_tree", option::Arg::None, "  --oracle_tree, -z  \n ." },
@@ -77,6 +79,10 @@ int main(int argc, char* argv[])
         read_pruning(options[PRUNING].arg, grammar);
     }
 
+    if (options[LABEL_PRUNING]) {
+        read_pruning(options[LABEL_PRUNING].arg, grammar);
+    }
+
     grammar->to_word("#START#");
     grammar->to_word("#END#");
 
@@ -91,6 +97,10 @@ int main(int argc, char* argv[])
                 grammar->to_word((*sentences)[i].words[j]));
             (*sentences)[i].int_deplabels.push_back(
                 grammar->to_deplabel((*sentences)[i].deplabels[j]));
+            // (*sentences)[i].struct_deplabels.push_back(
+            //     DepLabel::build((*sentences)[i].deplabels[j],
+            //                     grammar->nt_indices[0]));
+
         }
     }
 

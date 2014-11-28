@@ -122,6 +122,28 @@ void read_pruning(string file, Grammar *grammar) {
     }
 }
 
+
+void read_label_pruning(string file, Grammar *grammar) {
+    ifstream in_file;
+    grammar->label_pruning = true;
+    in_file.open(file.c_str());
+
+    if (in_file.is_open()) {
+        string label;
+        while (in_file >> label) {
+            int label_id = grammar->deplabel_map[label];
+            int allowed_rules;
+            in_file >> allowed_rules;
+            for (int i = 0; i < allowed_rules; ++i) {
+                int rule_num;
+                in_file >> rule_num;
+                grammar->label_rule_allowed[label_id][rule_num] = 1;
+            }
+        }
+    }
+}
+
+
 Grammar *read_rule_set(string file) {
     Grammar *grammar = new Grammar();
 

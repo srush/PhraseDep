@@ -225,7 +225,7 @@ class Chart {
             if (iter == item_score_[index].end()) {
                 item_score_[index][item.nt] = new_score;
                 span_init(item);
-            } else{
+            } else {
                 iter->second = new_score;
             }
         }
@@ -321,13 +321,13 @@ void complete(int i, int k, int h, const vector<int> &preterms,
 
         double item_score = chart->score(item);
 
-
         for (int index2 = 0;
              index2 < grammar.unary_rules_by_first[Y].size();
              ++index2) {
             int X = grammar.unary_rules_by_first[Y][index2].nt_X;
             int r = grammar.unary_rules_by_first[Y][index2].rule_num;
-            if (grammar.pruning && !grammar.rule_head_tags[r][preterms[h]])
+            if (grammar.pruning &&
+                !grammar.rule_head_tags[r][preterms[h]])
                 continue;
 
             AppliedRule rule(i, k, k, h, h, r);
@@ -352,7 +352,8 @@ void complete(int i, int k, int h, const vector<int> &preterms,
              ++index2) {
             int X = grammar.unary_rules_by_first[Y][index2].nt_X;
             int r = grammar.unary_rules_by_first[Y][index2].rule_num;
-            if (grammar.pruning && !grammar.rule_head_tags[r][preterms[h]])
+            if (grammar.pruning &&
+                !grammar.rule_head_tags[r][preterms[h]])
                 continue;
 
             AppliedRule rule(i, k, k, h, h, r);
@@ -404,25 +405,35 @@ double cky(const vector<int> &preterms,
 
                 if (h <= j) {
                     vector<bool> have_nt(N, 0);
-                    //Item other_item(j+1, k, m, Z, 2);
-                    for (int index = 0; index < chart.span_nts[j+1][k][m][2].size(); ++index) {
+                    for (int index = 0;
+                         index < chart.span_nts[j+1][k][m][2].size();
+                         ++index) {
                         int Z = chart.span_nts[j+1][k][m][2][index];
                         have_nt[Z] = 1;
                     }
 
-                    for (int index = 0; index < chart.span_nts[i][j][h][2].size(); ++index) {
+                    for (int index = 0;
+                         index < chart.span_nts[i][j][h][2].size();
+                         ++index) {
                         int Y = chart.span_nts[i][j][h][2][index];
                         Item item(i, j, h, Y, 2);
                         double item_score = chart.score(item);
 
-                        for (int r_index = 0; r_index < grammar.rules_by_first[Y].size(); ++r_index) {
-                            const BinaryRule &rule = grammar.rules_by_first[Y][r_index];
+                        for (int r_index = 0;
+                             r_index < grammar.rules_by_first[Y].size();
+                             ++r_index) {
+                            const BinaryRule &rule =
+                                    grammar.rules_by_first[Y][r_index];
                             int r = rule.rule_num;
                             int X = rule.nt_X;
                             int Z = rule.nt_Z;
                             if (grammar.pruning &&
                                 !grammar.rule_head_tags[rule.rule_num][preterms[h]])
                                 continue;
+
+                            // if (grammar.label_pruning &&
+                            //     !grammar.rule_head_tags[rule.rule_num][preterms[h]])
+                            //     continue;
 
                             if (have_nt[Z]) {
                                 Item other_item(j+1, k, m, Z, 2);
@@ -454,7 +465,8 @@ double cky(const vector<int> &preterms,
                             int r = rule.rule_num;
                             int X = rule.nt_X;
                             int Y = rule.nt_Y;
-                            if (grammar.pruning && !grammar.rule_head_tags[rule.rule_num][preterms[h]])
+                            if (grammar.pruning &&
+                                !grammar.rule_head_tags[rule.rule_num][preterms[h]])
                                 continue;
 
                             if (have_nt[Y]) {
@@ -485,14 +497,16 @@ double cky(const vector<int> &preterms,
     }
     // Item item(0, n, root_word, 0, 2);
     // for (int i = 0; i < grammar.roots.size(); ++i) {
-    int root = grammar.roots[0];
-    Item item(0, n-1, root_word, root, 2);
     // cerr << "ROOT: " << root << endl;
     // Item item1(0, n-1, root_word, root, 2);
     // if (chart.has_item(item1)) {
     //     chart.promote(item, item1);
     // }
     // }
+
+    int root = grammar.roots[0];
+    Item item(0, n-1, root_word, root, 2);
+
     stringstream out;
     *success = chart.to_tree(item, grammar, best_rules, output, out);
     if ((*success) && out) {

@@ -328,15 +328,15 @@ We begin by developing notation for a lexicalized phrase-structure formalism and
 
 \subsection{Lexicalized CFG Parsing}
 
-A lexicalized context-free grammar (LCFG) is an extension to a standard context-free grammar where each vertex also is annotated with a lexical head. Define an LCFG as a 4-tuple $(\nonterms, \rules, \terms, r)$ where:
+A binarized, lexicalized context-free grammar (LCFG) is an extension to a standard context-free grammar where each vertex also is annotated with a lexical head. Define an LCFG as a 4-tuple $(\nonterms, \rules, \terms, r)$ where:
 \begin{itemize}
 \item $\nonterms$; a set of nonterminal symbols, e.g. \Tag{NP}, \Tag{VP}.
 \item $\terms$; a set of terminal symbols, often consisting of the words in the language.
-\item $\rules$; a set of lexicalized rule productions of the form $\langle A \rightarrow \beta_1 \ldots \beta_m, k\rangle$ consisting of a parent nonterminal $A \in \nonterms$, a sequence of children $\beta_i \in \nonterms \cup \terms$ for $i \in \{1\ldots m\}$, and a distinguished head child $\beta_k$. The value $k$ comes from the head rules associated with the grammar.
+\item $\rules$; a set of lexicalized rule productions either of the form $\RuleA{A}{\beta_1}{\beta_2}$ or $\RuleB{A}{\beta_1}{\beta_2}$  consisting of a parent nonterminal $A \in \nonterms$, a sequence of children $\beta_i \in \nonterms$ for $i \in \{1\ldots 2\}$, and a distinguished head child annotated with $*$. The head child comes from the head rules associated with the grammar.
 \item $\Root$; a distinguished root symbol $\Root \in \nonterms$.
 \end{itemize}
 
-Given an input sentence $x_1, \ldots, x_n$ consisting of terminal symbols from $\terms$, define $\mathcal{Y}(x)$ as the set of valid lexicalized parses for the sentence. Informally this set consists of all ordered trees with fringe $x_1, \ldots,  x_n$, internal nodes labeled from $\nonterms$, all tree productions  $A \rightarrow \beta$ consisting of members of $\rules$, and root label $\Root$.
+Given an input sentence $x_1, \ldots, x_n$ consisting of terminal symbols from $\terms$, define $\mathcal{Y}(x)$ as the set of valid lexicalized parses for the sentence. This set consists of all binary ordered trees with fringe $x_1, \ldots,  x_n$, internal nodes labeled from $\nonterms$, all tree productions  $A \rightarrow \beta$ consisting of members of $\rules$, and root label $\Root$.
 
 
 % Given fixed sequence of terminal symbols $x_1 \in \terms, \ldots, x_n \in \terms$, for instance a sentence of words, a context-free parse consists of any ordered, finite-size tree where the interior labels come $\nonterms$, the fringe labels correspond to the initial sequence, and all tree productions
@@ -349,12 +349,12 @@ we further associate a triple $v = (\Span{i, j}, h, A)$ with each vertex in the 
 \begin{itemize}
 \item $\Span{i,j}$; the \textit{span}  of the vertex, i.e. the contiguous sequence $\{x_i, \ldots, x_j\}$ of the sentence covered by the vertex.
 
-\item $h \in \{1, \ldots n\}$; index indicating that $x_h$ is the \textit{head} of the vertex, defined recursively by the following rules:
+\item $h(v) \in \{1, \ldots n\}$; index indicating that $x_h$ is the \textit{head} of the vertex, defined recursively by the following rules:
   \begin{enumerate}
   \item  If the vertex is leaf $x_i$, then $h=i$.
-  \item Otherwise,  $h$ matches the head of the $k$'th child of the vertex where $\langle A \rightarrow \beta_1 \ldots \beta_m, k\rangle$  is the rule production at this vertex.
+  \item Otherwise,  $h$ matches the head of the $*$'th child of the vertex where $A \rightarrow \beta$  is the rule production at this vertex.
   \end{enumerate}
-  Let $h(v)$ indicate the head of vertex $v$.
+
 \item $A \in \terms \cup \nonterms$; the terminal or nonterminal symbol of the vertex.
 \end{itemize}
 
@@ -402,7 +402,7 @@ vertex $0$.
 % If each word and the pseudo-root is represented as a vertex, than
 % these relations correspond to arcs $(g_i, i)$ in a directed graph
 
-Given a valid dependency parse, we can define the span of any word $x_m$ as the set of indices reachable from vertex $m$ in the directed tree. A dependency parse is \textit{projective} if the descendants of every word in the tree form a contiguous span of the original sentence \cite{}. For we use the notation $\Left{m}$ and $\Right{m}$ to represent the left- and
+For a valid dependency parse, define the span of any word $x_m$ as the set of indices reachable from vertex $m$ in the directed tree. A dependency parse is \textit{projective} if the descendants of every word in the tree form a contiguous span of the original sentence \cite{}. For we use the notation $\Left{m}$ and $\Right{m}$ to represent the left- and
 right-boundaries of this span.
 
 The highest-scoring projective dependency parse under an arc-factored scoring function can be found in time $O(n^3)$.

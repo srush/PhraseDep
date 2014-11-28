@@ -107,6 +107,44 @@ struct Index {
     map<int, string> rmap;
 };
 
+struct DepLabel {
+  DepLabel() {}
+
+    static DepLabel build(string label, const Index &nt_index) {
+        // Label parts are of the form S+NP+VP
+
+        vector<string> label_parts(3);
+        int p = 0;
+        for (int i = 0; i < label.size(); ++i) {
+            if (label[i] == '+') {
+                p += 1;
+            } else {
+                label_parts[p] += label;
+            }
+        }
+        DepLabel out;
+
+        out.rule_label = label_parts[0];
+        out.head_label = label_parts[1];
+        out.mod_label = label_parts[2];
+
+        out.rule_label_id = nt_index.fget(out.rule_label);
+        out.head_label_id = nt_index.fget(out.head_label);
+        out.mod_label_id = nt_index.fget(out.mod_label);
+
+        return out;
+    }
+
+    string rule_label;
+    string head_label;
+    string mod_label;
+
+    int rule_label_id;
+    int head_label_id;
+    int mod_label_id;
+};
+
+
 struct NonTerminal {
     NonTerminal() {}
 
@@ -165,6 +203,9 @@ struct NonTerminal {
     bool removable;
 };
 
+
+
+
 class Grammar {
   public:
 
@@ -173,6 +214,7 @@ class Grammar {
         n_words = 0;
 
         pruning = false;
+        label_pruning = false;
     }
 
     int to_word(string word);
@@ -219,7 +261,9 @@ class Grammar {
     vector<NonTerminal> non_terminals_;
 
     vector<vector<bool> > rule_head_tags;
+    vector<vector<bool> > label_rule_allowed;
     bool pruning;
+    bool label_pruning;
 
 
     vector<int> sparse_rule_index;
@@ -229,5 +273,6 @@ class Grammar {
 
 Grammar *read_rule_set(string file);
 void read_pruning(string file, Grammar *grammar);
+void read_label_pruning(string file, Grammar *grammar);
 
 #endif  // GRAMMAR_H_

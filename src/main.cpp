@@ -108,9 +108,14 @@ int main(int argc, char* argv[])
 
         }
         if (options[POSITIVE_FEATURES]) {
+
             for (int j = 0; j < sentence.gold_rules.size(); ++j) {
                 scorer.add_positive_rule(sentence, sentence.gold_rules[j]);
             }
+
+        }
+        if (options[POSITIVE_FEATURES]) {
+            cerr << "NUM POSITIVE FEATURES: " << scorer.positive_feature_count_ << endl;
         }
     }
 

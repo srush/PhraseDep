@@ -86,9 +86,12 @@ class FeatureScorer : public Scorer {
         vector<long> features;
 
         feature_gen_.generate(sentence, positive_rule, &features, NULL);
+
         for (int i = 0; i < features.size(); ++i) {
-            positive_features_[features[i]] = positive_feature_count_;
-            positive_feature_count_++;
+            if (positive_features_.find(features[i]) == positive_features_.end()) {
+                positive_features_[features[i]] = positive_feature_count_;
+                positive_feature_count_++;
+            }
         }
     }
 
@@ -109,7 +112,7 @@ class FeatureScorer : public Scorer {
 
     Perceptron perceptron_;
     bool is_cost_augmented_;
-
+    int positive_feature_count_ = 0;
 
   private:
 
@@ -117,7 +120,6 @@ class FeatureScorer : public Scorer {
     const Sentence *sentence_;
 
     bool use_positive_features_;
-    int positive_feature_count_ = 0;
     map<int, int> positive_features_;
 
 };

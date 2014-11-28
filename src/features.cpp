@@ -52,12 +52,16 @@ double FeatureScorer::score(const AppliedRule &rule) const {
 // }
 
 void FeatureScorer::update(const vector<AppliedRule> &good,
-                           const vector<AppliedRule> &bad){
+                           const vector<AppliedRule> &bad) {
         map<long, int> count_map;
         for (int i = 0; i < good.size(); ++i) {
             vector<long> good_features;
             feature_gen_.generate(*sentence_, good[i], &good_features, NULL);
             for (int j = 0; j < good_features.size(); ++j) {
+
+                if (dont_hash_features_) {
+                    add_feature(good_features[j]);
+                }
                 long index = hashed_feature(good_features[j]);
                 double orignal_value = 0.0;
                 if (count_map.find(index) != count_map.end()) {
@@ -70,6 +74,9 @@ void FeatureScorer::update(const vector<AppliedRule> &good,
             vector<long> bad_features;
             feature_gen_.generate(*sentence_, bad[i], &bad_features, NULL);
             for (int j = 0; j < bad_features.size(); ++j) {
+                if (dont_hash_features_) {
+                    add_feature(bad_features[j]);
+                }
                 long index = hashed_feature(bad_features[j]);
                 double orignal_value = 0.0;
                 if (count_map.find(index) != count_map.end()) {

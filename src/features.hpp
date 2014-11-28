@@ -68,9 +68,11 @@ class FeatureGen {
 
 class FeatureScorer : public Scorer {
   public:
-    FeatureScorer(const Grammar *grammar, bool delex, bool positive_features)
+    FeatureScorer(const Grammar *grammar, bool delex, bool positive_features,
+                  bool dont_hash_features)
             : perceptron_(n_size), feature_gen_(grammar, delex),
-              use_positive_features_(positive_features) {}
+              use_positive_features_(positive_features),
+              dont_hash_features_(dont_hash_features) {}
 
     void set_sentence(const Sentence *sentence) {
         sentence_ = sentence;
@@ -95,8 +97,26 @@ class FeatureScorer : public Scorer {
         }
     }
 
+    void add_feature(long val) {
+        assert(dont_hash_features_);
+
+        map<int, int>::const_iterator iter = all_features_.find(val);
+        if (iter == all_features_.end()) {
+            int start = full_feature_count_;
+            all_features_[val] = full_feature_count_;
+            full_feature_count_++;
+        }
+    }
+
     long hashed_feature(long val) const {
-        if (!use_positive_features_) {
+        if (dont_hash_features_) {
+            map<int, int>::const_iterator iter = all_features_.find(val);
+            if (iter != all_features_.end()) {
+                return iter->second;
+            } else {
+                return 0;
+            }
+        } else if (!use_positive_features_) {
             return ((long)abs(val)) % n_size;
         } else {
             map<int, int>::const_iterator iter = positive_features_.find(val);
@@ -112,7 +132,9 @@ class FeatureScorer : public Scorer {
 
     Perceptron perceptron_;
     bool is_cost_augmented_;
+
     int positive_feature_count_ = 0;
+    int full_feature_count_ = 1;
 
   private:
 
@@ -122,6 +144,9 @@ class FeatureScorer : public Scorer {
     bool use_positive_features_;
     map<int, int> positive_features_;
 
+
+    bool dont_hash_features_;
+    mutable map<int, int> all_features_;
 };
 
 

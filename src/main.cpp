@@ -35,7 +35,7 @@ struct Arg: public option::Arg
 
 enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, LAMBDA,
                     MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE,
-                    LABEL_PRUNING, POSITIVE_FEATURES};
+                    LABEL_PRUNING, POSITIVE_FEATURES, NO_HASH};
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , "", option::Arg::None, "USAGE: example [options]\n\n"
@@ -54,7 +54,7 @@ const option::Descriptor usage[] =
     {ORACLE,    0,"o", "oracle", option::Arg::None, "  --oracle, -o  \n ." },
     {ORACLE_TREE,    0,"z", "oracle_tree", option::Arg::None, "  --oracle_tree, -z  \n ." },
     {POSITIVE_FEATURES,    0,"f", "positive_features", option::Arg::None, "  --positive_features, -f  \n ." },
-
+    {NO_HASH,    0,"", "no_hash", option::Arg::None, "  --no_hash  \n ." },
     {UNKNOWN, 0,"" ,  ""   , option::Arg::None, "\nExamples:\n"
                                                   "  example --unknown -- --this_is_no_option\n"
      "  example -unk --plus -ppp file1 file2\n" },
@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
     grammar->to_word("#END#");
 
     vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
-    FeatureScorer scorer(grammar, options[DELEX], options[POSITIVE_FEATURES]);
+    FeatureScorer scorer(grammar, options[DELEX], options[POSITIVE_FEATURES], options[NO_HASH]);
     for (int i = 0; i < sentences->size(); ++i) {
         Sentence &sentence = (*sentences)[i];
         for (int j = 0; j < sentence.tags.size(); ++j) {
@@ -290,7 +290,7 @@ int main(int argc, char* argv[])
 
 
                 if (i % 100 == 0) {
-                    cout << i << endl;
+                    cout << i << " " << scorer.full_feature_count_ << endl;
                 }
                 scorer.perceptron_.next_round();
             }

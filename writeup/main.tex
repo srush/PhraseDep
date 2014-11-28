@@ -213,14 +213,14 @@ still maintaining efficient run-time.
     \end{deptext}
     \deproot{2}{ROOT}
       \depedge{2}{1}{}
-      \depedge{3}{4}{}
+      \depedge{4}{3}{}
       \depedge{2}{4}{}
   \end{dependency}
 
   \scalebox{0.7}{
     \Tree [ .X(2) [ .X(1) [ .N I$_1$ ] ]  [ .V saw$_2$ ] [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
     \Tree [ .X(2)  [ .N I$_1$ ] [ .X(2)  [ .V saw$_2$ ] [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ] ]
-    \Tree [ .X(2) [ .X(1) [ .N I$_1$ ]   [ .V saw$_2$ ] ]  [ .X [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
+    \Tree [ .X(2) [ .X(1) [ .N I$_1$ ]   [ .V saw$_2$ ] ]  [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
   }
   \label{fig:inverse}
   \caption{While an LCFG parse determines a unique dependency parse, the inverse problem is non-deterministic. The figure, adapted from \cite{collins1999statistical}, shows several LCFG parse structures that all correspond to the dependency structure shown. The parentheses $X(h)$ indicate the head $h$ of each internal vertex. }
@@ -318,6 +318,19 @@ look at  producing the nonterminals of the tree.
 
 
 
+\begin{table}
+  \centering
+  \begin{tabular}{l|lll}
+    Model & sec 22 UAS & oracle score & speed \\
+    \hline
+    Berkeley &   $[O(n^5)]$ &  100\% & speed & \\
+    stanford  & $[O()]$ & oracle  &  \\
+    TurboParse & & & \\
+  \end{tabular}
+  \caption{Collins Head Rules scores on Dev.  }
+\end{table}
+
+
 
 % \section{Overview}
 
@@ -368,7 +381,7 @@ where $h(v_{p+1}) \neq i$. The full notation is illustrated in Figure~\ref{fig:s
 \begin{figure}
   \centering
 
-  
+
   \Tree [ .\node[color=red]{$(\Span{1,n}, 3, \Tag{S})$}; [ .\node[color=blue]{$(\Span{1,2}, 2,  \Tag{NP})$}; [  .\node{$(\Span{1,1}, 1,  \Tag{DT})$}; The$_1$ ]  [ .\node[color=blue]{$(\Span{2,2}, 2, \Tag{NN})$}; \textcolor{blue}{automaker$_2$} ] ] [ .\node{$(\Span{3,3}, 3,  \Tag{VBD})$}; sold$_3$ ] [ .\node{..}; ] ]
 
 
@@ -385,7 +398,7 @@ where $h(v_{p+1}) \neq i$. The full notation is illustrated in Figure~\ref{fig:s
 
   % \Tree [ .A [ .B  C ] ]
   \caption{Figure illustrating an LCFG parse. The parse is an ordered tree with fringe $x_1, \ldots, x_n$. Each vertex is annotated with a span, head, and syntactic tag. The blue vertices represent the 3-vertex spine $v_1, v_2, v_3$ of the word \texttt{automaker$_2$}. The root vertex is $v_4$, which implies that \texttt{automaker$_2$} modifies \texttt{sold$_3$} in the induced dependency graph.     }
-  \label{fig:spine}  
+  \label{fig:spine}
 \end{figure}
 
 \subsection{Dependency Parsing}
@@ -512,15 +525,15 @@ asymptotically faster.
 
 \subsection{Constrained Lexicalized CKY}
 
-We will assume in this section that the LCFG is in lexicalized Chomsky normal form, 
-with all non-preterminal rules of the form $\Rule{A}{\beta_1}{\beta_2}$. 
-In the next section we show how to convert our original grammar to this form while 
-preserving the head structure. 
+We will assume in this section that the LCFG is in lexicalized Chomsky normal form,
+with all non-preterminal rules of the form $\Rule{A}{\beta_1}{\beta_2}$.
+In the next section we show how to convert our original grammar to this form while
+preserving the head structure.
 
 A standard parsing  algorithm for a grammar in this form is the lexicalized
 variant CKY algorithm. This algorithm can be represented as a
 collection of inductive rule productions as shown in
-Figure~\ref{fig:cky}. These rules compactly encode the set of all 
+Figure~\ref{fig:cky}. These rules compactly encode the set of all
 valid parses for a given sentence under the grammar. For example consider the rule
 
 \[ \infer{(\Span{i, j}, h, A)}{(\Span{i, k}, m, \beta_1) &  (\Span{k+1, j}, h, \beta_2)} \]
@@ -551,18 +564,18 @@ $s$ is a scoring function that factors over each logical production.
 
 
 The highest-scoring parser can found by bottom-up dynamic programming
-over this set. The running time of this algorithm is linear 
+over this set. The running time of this algorithm is linear
 in the number of rules. Since five free indices $i, j, k, h, m$ and
 $|\rules|$ possible grammatical rules, the algorithm
 requires $O(n^5 |\rules|)$ time.
 
 This running-time makes this algorithm highly impractical to run on
-real data without heavy pruning. 
+real data without heavy pruning.
 
 However we are interested in a
 highly-constrained version of this problem. Assume that we are additionally given a projective dependency parse $d_1, \ldots, d_n$.
 Define the set $\mathcal{Y}(x,d)$ as all valid LCFG parses that match
-this dependency parse 
+this dependency parse
 
 \[
   {\cal Y}(x,d )  = \{ y \in {\cal Y}(x): \mathrm{for\ all\ }(h,m) \in y,  d_m =  h   \}
@@ -608,7 +621,7 @@ Now consider the following simple property of this new problem. For any word $x_
 
 Using this property, we can greatly limit the search space of the original problem.
 Instead of searching over all possible spans $\Span{i, j}$ of each modifier, we can
-precompute $\langle \Left{m},\Right{m}\rangle$.  
+precompute $\langle \Left{m},\Right{m}\rangle$.
 
 Figure~\ref{fig:cky_new} shows the new inductive rules which are
 virtually identical to the original lexicalized algorithm.
@@ -623,10 +636,10 @@ In fact, since there are $n$ dependency links $(h, m)$ and $n$ indices $i$ the n
 
 % \[ \argmax_{y \in {\cal Y}(x)} s(y;x) \]
 
-% 
+%
 % Recall that $\Left{m}$ and $\Right{m}$ are the precomputed left- and right- boundary words of the cover of word $m$.
 
-% While the algorithm is virtually identical to the standard lexicalized CKY algorithm, we are now able to fix many of the free indices. 
+% While the algorithm is virtually identical to the standard lexicalized CKY algorithm, we are now able to fix many of the free indices.
 
 % \begin{figure}
 %   \noindent \textbf{Premise:}
@@ -689,6 +702,25 @@ This label information can be used to encode further information about the parse
 if we use the label set ${\cal L} = \nonterms \times \nonterms \times \nonterms$, encoding the binary rule decisions $\Rule{A}{\beta_1}{\beta_2}$.
 
 
+\subsection{Extension: Pruning}
+
+
+Pruning discussion
+
+
+\begin{table}
+  \centering
+  \begin{tabular}{l|lll}
+    Model & \% items pruned & oracle score & speed \\
+    \hline
+    LCFG &   $[O(n^5)]$ &  100\% & speed & \\
+    Dep Parse Model  & $[O()]$ & oracle  &  \\
+    Pruned Model & $O(n)$ &  pruned oracle & \\
+  \end{tabular}
+  \caption{Pruning }
+\end{table}
+
+
 \subsection{Binarization}
 
 While the algorithm itself is not dependent on the LCFG binarization
@@ -697,18 +729,18 @@ algorithm, through $\rules$, as well as the modeling accuracy, through
 the factored scoring function $s$.
 
 % A general LCFG can be binarized while still maintaining the lexical
-% structure and making it possible to recover the original tree. 
+% structure and making it possible to recover the original tree.
 Since the parser traces a fixed dependency structure
-we select a binarization based around the head 
+we select a binarization based around the head
 structure.
 
 For simplicity, we consider binarizing rule $\langle A \rightarrow \beta_1 \ldots \beta_m,
 k\rangle$ with $m > 2$. Relative to the head $\beta_k$
 the rule has left-side $\beta_1 \ldots \beta_{k-1}$ and right-side
-$\beta_{k+1} \ldots \beta_m$. 
+$\beta_{k+1} \ldots \beta_m$.
 
 We replace this rule with binary rules that consume each side
-independently as a first-order Markov chain (horizontal Markovization). 
+independently as a first-order Markov chain (horizontal Markovization).
 The main transformation is to introduce rules
 
 \begin{itemize}
@@ -718,7 +750,7 @@ $\RuleA{A^{\Rightarrow}_{\beta_i}}{A^{\Rightarrow}_{\beta_{i-1}}}{\beta_i}$ for 
 
 \item
 $\RuleB{A^{\Leftarrow}_{\beta_i}} {\beta_i}{A^{\Leftarrow}_{\beta_{i+1}}} $ for $1< i < k$
-\end{itemize}  
+\end{itemize}
 
 Additionally we introduce several additional rules to handle the boundary cases of starting a new rule, finishing the right side, and completing a rule. (These rules are slightly modified when $k=1$ or $k=m$) .
 
@@ -726,16 +758,16 @@ Additionally we introduce several additional rules to handle the boundary cases 
 
 \item $\RuleA{A^{\Rightarrow}_{\beta_{k+1}}}{\beta_k}{\beta_{k+1}} $
 
-\item 
+\item
 $\RuleA{A^{\Rightarrow}_{\END}} {A^{\Rightarrow}_{\beta_{m-1}}}{\beta_m}$
 
 \item  $\RuleB{ A^{\Leftarrow}_{\beta_{k-1}}}{\beta_{k-1}}{A^{\Rightarrow}_{\END}}$
 
 \item
-$\RuleB{A}{\beta_1}{ A^{\Leftarrow}_{\beta_{2}}} $ 
+$\RuleB{A}{\beta_1}{ A^{\Leftarrow}_{\beta_{2}}} $
 \end{itemize}
 
-\noindent Each rule contains at most 3 nonterminals so the size of the new binarized rule set is bounded by $O(\nonterms^3)$.    
+\noindent Each rule contains at most 3 nonterminals so the size of the new binarized rule set is bounded by $O(\nonterms^3)$.
 
 
 % \subsection{Complexity Analysis}
@@ -749,9 +781,9 @@ $\RuleB{A}{\beta_1}{ A^{\Leftarrow}_{\beta_{2}}} $
 
 \section{Structured Prediction}
 
-To learn the transformation from dependency trees to phrase-structure trees, 
-we use a standard structured prediction setup. 
-The goal is to predict the highest-scoring LCFG parse for sentence and dependency tree. 
+To learn the transformation from dependency trees to phrase-structure trees,
+we use a standard structured prediction setup.
+The goal is to predict the highest-scoring LCFG parse for sentence and dependency tree.
 We define the scoring function $s$ as
 
 \[s(y;x, d, \theta) =  \theta^{\top} f(x, d, y) \]

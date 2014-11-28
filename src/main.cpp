@@ -33,9 +33,8 @@ struct Arg: public option::Arg
     }
 };
 
-enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH,
-                    MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE,
-LABEL_PRUNING };
+enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, LAMBDA,
+                    MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE };
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , "", option::Arg::None, "USAGE: example [options]\n\n"
@@ -45,6 +44,7 @@ const option::Descriptor usage[] =
     {SENTENCE,    0,"s", "sentence", Arg::Required, "  --sentence, -g  \nSentence file." },
     {SENTENCE_TEST,    0,"t", "sentence_test", Arg::Required, "  --sentence_test, -t  \nSentence test file." },
     {EPOCH,    0,"e", "epochs", Arg::Numeric, "  --epochs, -e  \nNumber of epochs." },
+    {LAMBDA,    0,"l", "lambda", Arg::Required, "  --lambda, -e  \nLambda" },
     {MODEL,    0,"m", "model", Arg::Required, "  --model, -m  \nModel path ." },
     {TEST,    0,"t", "test", option::Arg::None, "  --test, -m  \n ." },
     {PRUNING,    0,"p", "pruning", Arg::Required, "  --pruning, -p  \n ." },
@@ -183,9 +183,14 @@ int main(int argc, char* argv[])
         }
     } else {
         scorer.is_cost_augmented_ = true;
-        cerr << "begin training" << endl;
         char *temp = 0;
-        int epochs = strtol(options[EPOCH].arg, &temp, 10);
+        double lambda = strtod(options[LAMBDA].arg, &temp);
+        scorer.perceptron_.set_lambda(lambda);
+        cerr << "begin training" << endl;
+        cerr << "lambda " << scorer.perceptron_.get_lambda();
+
+        char *temp2 = 0;
+        int epochs = strtol(options[EPOCH].arg, &temp2, 10);
         char epoch_char = '1';
         for (int epoch = 0; epoch < epochs; ++epoch) {
             double total_score = 0.0;
@@ -236,8 +241,8 @@ int main(int argc, char* argv[])
                     if (!have) good.push_back(sentence->gold_rules[j]);
                 }
                 assert(best_score >= gold_score - 1e-4);
-                scorer.update(good, 1);
-                scorer.update(bad, -1);
+
+                scorer.update(good, bad);
 
                 double tscore;
                 if (best_rules.size() > 0 && sentence->gold_rules.size() > 0) {
@@ -274,16 +279,16 @@ int main(int argc, char* argv[])
                 }
                 scorer.perceptron_.next_round();
             }
-            scorer.perceptron_.finish();
+            // scorer.perceptron_.finish();
             cout << "EPOCH: " << epoch << " " << total_score / (float)total
                  << " " << total_score2 / (float)total << endl;
             scorer.perceptron_.write(string(options[MODEL].arg)
-                                     + (char)(epoch_char + epoch), false);
-            scorer.perceptron_.write(string(options[MODEL].arg)
-                                     + (char)(epoch_char + epoch) + ".average", true);
+                                     + (char)(epoch_char + epoch));
+            // scorer.perceptron_.write(string(options[MODEL].arg)
+            //                          + (char)(epoch_char + epoch) + ".average", true);
         }
 
         // Output model.
-        scorer.perceptron_.write(string(options[MODEL].arg) + ".average", true);
+        scorer.perceptron_.write(string(options[MODEL].arg));
     }
 }

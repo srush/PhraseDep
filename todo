@@ -1,9 +1,22 @@
-- Accuracy, different binarizations. Different features.
+- Train with only 5% of TreeBank. 100% dep, 5%. (maybe turn off
+   lexical features.)
+- Compare dependency on Collin Head rules with (Berkeley + Stanford CFG)
+   UAS
+- Comparison with section 0. Fei Xia paper.
+- Runtime., Select sentences based on length
+- adding simple chinese language-specific features
+
+- run maltparser (model ready)
+- Pruning fast pruning.
+- Pruning by dependency labels.
+- Try different binarization.
+- Try hashing negative features separately.
 - Comparison with other parsers. (Ling-Peng)
-- Charniak/ Berkeley - Most accurate
-- Different languages. (head rules).
-- Use this with english head rules, recover the phrase structure. (LingPeng )
-- Train a delexicalized model. (sasha) (delexicalized)
-- Theoretical analysis. O(n^2)
-- Empirical Analysis O(n)
-- Malt parser
+
+- Pruning in third section. Table -
+
+- Negative feature hashing.
+
+- Faster?
+- ZPar shift-reduce...
+- run zpar

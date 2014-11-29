@@ -776,7 +776,7 @@ $\Rule{A^{\Leftarrow}_{\beta_i}} {\beta_i}{A^{\Leftarrow*}_{\beta_{i+1}}} $ for 
 Additionally we introduce several additional rules to handle the boundary cases of starting a new rule, finishing the right side, and completing a rule. (These rules are slightly modified when $k\leq 2$ or $k=m$).
 \begin{align*}
 & \RuleA{A^{\Rightarrow}_{\beta_{k+1}}}{\beta_k}{\beta_{k+1}} & \Rule{A^{\Rightarrow*}} {A^{\Rightarrow}_{\beta_{m-1}}}{\beta_m} \\
- &\RuleB{ A^{\Leftarrow}_{\beta_{k-1}}}{\beta_{k-1}}{A^{\Rightarrow}} & \RuleB{A}{\beta_1}{ A^{\Leftarrow}_{\beta_{2}}}
+ &\Rule{A^{\Leftarrow}_{\beta_{k-1}}}{\beta_{k-1}}{A^{\Rightarrow *}} & \Rule{A}{\beta_1}{ A^{\Leftarrow*}_{\beta_{2}}}\\
 \end{align*}
 
 \noindent For example the transformation of a common rule looks like
@@ -1115,7 +1115,7 @@ Finally we consider the practical run-time of the parser on sentences of differe
 
 
 To gauge the upper bound of the accuracy of this system we consider an oracle version of the parser. For a gold parse $y$ and predicted dependencies $\hat{d}$,  define the oracle parse $y'$ as
-\[ y' = \argmin_{y' \in \mathcal{Y}(x, \hat{d})} \Delta(y, y')} \]
+\[ y' = \argmin_{y' \in \mathcal{Y}(x, \hat{d})} \Delta(y, y') \]
 \noindent Table~\ref{tab:oracle} shows the oracle accuracy of TurboParser and several other commonly used dependency parsers.
 
 We also consider the mistakes that are made by the parser compared to the

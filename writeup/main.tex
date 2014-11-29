@@ -722,13 +722,13 @@ Pruning discussion
   \centering
   \begin{tabular}{|l|lll|}
     \hline
-    Model & \% items pruned & oracle score & speed \\
+    Model & \% pruned & oracle  & speed \\
     \hline
 
     \hline
     LCFG &   $[O(n^5)]$ &  100\% & speed  \\
     Dep Parse Model  & $[O()]$ & oracle  &  \\
-    Pruned Model & $O(n)$ &  pruned oracle & \\
+    Pruned Model & $O(n)$ &  oracle & \\
     \hline
   \end{tabular}
   \caption{Pruning }
@@ -1231,6 +1231,19 @@ $\ldots$
 
 
 \section{Conclusion}
+
+With recent advances in statistical dependency parsing, state-of-the-art parsers
+have reached the comparable  dependency accuracy as the best phrase structure parsers. However,
+these parser cannot be directly used in applications that require phrase-structure prediction. In this work
+we have described a simple parsing algorithm and structured prediction system for this problem, and show that it
+performs at the accuracy of phrase-structure parsers.
+
+One question for future work is whether these results are language
+dependent, or whether these transformation can be projected across
+languages. If this were possible, we could use a system of this form to learn phrase
+structure parsers on languages with only dependency annotations.
+
+
 
 
 

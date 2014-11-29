@@ -35,7 +35,7 @@ struct Arg: public option::Arg
 
 enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, LAMBDA,
                     MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE,
-                    LABEL_PRUNING, POSITIVE_FEATURES, NO_HASH, FEATURE_FILE};
+                    LABEL_PRUNING, POSITIVE_FEATURES, NO_HASH, FEATURE_FILE, ITEMS};
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , "", option::Arg::None, "USAGE: example [options]\n\n"
@@ -56,6 +56,7 @@ const option::Descriptor usage[] =
     {POSITIVE_FEATURES,    0,"f", "positive_features", option::Arg::None, "  --positive_features, -f  \n ." },
     {NO_HASH,    0,"", "no_hash", option::Arg::None, "  --no_hash  \n ." },
     {FEATURE_FILE,    0,"", "feature_file", Arg::Required, "  --feature_file  \n ." },
+    {ITEMS,    0,"", "items", option::Arg::None, "  --items  \n ." },
     {UNKNOWN, 0,"" ,  ""   , option::Arg::None, "\nExamples:\n"
                                                   "  example --unknown -- --this_is_no_option\n"
      "  example -unk --plus -ppp file1 file2\n" },
@@ -90,6 +91,9 @@ int main(int argc, char* argv[])
     grammar->to_word("#START#");
     grammar->to_word("#END#");
 
+    grammar->tag_index.fget("#START#");
+    grammar->tag_index.fget("#END#");
+
     vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
     for (int i = 0; i < sentences->size(); ++i) {
         Sentence &sentence = (*sentences)[i];
@@ -107,19 +111,18 @@ int main(int argc, char* argv[])
             //                     grammar->nt_indices[0]));
 
         }
-        // if (options[POSITIVE_FEATURES]) {
-
-        //     for (int j = 0; j < sentence.gold_rules.size(); ++j) {
-        //         scorer.add_positive_rule(sentence, sentence.gold_rules[j]);
-        //     }
-
-        // }
-        // if (options[POSITIVE_FEATURES]) {
-        //     cerr << "NUM POSITIVE FEATURES: " << scorer.positive_feature_count_ << endl;
-        // }
     }
 
     FeatureScorer scorer(grammar, options[DELEX], options[POSITIVE_FEATURES], options[NO_HASH]);
+    if (options[POSITIVE_FEATURES]) {
+        for (int i = 0; i < sentences->size(); ++i) {
+            Sentence &sentence = (*sentences)[i];
+            for (int j = 0; j < sentence.gold_rules.size(); ++j) {
+                scorer.add_positive_rule(sentence, sentence.gold_rules[j]);
+            }
+        }
+    }
+
     if (options[NO_HASH] && options[FEATURE_FILE])  {
         scorer.read(options[FEATURE_FILE].arg);
     }
@@ -129,7 +132,8 @@ int main(int argc, char* argv[])
 
     if (options[TEST]) {
         scorer.is_cost_augmented_ = false;
-        vector<Sentence> *sentences = read_sentence(string(options[SENTENCE_TEST].arg));
+        vector<Sentence> *sentences =
+                read_sentence(string(options[SENTENCE_TEST].arg));
         for (int i = 0; i < sentences->size(); ++i) {
             for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
                 (*sentences)[i].int_tags.push_back(
@@ -153,13 +157,21 @@ int main(int argc, char* argv[])
         clock_t t = clock();
         cerr << "start" << endl;
         for (int i = 0; i < sentences->size(); ++i) {
-            const Sentence *sentence = &(*sentences)[i];
+            Sentence *sentence = &(*sentences)[i];
             scorer.set_sentence(sentence);
             vector<AppliedRule> best_rules;
             bool success;
             cky(sentence->preterms, sentence->words, sentence->deps,
-                *grammar, scorer, &best_rules, true, &success);
-            cout << endl;
+                *grammar, scorer, &best_rules, !options[ITEMS], &success);
+
+            if (!options[ITEMS]) {
+                cout << endl;
+            } else {
+                if (success) {
+                    sentence->gold_rules = best_rules;
+                }
+                output_sentence(*sentence);
+            }
         }
 
         t = clock() - t;
@@ -167,27 +179,12 @@ int main(int argc, char* argv[])
     } else if (options[ORACLE]) {
         cerr << "ORACLE mode";
 
-        // vector<Sentence> *sentences = read_sentence(string(options[SENTENCE_TEST].arg));
-        // for (int i = 0; i < sentences->size(); ++i) {
-        //     for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
-        //         (*sentences)[i].int_tags.push_back(
-        //             grammar->tag_index.fget((*sentences)[i].tags[j]));
-        //         (*sentences)[i].preterms.push_back(
-        //             grammar->to_nonterm((*sentences)[i].tags[j]));
-        //         (*sentences)[i].int_words.push_back(
-        //             grammar->to_word((*sentences)[i].words[j]));
-        //         (*sentences)[i].int_deplabels.push_back(
-        //             grammar->to_deplabel((*sentences)[i].deplabels[j]));
-        //     }
-        // }
-
         for (int i = 0; i < sentences->size(); ++i) {
             Sentence *sentence = &(*sentences)[i];
             vector<AppliedRule> best_rules;
             OracleScorer oracle(&sentence->gold_rules, grammar);
             bool success;
             if (options[ORACLE_TREE]) {
-
                 cky(sentence->preterms, sentence->words, sentence->deps,
                     *grammar, oracle, &best_rules, true, &success);
                 cout << endl;
@@ -199,8 +196,6 @@ int main(int argc, char* argv[])
                 }
                 output_sentence(*sentence);
             }
-            // cerr << "NUMBER OF RULES: " << best_rules.size()
-            //      << " " << dp_score << " " << sentence->words.size() <<  endl;
         }
     } else {
         scorer.is_cost_augmented_ = true;
@@ -279,20 +274,6 @@ int main(int argc, char* argv[])
                                             << sentence->words[0]
                                             << endl;
                 }
-
-
-                // cout << score << " " << best_rules.size() << " " << sentence->gold_rules.size() << endl;
-                // cout << correct << " " << best_rules.size() << " " << score << endl;
-
-                // cout << "BEST" << endl;
-                // for (int i = 0; i < best_rules.size(); ++i) {
-                //     cout << best_rules[i].i << " " << best_rules[i].j <<  " " << best_rules[i].k << endl;
-                // }
-                // cout << "GOLD" << endl;
-
-                // for (int i = 0; i < sentence->gold_rules.size(); ++i) {
-                //     cout << sentence->gold_rules[i].i << " " << sentence->gold_rules[i].j <<  " " << sentence->gold_rules[i].k << endl;
-                // }
 
 
                 if (i % 100 == 0) {

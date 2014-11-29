@@ -2,6 +2,7 @@
 % File naaclhlt2015.tex
 %
 
+
 \documentclass[11pt,letterpaper]{article}
 \usepackage{naaclhlt2015}
 \usepackage{times}
@@ -368,12 +369,16 @@ down parser based on a simple X-bar grammar and a small set of lexicalized featu
 
 \begin{table}
   \centering
-  \begin{tabular}{l|lll}
+  \begin{tabular}{|l|lll|}
+    \hline
     Model & sec 22 UAS & oracle score & speed \\
     \hline
-    Berkeley &   $[O(n^5)]$ &  100\% & speed & \\
+
+    \hline
+    Berkeley &   $[O(n^5)]$ &  100\% & speed  \\
     stanford  & $[O()]$ & oracle  &  \\
     TurboParse & & & \\
+    \hline
   \end{tabular}
   \caption{Collins Head Rules scores on Dev.  }
   \label{fig:depcomp}
@@ -639,7 +644,8 @@ much more constrained. Given that there are $n$ dependency links $(h, m)$ and $n
 
 % While the algorithm is virtually identical to the standard lexicalized CKY algorithm, we are now able to fix many of the free indices.
 
-\begin{figure}
+\begin{figure*}
+  \begin{multicols}{2}
   \noindent \textbf{Premise:}
   \[(\Span{i, i}, i, A)\ \ \ \forall i \in \{1 \ldots n\}, A \in {\cal N}\]
 
@@ -654,11 +660,10 @@ much more constrained. Given that there are $n$ dependency links $(h, m)$ and $n
 
 \noindent \textbf{Goal:}\[ (\Span{1, n}, m, \Root) \mathrm{\ for\ any }\ m\]
 \label{fig:cky}
-\caption{Standard CKY algorithm for LCFG parsing stated as inductive rules. Starting from the \textit{premise}, any valid application of \textit{rules} that leads to a \textit{goal} is a valid parse. Finding the optimal parse with dynamic programming is linear in the number of rules. For this algorithm there are $O(n^5|\rules|)$ rules where $n$ is the length of the sentence.}
 
-\end{figure}
+% \end{figure}
 
-\begin{figure}
+% \begin{figure}
   \noindent \textbf{Premise:}
   \[(\langle i,i \rangle, i, A)\ \ \ \forall i \in \{1 \ldots n\}, A \in {\cal N}\]
 
@@ -680,9 +685,10 @@ much more constrained. Given that there are $n$ dependency links $(h, m)$ and $n
 % \\
 
 \noindent \textbf{Goal:}\[ (\Span{1, n}, m, \Root) \mathrm{\ for\ any }\ m \mathrm{\ s.t. \ } d_m = 0  \]
+\end{multicols}
 \label{fig:cky_new}
-\caption{The constrained CKY parsing algorithm for $\mathcal{Y}(x, d)$. The algorithm is nearly identical to Figure~\ref{fig:cky} except that many of the free indices are now fixed to the dependency parse. Finding the optimal parse is now $O(n^2|\rules|)$}.
-\end{figure}
+\caption{(a) Standard CKY algorithm for LCFG parsing stated as inductive rules. Starting from the \textit{premise}, any valid application of \textit{rules} that leads to a \textit{goal} is a valid parse. Finding the optimal parse with dynamic programming is linear in the number of rules. For this algorithm there are $O(n^5|\rules|)$ rules where $n$ is the length of the sentence. (b) The constrained CKY parsing algorithm for $\mathcal{Y}(x, d)$. The algorithm is nearly identical to Figure~\ref{fig:cky} except that many of the free indices are now fixed to the dependency parse. Finding the optimal parse is now $O(n^2|\rules|)$}.
+\end{figure*}
 
 % Here we assume there can
 
@@ -700,7 +706,14 @@ This label information can be used to encode further information about the parse
 if we use the label set ${\cal L} = \nonterms \times \nonterms \times \nonterms$, encoding the binary rule decisions $\Rule{A}{\beta_1}{\beta_2}$.
 
 
+% \subsection{Extension: Pruning}
+
 \subsection{Extension: Pruning}
+\label{sec:prune}
+
+We also experiment with a simple pruning dictionary pruning technique.
+For each context-free rule $A \rightarrow \beta_1\ \beta_2$ and POS tag $a$ we
+remove all rules that were not seen with that tag as a head in training.
 
 
 Pruning discussion
@@ -708,12 +721,16 @@ Pruning discussion
 
 \begin{table}
   \centering
-  \begin{tabular}{l|lll}
+  \begin{tabular}{|l|lll|}
+    \hline
     Model & \% items pruned & oracle score & speed \\
     \hline
-    LCFG &   $[O(n^5)]$ &  100\% & speed & \\
+
+    \hline
+    LCFG &   $[O(n^5)]$ &  100\% & speed  \\
     Dep Parse Model  & $[O()]$ & oracle  &  \\
     Pruned Model & $O(n)$ &  pruned oracle & \\
+    \hline
   \end{tabular}
   \caption{Pruning }
 \end{table}
@@ -721,16 +738,20 @@ Pruning discussion
 
 \subsection{Binarization}
 
-While the algorithm itself is not dependent on the LCFG binarization
-method used, the choice of binarization effects the run-time of the
-algorithm, through $\rules$, as well as the modeling accuracy, through
-the factored scoring function $s$.
+In order to have an efficient binary LCFG grammar, we must convert the
+non-binary treebank grammars to binary form.  While the algorithm
+itself is not dependent on the binarization used, this choice affects
+the run-time of the algorithm, through $\rules$, as well as the
+structure of the scoring function.
+
+Our binarization decomposes non-binary rules into fragments for
+each head-modifier pair.
 
 % A general LCFG can be binarized while still maintaining the lexical
 % structure and making it possible to recover the original tree.
-Since the parser traces a fixed dependency structure
-we select a binarization based around the head
-structure.
+% Since the parser traces a fixed dependency structure
+% we select a binarization based around the head
+% structure.
 
 For simplicity, we consider binarizing rule $\langle A \rightarrow \beta_1 \ldots \beta_m,
 k\rangle$ with $m > 2$. Relative to the head $\beta_k$
@@ -744,28 +765,42 @@ The main transformation is to introduce rules
 \begin{itemize}
 
 \item
-$\RuleA{A^{\Rightarrow}_{\beta_i}}{A^{\Rightarrow}_{\beta_{i-1}}}{\beta_i}$ for $k > i > m$
+$\Rule{A^{\Rightarrow}_{\beta_i}}{A^{\Rightarrow*}_{\beta_{i-1}}}{\beta_i}$ for $k < i < m$
 
 \item
-$\RuleB{A^{\Leftarrow}_{\beta_i}} {\beta_i}{A^{\Leftarrow}_{\beta_{i+1}}} $ for $1< i < k$
+$\Rule{A^{\Leftarrow}_{\beta_i}} {\beta_i}{A^{\Leftarrow*}_{\beta_{i+1}}} $ for $1< i < k$
 \end{itemize}
 
-Additionally we introduce several additional rules to handle the boundary cases of starting a new rule, finishing the right side, and completing a rule. (These rules are slightly modified when $k=1$ or $k=m$) .
 
-\begin{itemize}
+% As an example consider the rule
 
-\item $\RuleA{A^{\Rightarrow}_{\beta_{k+1}}}{\beta_k}{\beta_{k+1}} $
+Additionally we introduce several additional rules to handle the boundary cases of starting a new rule, finishing the right side, and completing a rule. (These rules are slightly modified when $k\leq 2$ or $k=m$).
+\begin{align*}
+& \RuleA{A^{\Rightarrow}_{\beta_{k+1}}}{\beta_k}{\beta_{k+1}} & \Rule{A^{\Rightarrow*}} {A^{\Rightarrow}_{\beta_{m-1}}}{\beta_m} \\
+ &\RuleB{ A^{\Leftarrow}_{\beta_{k-1}}}{\beta_{k-1}}{A^{\Rightarrow}} & \RuleB{A}{\beta_1}{ A^{\Leftarrow}_{\beta_{2}}}
+\end{align*}
 
-\item
-$\RuleA{A^{\Rightarrow}_{\END}} {A^{\Rightarrow}_{\beta_{m-1}}}{\beta_m}$
+\noindent For example the transformation of a common rule looks like
 
-\item  $\RuleB{ A^{\Leftarrow}_{\beta_{k-1}}}{\beta_{k-1}}{A^{\Rightarrow}_{\END}}$
+\begin{center}
+  \scalebox{0.6}{ \Tree [ .S NP VP$^*$ NP NP ] $\Rightarrow$ \Tree [
+    .S NP [ .S$^{\Rightarrow*}$ [ .S$^{\Rightarrow*}_{NP}$ VP$^*$ NP ]
+    NP ] ] }
+\end{center}
 
-\item
-$\RuleB{A}{\beta_1}{ A^{\Leftarrow}_{\beta_{2}}} $
-\end{itemize}
+\noindent Each rule contains at most 3 original nonterminals so the size of the new binarized rule set is bounded by $O(\nonterms^3)$.
 
-\noindent Each rule contains at most 3 nonterminals so the size of the new binarized rule set is bounded by $O(\nonterms^3)$.
+% \begin{figure}
+%   \centering
+%   \scalebox{0.6}{
+%   \Tree [ .S NP VP$^*$ NP NP ]
+%   $\Rightarrow$
+%   \Tree [ .S NP   [ .S$^{\Rightarrow*}$ [ .S$^{\Rightarrow*}_{NP}$ VP$^*$  NP ]  NP ]   ]
+% }
+%   \label{fig:rule}
+% \end{figure}
+
+
 
 
 % \subsection{Complexity Analysis}
@@ -972,85 +1007,233 @@ training example which is done using the algorithm of Figure~\ref{}.
 % Note that we are optimizing towards the oracle parse.
 
 
-\section{Data and Setup}
+\section{Setup}
 
 
-\subsection{Data}
+\subsection{Data and Methods}
 
-We used wsj..
+For English experiments we use the standard Penn Treebank (PTB)
+experimental setup \cite{marcus1993building}. Training is done on
+section 2-21, development on section 22, and test of section 23.
 
-We used ctb 5-1..
+For Chinese experiment, we the standard Chinese Treebank 5.1 (CTB)
+experimental setup \cite{xue2005penn}.
+
+Part-of-speech tagging is done using TurboTagger
+\cite{martins2013turning}. Prior to training, the train sections are
+automatically tagged using 10-fold jack-knifing. At training time, the
+gold dependency structures are computed using the Collins head rules
+\cite{collins2003head}.\footnote{ We experimented with using
+  jackknifed dependency parses $d'$ at training time with oracle tree
+  structures, i.e. $\argmin_{y' \in \mathcal{Y}(x, d')} \Delta(y, y)$,
+  but found that this did not improve performance.}
+
+Evaluation for phrase-structure parses is performed using the \texttt{evalb}\footnote{http://nlp.cs.nyu.edu/evalb/} script using a standard setup and for dependency parsing using unlabeled accuracy score (UAS).
+
+We implemented the grammar binarization, head rules, and pruning
+tables in Python, and the parser, features, and training in C++. The
+core run-time decoding algorithm is self contained and requires less
+than 500 lines of code. Both are publicly available.\footnote{Withheld
+  for review}
+
+% Parser is in C++, publicly available, 500 lines of code..
+% At training time, we run 10-fold jack-knifing to produce dependency parses $\hat{d}$. We then run a single pass to calculate $\bar{y}$ for each training example.
 
 
-At training time, we run 10-fold jack-knifing to produce dependency parses $\hat{d}$. We then run a single pass to calculate $\bar{y}$ for each training example.
 
 
 
-\subsection{Implementation}
 
-We built...
+% \subsection{Binarization}
 
-Parser is in C++, publicly available, 500 lines of code..
-
-
-\subsection{Binarization}
-
-Before describing our parsing algorithm we first describe a binarization approach to make efficient parsing possible and highlight the relationship between the LCFG and the dependency parse.
+% Before describing our parsing algorithm we first describe a binarization approach to make efficient parsing possible and highlight the relationship between the LCFG and the dependency parse.
 
 % We can binarize a context-free grammar to produce a new grammar where for all rules $A \rightarrow \beta$ the length of $\beta$ is in either $\{1, 2\}$
 % in such a way that we can obtain the original tree.
 
 % We first describe our binarization approach. Our aim is for every non-unary rule to correspond to exactly one dependency arc.
 
+% \subsection{}
 
-\subsection{Extension: Pruning}
+\section{Experiments}
 
-We also experiment with a simple pruning dictionary pruning technique.
-For each context-free rule $A \rightarrow \beta_1\ \beta_2$ and POS tag $a$ we
-remove all rules that were not seen with that tag as a head in training.
+We ran experiments to assess the accuracy of the method, its run-time efficiency, the amount of phrase-structure data required, and the effect of dependency accuracy.
 
-
-
-\subsection{}
-
-\section{Results}
-
-
-\subsection{}
-
-
-\begin{table*}
-  \centering
-  Parsing Results
-
-
-  \begin{tabular}{l|lllllll}
-    \hline
-    & \multicolumn{7}{|c}{wsj} \\
-    \hline
-    & speed & fscore \\
-    \hline
-    Petrov & & & \\
-    Carreras & & & \\
-    \hline
-    \hline
-    & \multicolumn{7}{|c}{ctb} \\
-    \hline
-  \end{tabular}
-  \caption{This is the big monster result table that should tower above all comers. }
-\end{table*}
+\subsection{Parsing Accuracy}
 
 \begin{table}
   \centering
-  \begin{tabular}{l|ll}
+
+  \begin{tabular}{|l|lll|}
+    \hline
+    & \multicolumn{3}{|c|}{PTB} \\
+    \hline
+
+    \hline
+    model &  dev fscore & & test fscore  \\
+    \hline
+    Petrov[06] \nocite{petrov2006learning} & & & \\
+    Carreras[08] \nocite{carreras2008tag} & & & \\
+    Zhu[13] \nocite{zhu2013fast} & &  & \\
+    Charniak[00] \nocite{charniak2000maximum} & & & \\
+    Stanford[] & & & \\
+    \textsc{ParseDep} & & & \\
+    \hline
+    \hline
+    & \multicolumn{3}{|c|}{CTB} \\
+    model &  dev fscore & & test fscore  \\
+    \hline
+
+    \hline
+    Petrov[06] \nocite{petrov2006learning} & & & \\
+    Carreras[08] \nocite{carreras2008tag} & & & \\
+    Zhu[13] \nocite{zhu2013fast} & &  & \\
+    Stanford[] & & & \\
+    Charniak[00] \nocite{charniak2000maximum} & & & \\
+    \textsc{ParseDep} & & & \\
+    \hline
+  \end{tabular}
+  \label{tab:acc}
+  \caption{ Accuracy results on the Penn Treebank and Chinese Treebank datasets. Comparisons are to state-of-the-art non-reranking phrase-structure parsers including:  Petrov[06] \cite{petrov2006learning}, Carraras[08] \cite{carreras2008tag}, Zhu[13] \cite{zhu2013fast}, Charniak[00] \cite{charniak2000maximum}, and Stanford[] \cite{}.    }
+\end{table}
+
+Our first experiments, shown in Table~\ref{tab:acc}, examine the accuracy of the phrase-structure trees produced by the parser. For these experiments,
+we use TurboParser \cite{martins2013turning} to predict downstream dependencies.
+
+$\ldots$
+
+
+\subsection{Efficiency}
+
+Our next set of experiments consider the efficiency of the model. For these experiments we consider both the full and pruned version of the parser using the pruning described in section~\ref{sec:prune}. Table~\ref{tab:speed} shows that in practice the parser is quite fast,  averaging around \% tokens per second at high accuracy.
+
+We also consider the end-to-end speed of the parser when combined with different downstream dependencies. We look at
+
+Finally we consider the practical run-time of the parser on sentences of different length. Figure~\ref{} shows the graph.
+
+
+\subsection{Analysis}
+
+
+To gauge the upper bound of the accuracy of this system we consider an oracle version of the parser. For a gold parse $y$ and predicted dependencies $\hat{d}$,  define the oracle parse $y'$ as
+\[ y' = \argmin_{y' \in \mathcal{Y}(x, \hat{d})} \Delta(y, y')} \]
+\noindent Table~\ref{tab:oracle} shows the oracle accuracy of TurboParser and several other commonly used dependency parsers.
+
+We also consider the mistakes that are made by the parser compared to the
+mistakes made. For each of the bracketing errors made by the parser, we can classify it as a bracketing mistake, a dependency mistake or neither.
+
+
+\begin{table}
+  \centering
+
+  \begin{tabular}{|l|lll|}
+    \hline
+    Model & oracle & fscore & speed  \\
+    \hline
+
+    \hline
+    \textsc{TurboParser}& & & \\
+    \textsc{MaltParser}& & & \\
+    \textsc{MIT}& & & \\
+    \hline
+  \end{tabular}
+
+  \vspace{0.5cm}
+
+  \begin{tabular}{|lll|}
+    \hline
+     oracle & dep & dev  \\
+    \hline
+
+    \hline
+    & & \\
+    \hline
+  \end{tabular}
+  \label{tab:oracle}
+  \caption{(a) Oracle accuracy for the predicted dependency trees of commonly used dependency parsers including TurboParser \cite{martins2013turning}, MaltParser \cite{nivre2006maltparser}, and MIT \cite{}. (b) Classification of the bracketing mistakes made by the parser. }
+\end{table}
+
+
+\subsection{Conversion}
+
+Previous work on this problem has looked at converting dependency trees to phrase-structure trees using linguistic rules \cite{xia2001converting,xia2009towards}. This work is targeted towards the development of treebanks, particularly converting dependency treebanks to phrase-structure treebanks.
+For this application, it is useful to convert gold trees as opposed to predicted trees.
+
+To compare to this work, we train our parser with gold tags and run on gold dependency trees in development. Table~\ref{tab:convert} give the results for this task.
+
+
+\begin{table}
+  \centering
+  \begin{tabular}{|l|ll|}
+
+    \hline
+    model & dev fscore & \\
+    \hline
+
+    \hline
+    Xia[0] & & \\
+    \textsc{ParseDep}  & & \\
+    \hline
+
+  \end{tabular}
+  \caption{}
+  \label{tab:convert}
+\end{table}
+
+\subsection{Training Size}
+
+Finally we consider a variant setup. It is often cheaper to develop
+dependency treebanks than full phrase-structure treebanks, and they
+exists for more languages \cite{}. For these languages we may have a small
+amount of phrase-structure annotations and a large amount of dependency annotations.
+
+\begin{table}
+  \centering
+  \begin{tabular}{|l|ll|}
+
+    \hline
+    model & dev fscore & \\
+    \hline
+
+    \hline
+    \textsc{ParseDep[5\%]}  & & \\
+    \textsc{ParseDep[10\%]}  & & \\
+    \textsc{ParseDep[20\%]}  & & \\
+    \hline
+
+  \end{tabular}
+  \caption{}
+  \label{tab:size}
+\end{table}
+
+
+To simulate this setup, we consider training a dependency parser on the full PTB, but limit our model to a small slice of the treebank. Table~\ref{size} shows the development set results with different splits of the training data.
+
+$\ldots$
+
+\begin{table}
+  \centering
+  \begin{tabular}{|l|ll|}
+    \hline
     Model & fscore & speed  \\
     \hline
     \textsc{TurboParser} & & \\
     \textsc{MaltParser} & & \\
-    \textsc{EasyFirst} & & \\
+    \textsc{MIT} & & \\
+    \hline
   \end{tabular}
-  \caption{This }
+
+  \missingfigure{Speed length graph}
+  \label{tab:speed}
+  \caption{Experiments of parsing speed. (a) The speed of the parser on its own and with pruning. (b) The end-to-end speed of the parser when combined with different dependency parsers. }
 \end{table}
+
+
+
+
+\section{Conclusion}
+
+
 
 \appendix{}
 
@@ -1085,6 +1268,7 @@ Consider the LCFG grammar with two rules $A = \RuleA{X}{X}{X}$ and  $ B = \RuleB
 \Tree [ .X  [ .X  [ .$\vdots$ $x_{n+1}$ ]   $x_{2n}$ ] $x_{2n+1}$ ]
 }
 \end{center}
+
 
 \noindent Since there must be equal $A$s and $B$s and all orders are possible, there are $2n \choose n$ valid parses and $|\mathcal{Y}(x, d)|$ is $O(2^n)$.
 % \textbf{Acknowledgment} sections should go as a last (unnumbered) section immediately

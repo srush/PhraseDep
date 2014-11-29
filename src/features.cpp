@@ -15,7 +15,7 @@ double FeatureScorer::score(const AppliedRule &rule) const {
         return score;
         // feature_gen_.generate(*sentence_, rule,
         //                              &features, &perceptron_.weights);
-    } else{
+    } else {
         double cost = 1;
         for (int j = 0; j < sentence_->gold_rules.size(); ++j) {
             if (rule.same(sentence_->gold_rules[j])) {
@@ -24,32 +24,9 @@ double FeatureScorer::score(const AppliedRule &rule) const {
             }
         }
         return score + cost;
-        // if(cost == 0){
-        //     cerr << "fin " << feature_gen_.generate(*sentence_, rule, &features, &perceptron_.weights) << "cost " << cost << endl;
-        // }
 
     }
-    // for (long i = 0; i < features.size(); ++i) {
-    //     long val = features[i];
-    //     score += perceptron_.weights[((long)abs(val)) % 1000000];
-    // }
-    // return score;
-
 }
-
-
-
-// void FeatureScorer::update(const vector<AppliedRule> &rules,
-//                            int direction) {
-//     for (int i = 0; i < rules.size(); ++i) {
-//         vector<long> features;
-//         feature_gen_.generate(*sentence_, rules[i], &features, NULL);
-//         for (int j = 0; j < features.size(); ++j) {
-//             long val = features[j];
-//             perceptron_.update((long)abs(val) % n_size, direction);
-//         }
-//     }
-// }
 
 void FeatureScorer::update(const vector<AppliedRule> &good,
                            const vector<AppliedRule> &bad) {
@@ -93,6 +70,171 @@ void FeatureScorer::update(const vector<AppliedRule> &good,
         }
 }
 
+
+inline long get_word_int(const Grammar* grammar,
+                         const Sentence &sentence,
+                         int index){
+    if (index >= 0 && index < sentence.int_words.size()) {
+        return sentence.int_words[index];
+    } else if (index == -1) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+inline long get_tag_int(const Grammar* grammar,
+                        const Sentence &sentence,
+                        int index){
+    if (index >= 0 && index < sentence.int_tags.size()) {
+        return sentence.int_tags[index];
+    } else if (index == -1) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+
+
+int span_length(int span_length) {
+    int bin_span_length = 0;
+    if (span_length <=5) {
+        bin_span_length = span_length;
+    } else if (span_length <=10) {
+        bin_span_length = 6;
+    } else if (span_length <= 20) {
+        bin_span_length = 7;
+    } else {
+        bin_span_length = 8;
+    }
+    return bin_span_length;
+}
+
+FeatureGenBackoff::FeatureGenBackoff(const Grammar *grammar)
+        : grammar_(grammar) {
+    int n_tags = grammar->tag_index.size();
+    int n_nonterms = grammar->n_nonterms;
+    int n_rules = grammar->n_rules;
+    int n_labels = grammar->n_deplabel;
+
+    for (int i = 0; i < 8; ++i) {
+        add_backed_off_template(1);
+    }
+    add_backed_off_template(n_tags);
+    add_backed_off_template(n_tags);
+    add_backed_off_template(n_nonterms);
+    add_backed_off_template(n_nonterms);
+
+    // ad hoc features.
+    add_template(n_nonterms, n_nonterms);
+    add_template(n_nonterms, n_nonterms);
+    add_template(2, n_tags);
+    add_template(2, n_nonterms);
+    add_template(2, n_rules);
+
+    add_template(10, n_nonterms);
+    add_template(10, n_rules);
+
+    add_template(10, 10, n_nonterms);
+    add_template(10, 10, n_rules);
+
+    add_template(n_nonterms, n_labels);
+    add_template(n_nonterms, n_labels);
+    add_template(n_nonterms, n_labels);
+    add_template(n_rules, n_labels);
+    add_template(n_nonterms, n_nonterms, n_labels);
+    add_template(n_nonterms, n_nonterms, n_labels);
+}
+
+void FeatureGenBackoff::add_template(int a, int b, int c/*1*/) {
+    features_.push_back(Triple(a, b, c));
+}
+
+void FeatureGenBackoff::add_backed_off_template(int plus) {
+    add_template(grammar_->n_words, grammar_->n_rules, plus);
+    add_template(grammar_->n_words, grammar_->n_nonterms, plus);
+    add_template(grammar_->tag_index.size(), grammar_->n_rules, plus);
+    add_template(grammar_->tag_index.size(), grammar_->n_nonterms, plus);
+}
+
+void FeatureGenBackoff::backed_off_features(const Sentence &sentence,
+                                            const AppliedRule &rule,
+                                            int index,
+                                            int extra,
+                                            FeatureState *state) const {
+    int word = get_word_int(grammar_, sentence, index);
+    int tag = get_tag_int(grammar_, sentence, index);
+    int rule_ = rule.rule;
+    int X = grammar_->head_symbol[rule.rule];
+
+    state->inc(word, rule_, extra);
+    state->inc(word, X, extra);
+    state->inc(tag, rule_, extra);
+    state->inc(tag, X, extra);
+}
+
+
+double FeatureGenBackoff::generate(const Sentence &sentence,
+                                   const AppliedRule &rule,
+                                   vector<long> *base,
+                                   const vector<double> *weights) const {
+
+    FeatureState state(base, weights);
+    state.features = &features_;
+
+    int X = grammar_->head_symbol[rule.rule];
+    int Y = grammar_->left_symbol[rule.rule];
+    int Z = grammar_->right_symbol[rule.rule];
+    int m_tag = sentence.int_tags[rule.m];
+    int h_tag = sentence.int_tags[rule.h];
+    bool is_unary = grammar_->is_unary[rule.rule];
+    long m_deplabel = sentence.int_deplabels[rule.m];
+
+    // 8 backed off position rules.
+    vector<int> rules = {rule.i, rule.k, rule.j, rule.j + 1,
+                         rule.i - 1, rule.k + 1, rule.h, rule.m};
+    for (int i = 0; i < rules.size(); ++i) {
+        backed_off_features(sentence, rule, rules[i], 1, &state);
+    }
+
+    //
+    backed_off_features(sentence, rule, rule.m, h_tag, &state);
+    backed_off_features(sentence, rule, rule.h, m_tag, &state);
+    backed_off_features(sentence, rule, rule.h, Y, &state);
+    backed_off_features(sentence, rule, rule.h, Z, &state);
+
+    state.inc(X, Y);
+    state.inc(X, Z);
+    state.inc(is_unary, h_tag);
+    state.inc(is_unary, X);
+    state.inc(is_unary, rule.rule);
+
+    int bin_span_length = span_length(rule.k - rule.i);
+    state.inc(bin_span_length, X);
+    state.inc(bin_span_length, rule.rule);
+
+
+    int bin_span_length1 = span_length(rule.k - rule.j);
+    int bin_span_length2 = span_length(rule.j - rule.i);
+    state.inc(bin_span_length1, bin_span_length2, X);
+    state.inc(bin_span_length1, bin_span_length2, rule.rule);
+
+
+    // Label features.
+    state.inc(X, m_deplabel);
+    state.inc(Y, m_deplabel);
+    state.inc(Z, m_deplabel);
+    state.inc(rule.rule, m_deplabel);
+    state.inc(X, Y, m_deplabel);
+    state.inc(X, Z, m_deplabel);
+}
+
+
+
+
+// THIS CODE IS DEPRECATED.
+
 FeatureGen::FeatureGen(const Grammar *grammar, bool delex)
         : grammar_(grammar),
           delex_(delex) {
@@ -115,24 +257,6 @@ FeatureGen::FeatureGen(const Grammar *grammar, bool delex)
     doubles.push_back(Double(grammar_->n_rules, grammar->tag_index.size()));
     doubles.push_back(Double(2, 2));
     doubles.push_back(Double(grammar_->n_nonterms, 2));
-
-    // doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_nonterms));
-    // doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_nonterms));
-    // doubles.push_back(Double(grammar_->n_nonterms, grammar->tag_index.size()));
-    // doubles.push_back(Double(grammar_->n_nonterms, grammar->tag_index.size()));
-    // doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_words));
-    // doubles.push_back(Double(grammar_->n_nonterms, grammar_->n_words));
-    // doubles.push_back(Double(grammar_->n_nonterms, 2));
-
-    // triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, grammar_->n_nonterms));
-
-
-    // triples.push_back(Triple(grammar_->n_rules, grammar->tag_index.size(), grammar->tag_index.size()));
-    // triples.push_back(Triple(grammar_->n_rules, grammar->n_words, grammar->tag_index.size()));
-    // triples.push_back(Triple(grammar_->n_rules, grammar->n_words, grammar->tag_index.size()));
-
-    // triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, grammar_->n_nonterms));
-    // triples.push_back(Triple(grammar_->n_nonterms, grammar_->n_nonterms, grammar_->n_nonterms));
 
     // Adding features for dependency labels
     doubles.push_back(Double(grammar_->n_nonterms, grammar->n_deplabel));
@@ -193,33 +317,6 @@ inline void inc2(const Double &t, long a, long b,  vector<long> *base,
     (*tally) += t._total_size;
 }
 
-// inline void inc1(long total_size, long a, vector<long> *base, long *tally,
-//                  const vector<double> *weights, double *score)  {
-
-//     long app = (a);
-//     long index = *tally + app;
-//     assert(app < total_size);
-
-//     if (weights != NULL) {
-//         *score += (*weights)[((long)abs(index)) % n_size];
-//     } else {
-//         base->push_back(index);
-//     }
-//     (*tally) += total_size;
-// }
-
-inline long get_word_int(const Grammar* grammar,
-                         const Sentence &sentence, int index){
-    if (index >= 0 && index <= sentence.int_words.size()){
-        return sentence.int_words[index];
-    } else if (index == -1) {
-        return 0;
-    } else {
-        return 1;
-    }
-}
-
-
 double FeatureGen::generate(const Sentence &sentence,
                             const AppliedRule &rule,
                             vector<long> *base,
@@ -253,6 +350,29 @@ double FeatureGen::generate(const Sentence &sentence,
     // cout << X << " " << Y << " " << Z << " " << nt_X.int_main << " "
     //      << nt_Y.int_main << " " << nt_Z.int_main << " " << h_tag << " " << h_word << " " << m_tag << " " << is_unary << " " << rule.rule << endl;
 
+    long first_word = sentence.int_words[rule.i];
+    long last_word = sentence.int_words[rule.k];
+
+    long before_split_word = get_word_int(grammar_, sentence, (rule.j));
+    long after_split_word = get_word_int(grammar_, sentence, (rule.j + 1));
+
+    long before_span_word = get_word_int(grammar_, sentence, (rule.i - 1));
+    long after_span_word = get_word_int(grammar_, sentence, (rule.k + 1));
+
+
+    int span_length = rule.k - rule.i;
+    int bin_span_length = 0;
+    if (span_length <=5) {
+        bin_span_length = span_length;
+    } else if (span_length <=10) {
+        bin_span_length = 6;
+    } else if (span_length <= 20) {
+        bin_span_length = 7;
+    } else {
+        bin_span_length = 8;
+    }
+
+
     long tally = 0;
     double score = 0.0;
     inc3(triples[0], X, h_tag, m_tag, base, &tally, weights, &score);
@@ -277,28 +397,12 @@ double FeatureGen::generate(const Sentence &sentence,
     inc2(doubles[5], is_unary, h_tag, base, &tally, weights, &score);
     inc2(doubles[6], is_unary, X, base, &tally, weights, &score);
     inc2(doubles[7], is_unary, rule.rule, base, &tally, weights, &score);
+
+
     inc2(doubles[8], rule.rule, h_tag, base, &tally, weights, &score);
     inc2(doubles[9], rule.rule, m_tag, base, &tally, weights, &score);
     inc2(doubles[10], is_unary, (size == 0) ? 1: 0, base, &tally, weights, &score);
     inc2(doubles[11], X, (size == sentence_size)? 1:0, base, &tally, weights, &score);
-
-    // New features.
-    // inc2(doubles[12], simple_X, simple_Y, base, &tally, weights, &score);
-    // inc2(doubles[13], simple_X, simple_Z, base, &tally, weights, &score);
-    // inc2(doubles[14], simple_X, h_tag, base, &tally, weights, &score);
-    // inc2(doubles[15], simple_X, m_tag, base, &tally, weights, &score);
-    // inc2(doubles[16], simple_X, m_word, base, &tally, weights, &score);
-    // inc2(doubles[17], simple_X, h_word, base, &tally, weights, &score);
-    // inc2(doubles[18], simple_X, is_unary, base, &tally, weights, &score);
-
-
-    // inc3(triples[5], nt_X.int_main, nt_Y.int_main, nt_Z.int_main, base, &tally, weights, &score);
-
-    // // Sparse rules
-    // inc3(triples[6], simple_rule, h_tag, m_tag, base, &tally, weights, &score);
-    // inc3(triples[7], simple_rule, h_word, m_tag, base, &tally, weights, &score);
-    // inc3(triples[8], simple_rule, m_word, h_tag, base, &tally, weights, &score);
-    // inc3(triples[8], nt_X.int_main, nt_Y.int_main, , base, &tally, weights, &score);
 
     // Adding features for dependency labels
     inc2(doubles[12], X, m_deplabel, base, &tally, weights, &score);
@@ -315,21 +419,6 @@ double FeatureGen::generate(const Sentence &sentence,
     // Adding more surface features
     // Span first word, span last word and the span length
 
-    long first_word = sentence.int_words[rule.i];
-    long last_word = sentence.int_words[rule.k];
-
-    int span_length = rule.k - rule.i;
-    int bin_span_length = 0;
-    if (span_length <=5) {
-        bin_span_length = span_length;
-    }else if (span_length <=10) {
-        bin_span_length = 6;
-    }else if (span_length <= 20) {
-        bin_span_length = 7;
-    }else{
-        bin_span_length = 8;
-    }
-
     inc2(doubles[17], first_word, X, base, &tally, weights, &score);
     inc2(doubles[18], first_word, rule.rule, base, &tally, weights, &score);
     inc2(doubles[19], last_word, X, base, &tally, weights, &score);
@@ -339,16 +428,10 @@ double FeatureGen::generate(const Sentence &sentence,
     inc2(doubles[22], bin_span_length, rule.rule, base, &tally, weights, &score);
 
 
-    long before_span_word = get_word_int(grammar_, sentence, (rule.i - 1));
-    long after_span_word = get_word_int(grammar_, sentence, (rule.k + 1));
-
     inc2(doubles[23], before_span_word, X, base, &tally, weights, &score);
     inc2(doubles[24], before_span_word, rule.rule, base, &tally, weights, &score);
     inc2(doubles[25], after_span_word, X, base, &tally, weights, &score);
     inc2(doubles[26], after_span_word, rule.rule, base, &tally, weights, &score);
-
-    long before_split_word = get_word_int(grammar_, sentence, (rule.j));
-    long after_split_word = get_word_int(grammar_, sentence, (rule.j + 1));
 
     inc2(doubles[23], before_split_word, X, base, &tally, weights, &score);
     inc2(doubles[24], before_split_word, rule.rule, base, &tally, weights, &score);
@@ -359,26 +442,6 @@ double FeatureGen::generate(const Sentence &sentence,
     return score;
 }
 
-        // D       [(X, p["TAG"][o[:, HEAD]], p["TAG"][o[:, MOD]]),
-        // D        (X, p["TAG"][o[:, HEAD]]),
-        //         (X, top),
-        // D        (X, Y),
-        // D        (X, Z),
-        //         (mod_count[o[:, HEAD], 0], o[:, RULE]),
-        //         (mod_count[o[:, HEAD], 1], o[:, RULE]),
-        //         (first_child, o[:, RULE]),
-        //         (last_child, o[:, RULE]),
-        //         (is_unary,),
-        // D        (is_unary, p["TAG"][o[:, HEAD]]),
-        // D        (is_unary, X),
-        //         (is_unary, size == 0),
-        // D        (X, Y, p["TAG"][o[:, HEAD]]),
-        // D        (X, Z, p["TAG"][o[:, HEAD]]),
-        // D        (X, p["WORD"][o[:, HEAD]]),
-        // D        (o[:, RULE], p["TAG"][o[:, MOD]]),
-        // D        (o[:, RULE], p["TAG"][o[:, HEAD]]),
-        //         (o[:, RULE], p["TAG"][o[:, HEAD]], p["WORD"][o[:, MOD]]),
-        // D        (o[:, RULE], p["WORD"][o[:, HEAD]], p["TAG"][o[:, MOD]]),
-        //         (bdist, o[:, RULE]),
-        //         (direction, bdist1, bdist2),
-        //         (o[:, RULE],)]
+
+
+// END DEPRECATED.

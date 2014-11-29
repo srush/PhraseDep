@@ -11,6 +11,7 @@
 const int n_size = 100000000;
 
 class FeatureGen;
+class FeatureGenBackoff;
 class Double;
 class Triple;
 
@@ -66,11 +67,74 @@ class FeatureGen {
     bool delex_;
 };
 
+
+struct FeatureState {
+    FeatureState(vector<long> *base_,
+                 const vector<double> *weights_
+                 )
+            : base(base_), weights(weights_) {
+        tally = 0;
+        score = 0.0;
+        feature_num = 0;
+    }
+
+    vector<long> *base;
+    const vector<double> *weights;
+    long tally;
+    double score;
+    int feature_num;
+    const vector<Triple> *features;
+
+    inline void inc(long a, long b, long c=1) {
+        const Triple &t = (*features)[feature_num];
+        long app = (a * t._size_b * t._size_c + b * t._size_c + c);
+        long index = tally + app;
+        assert(app <= t._total_size);
+
+        // if (weights != NULL) {
+        // *score += (*weights)[((long)abs(index)) % n_size];
+        // } else {
+        base->push_back(index);
+        // }
+        (tally) += t._total_size;
+        feature_num += 1;
+    }
+
+};
+
+
+class FeatureGenBackoff {
+  public:
+    FeatureGenBackoff(const Grammar *grammar);
+
+    double generate(const Sentence &sentence,
+                    const AppliedRule &rule,
+                    vector<long> *base,
+                    const vector<double> *weights) const;
+
+  private:
+
+    void backed_off_features(const Sentence &sentence,
+                             const AppliedRule &rule,
+                             int index,
+                             int extra,
+                             FeatureState *state) const;
+
+    void add_template(int a, int b, int c=1);
+
+    void add_backed_off_template(int plus=1);
+
+    vector <Triple> features_;
+    const Grammar *grammar_;
+};
+
+
 class FeatureScorer : public Scorer {
   public:
     FeatureScorer(const Grammar *grammar, bool delex, bool positive_features,
                   bool dont_hash_features)
-            : perceptron_(n_size), feature_gen_(grammar, delex),
+            : perceptron_(n_size),
+              feature_gen_(grammar),
               use_positive_features_(positive_features),
               dont_hash_features_(dont_hash_features) {}
 
@@ -168,7 +232,8 @@ class FeatureScorer : public Scorer {
 
   private:
 
-    FeatureGen feature_gen_;
+    // FeatureGen feature_gen_;
+    FeatureGenBackoff feature_gen_;
     const Sentence *sentence_;
 
     bool use_positive_features_;
@@ -178,6 +243,7 @@ class FeatureScorer : public Scorer {
     bool dont_hash_features_;
     mutable map<long, int> all_features_;
 };
+
 
 
 #endif  // FEATURES_H_

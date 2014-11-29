@@ -91,10 +91,6 @@ int main(int argc, char* argv[])
     grammar->to_word("#END#");
 
     vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
-    FeatureScorer scorer(grammar, options[DELEX], options[POSITIVE_FEATURES], options[NO_HASH]);
-    if (options[NO_HASH] && options[FEATURE_FILE])  {
-        scorer.read(options[FEATURE_FILE].arg);
-    }
     for (int i = 0; i < sentences->size(); ++i) {
         Sentence &sentence = (*sentences)[i];
         for (int j = 0; j < sentence.tags.size(); ++j) {
@@ -111,17 +107,23 @@ int main(int argc, char* argv[])
             //                     grammar->nt_indices[0]));
 
         }
-        if (options[POSITIVE_FEATURES]) {
+        // if (options[POSITIVE_FEATURES]) {
 
-            for (int j = 0; j < sentence.gold_rules.size(); ++j) {
-                scorer.add_positive_rule(sentence, sentence.gold_rules[j]);
-            }
+        //     for (int j = 0; j < sentence.gold_rules.size(); ++j) {
+        //         scorer.add_positive_rule(sentence, sentence.gold_rules[j]);
+        //     }
 
-        }
-        if (options[POSITIVE_FEATURES]) {
-            cerr << "NUM POSITIVE FEATURES: " << scorer.positive_feature_count_ << endl;
-        }
+        // }
+        // if (options[POSITIVE_FEATURES]) {
+        //     cerr << "NUM POSITIVE FEATURES: " << scorer.positive_feature_count_ << endl;
+        // }
     }
+
+    FeatureScorer scorer(grammar, options[DELEX], options[POSITIVE_FEATURES], options[NO_HASH]);
+    if (options[NO_HASH] && options[FEATURE_FILE])  {
+        scorer.read(options[FEATURE_FILE].arg);
+    }
+
 
     // Make scorer.
 

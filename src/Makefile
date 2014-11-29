@@ -1,5 +1,5 @@
-CPPFLAGS=-g  -std=c++11
-LDFLAGS=-g
+CPPFLAGS=-g -O2 -DNDEBUG -std=c++11
+LDFLAGS=-g -O2 -DNDEBUG
 LDLIBS=-Wall
 
 main: main.o dp.o grammar.o features.o sentence.o

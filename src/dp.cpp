@@ -425,25 +425,15 @@ double cky(const vector<int> &preterms,
 
                 if (h <= j) {
                     vector<bool> have_nt(N, 0);
-                    for (int index = 0;
-                         index < chart.span_nts[j+1][k][m][2].size();
-                         ++index) {
-                        int Z = chart.span_nts[j+1][k][m][2][index];
+                    for (int Z : chart.span_nts[j+1][k][m][2]) {
                         have_nt[Z] = 1;
                     }
 
-                    for (int index = 0;
-                         index < chart.span_nts[i][j][h][2].size();
-                         ++index) {
-                        int Y = chart.span_nts[i][j][h][2][index];
+                    for (int Y : chart.span_nts[i][j][h][2]) {
                         Item item(i, j, h, Y, 2);
                         double item_score = chart.score(item);
 
-                        for (int r_index = 0;
-                             r_index < grammar.rules_by_first[Y].size();
-                             ++r_index) {
-                            const BinaryRule &rule =
-                                    grammar.rules_by_first[Y][r_index];
+                        for (const BinaryRule &rule : grammar.rules_by_first[Y]) {
                             int r = rule.rule_num;
                             int X = rule.nt_X;
                             int Z = rule.nt_Z;
@@ -463,7 +453,6 @@ double cky(const vector<int> &preterms,
                                 double score = scorer.score(rule);
                                 chart.update(new_item, score, item, other_item, rule,
                                              item_score, other_item_score);
-                                // assert(r < G);
                             }
                         }
                     }
@@ -475,13 +464,12 @@ double cky(const vector<int> &preterms,
                         have_nt[Y] = 1;
                     }
 
-                    for (int index = 0; index < chart.span_nts[j+1][k][h][2].size(); ++index) {
-                        int Z = chart.span_nts[j+1][k][h][2][index];
+                    for (int Z : chart.span_nts[j+1][k][h][2]) {
                         Item item(j+1, k, h, Z, 2);
                         double item_score = chart.score(item);
 
-                        for (int r_index = 0; r_index < grammar.rules_by_second[Z].size(); ++r_index) {
-                            const BinaryRule &rule = grammar.rules_by_second[Z][r_index];
+                        for (const BinaryRule &rule : grammar.rules_by_second[Z]) {
+
                             int r = rule.rule_num;
                             int X = rule.nt_X;
                             int Y = rule.nt_Y;

@@ -755,20 +755,22 @@ def chomsky_normal_form(tree, horzMarkov=None, vertMarkov=0, childChar="|", pare
                         #every time we going to the right, the left context in are consumed by one
                         del childNodes[0]
                         #newHead = "%s%s<%s>%s" % (originalNode, childChar, "-".join(childNodes[i:min([i+horzMarkov,numChildren])]),parentString) # create new head
-                        if next_step_right:
-                            newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "l-") + "-".join(childNodes[:min(len(childNodes),horzMarkov)]),parentString) # create new head
-                        else:
-                            newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "r-") + "-".join(childNodes[max(0,len(childNodes)-horzMarkov):]),parentString) # create new head
+                        #if next_step_right:
+                        #    newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "l-") + "-".join(childNodes[:min(len(childNodes),horzMarkov)]),parentString) # create new head
+                        #else:
+                        #    newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "r-") + "-".join(childNodes[max(0,len(childNodes)-horzMarkov):]),parentString) # create new head
+                        newHead = "%s%s" % (originalNode, childChar)
                         newNode = Tree(newHead, [])
                         curNode[0:] = [nodeCopy.pop(0), newNode]
 
                     else:
                         del childNodes[-1]
                         #newHead = "%s%s<%s>%s" % (originalNode, childChar, "-".join(childNodes[max([numChildren-i-horzMarkov,0]):-i]),parentString)
-                        if next_step_right:
-                            newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "l-") + "-".join(childNodes[:min(len(childNodes),horzMarkov)]),parentString) # create new head
-                        else:
-                            newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "r-") + "-".join(childNodes[max(0,len(childNodes)-horzMarkov):]),parentString) # create new head
+                        #if next_step_right:
+                        #    newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "l-") + "-".join(childNodes[:min(len(childNodes),horzMarkov)]),parentString) # create new head
+                        #else:
+                        #    newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "r-") + "-".join(childNodes[max(0,len(childNodes)-horzMarkov):]),parentString) # create new head
+                        newHead = "%s%s" % (originalNode, childChar)
                         newNode = Tree(newHead, [])
                         curNode[0:] = [newNode, nodeCopy.pop()]
 

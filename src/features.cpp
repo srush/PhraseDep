@@ -115,7 +115,7 @@ inline int span_length(int span_length) {
     return bin_span_length;
 }
 
-FeatureGenBackoff::FeatureGenBackoff(const Grammar *grammar)
+FeatureGenBackoff::FeatureGenBackoff(const Grammar *grammar, bool delex)
         : grammar_(grammar) {
     int n_tags = grammar->tag_index.size();
     int n_nonterms = grammar->n_nonterms;
@@ -298,11 +298,11 @@ inline void inc3(const Triple &t, long a, long b, long c, vector<long> *base,
     long index = *tally + app;
     assert(app < t._total_size);
 
-    // if (weights != NULL) {
-        // *score += (*weights)[((long)abs(index)) % n_size];
-    // } else {
+    if (weights != NULL) {
+        *score += (*weights)[((long)abs(index)) % n_size];
+    } else {
         base->push_back(index);
-    // }
+    }
     (*tally) += t._total_size;
 }
 
@@ -314,11 +314,11 @@ inline void inc2(const Double &t, long a, long b,  vector<long> *base,
     long index = *tally + app;
     assert(app < t._total_size);
 
-    // if (weights != NULL) {
-    //     *score += (*weights)[((long)abs(index)) % n_size];
-    // } else {
+    if (weights != NULL) {
+        *score += (*weights)[((long)abs(index)) % n_size];
+    } else {
         base->push_back(index);
-    // }
+    }
     (*tally) += t._total_size;
 }
 

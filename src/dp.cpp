@@ -40,6 +40,22 @@ struct Item {
 
 };
 
+void find_spans(int h, const vector<int> &deps,
+                vector<int> *left,
+                vector<int> *right) {
+    (*left)[h] = h;
+    (*right)[h] = h;
+    for (int i = 0; i < deps.size(); ++i) {
+        if (deps[i] == h) {
+            find_spans(i, deps, left, right);
+            if (i < h) {
+                (*left)[h] = min((*left)[h], (*left)[i]);
+            } else {
+                (*right)[h] = max((*right)[h], (*right)[i]);
+            }
+        }
+    }
+}
 
 
 void span_pruning(const int n, const vector<int> &deps,
@@ -51,6 +67,12 @@ void span_pruning(const int n, const vector<int> &deps,
     // List of head positions at each span.
     vector<vector<vector<int> > > heads(n);
     vector<vector<vector<int> > > has_head(n);
+    vector<int> left(n, -2), right(n, -2);
+    for (int i = 0; i < deps.size(); ++i) {
+        if (deps[i] == -1) {
+            find_spans(i, deps, &left, &right);
+        }
+    }
 
     // Initialize.
     for (int i = 0; i < n; ++i) {
@@ -70,18 +92,16 @@ void span_pruning(const int n, const vector<int> &deps,
             if (k >= n) continue;
 
             for (int j = i; j < k; ++j) {
-                for (int h1_index = 0; h1_index < heads[i][j].size(); ++h1_index) {
-                    int h1 = heads[i][j][h1_index];
-                    for (int h2_index = 0; h2_index < heads[j+1][k].size(); ++h2_index) {
-                        int h2 = heads[j+1][k][h2_index];
-                        if (deps[h2] == h1) {
+                for (int h1 : heads[i][j]) {
+                    for (int h2 : heads[j+1][k]) {
+                        if (deps[h2] == h1 && left[h2] == j+1 && right[h2] == k) {
                             (*chart)[i][k].push_back(DepSplit(h1, h2, j));
                             if (!has_head[i][k][h1]) {
                                 heads[i][k].push_back(h1);
                                 has_head[i][k][h1] = 1;
                             }
                         }
-                        if (deps[h1] == h2) {
+                        if (deps[h1] == h2  && left[h1] == i && right[h1] == j) {
                             (*chart)[i][k].push_back(DepSplit(h2, h1, j));
                             if (!has_head[i][k][h2]) {
                                 heads[i][k].push_back(h2);

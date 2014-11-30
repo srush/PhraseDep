@@ -104,7 +104,7 @@ struct FeatureState {
 
 class FeatureGenBackoff {
   public:
-    FeatureGenBackoff(const Grammar *grammar);
+    FeatureGenBackoff(const Grammar *grammar, bool delex);
 
     double generate(const Sentence &sentence,
                     const AppliedRule &rule,
@@ -133,7 +133,7 @@ class FeatureScorer : public Scorer {
     FeatureScorer(const Grammar *grammar, bool delex, bool positive_features,
                   bool dont_hash_features)
             : perceptron_(n_size),
-              feature_gen_(grammar),
+              feature_gen_(grammar, delex),
               use_positive_features_(positive_features),
               dont_hash_features_(dont_hash_features) {}
 
@@ -231,7 +231,7 @@ class FeatureScorer : public Scorer {
 
   private:
 
-    // FeatureGen feature_gen_old_;
+    // FeatureGen feature_gen_;
     FeatureGenBackoff feature_gen_;
     const Sentence *sentence_;
 

@@ -155,7 +155,7 @@ int main(int argc, char* argv[])
         in.close();
 
         clock_t t = clock();
-        cerr << "start" << endl;
+        cerr << "start " << sentences->size() << endl;
         for (int i = 0; i < sentences->size(); ++i) {
             Sentence *sentence = &(*sentences)[i];
             scorer.set_sentence(sentence);

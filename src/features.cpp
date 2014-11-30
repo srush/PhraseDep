@@ -6,9 +6,13 @@
 double FeatureScorer::score(const AppliedRule &rule) const {
     double score = 0.0;
     vector<long> features;
-    feature_gen_.generate(*sentence_, rule, &features, NULL);
-    for (long i = 0; i < features.size(); ++i) {
-        score += perceptron_.weights[hashed_feature(features[i])];
+    if (dont_hash_features_) {
+        feature_gen_.generate(*sentence_, rule, &features, NULL);
+        for (long i = 0; i < features.size(); ++i) {
+            score += perceptron_.weights[hashed_feature(features[i])];
+        }
+    } else {
+        score = feature_gen_.generate(*sentence_, rule, &features, &perceptron_.weights);
     }
 
     if (!is_cost_augmented_) {
@@ -97,7 +101,7 @@ inline long get_tag_int(const Grammar* grammar,
 
 
 
-int span_length(int span_length) {
+inline int span_length(int span_length) {
     int bin_span_length = 0;
     if (span_length <=5) {
         bin_span_length = span_length;
@@ -228,6 +232,7 @@ double FeatureGenBackoff::generate(const Sentence &sentence,
     state.inc(rule.rule, m_deplabel);
     state.inc(X, Y, m_deplabel);
     state.inc(X, Z, m_deplabel);
+    return state.score;
 }
 
 

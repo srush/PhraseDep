@@ -70,8 +70,7 @@ class FeatureGen {
 
 struct FeatureState {
     FeatureState(vector<long> *base_,
-                 const vector<double> *weights_
-                 )
+                 const vector<double> *weights_)
             : base(base_), weights(weights_) {
         tally = 0;
         score = 0.0;
@@ -91,11 +90,11 @@ struct FeatureState {
         long index = tally + app;
         assert(app <= t._total_size);
 
-        // if (weights != NULL) {
-        // *score += (*weights)[((long)abs(index)) % n_size];
-        // } else {
-        base->push_back(index);
-        // }
+        if (weights != NULL) {
+            score += (*weights)[((long)abs(index)) % n_size];
+        } else {
+            base->push_back(index);
+        }
         (tally) += t._total_size;
         feature_num += 1;
     }

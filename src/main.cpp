@@ -91,8 +91,8 @@ int main(int argc, char* argv[])
     grammar->to_word("#START#");
     grammar->to_word("#END#");
 
-    grammar->tag_index.fget("#START#");
-    grammar->tag_index.fget("#END#");
+    // grammar->tag_index.fget("#START#");
+    // grammar->tag_index.fget("#END#");
 
     vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
     for (int i = 0; i < sentences->size(); ++i) {

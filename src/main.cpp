@@ -48,7 +48,7 @@ const option::Descriptor usage[] =
     {LAMBDA,    0,"l", "lambda", Arg::Required, "  --lambda, -e  \nLambda" },
     {MODEL,    0,"m", "model", Arg::Required, "  --model, -m  \nModel path ." },
     {TEST,    0,"t", "test", option::Arg::None, "  --test, -m  \n ." },
-    {PRUNING,    0,"p", "pruning", Arg::Required, "  --pruning, -p  \n ." },
+    {PRUNING,    0,"p", "pruning", option::Arg::None, "  --pruning, -p  \n ." },
     {LABEL_PRUNING,    0,"l", "label_pruning", Arg::Required, "  --label_pruning, -l  \n ." },
     {DELEX,    0,"p", "delex", option::Arg::None, "  --delex, -d  \n ." },
     {ORACLE,    0,"o", "oracle", option::Arg::None, "  --oracle, -o  \n ." },
@@ -63,8 +63,22 @@ const option::Descriptor usage[] =
     {0,0,0,0,0,0}
 };
 
-int main(int argc, char* argv[])
-{
+
+void process_sentence(Sentence *sentence,
+                      Grammar *grammar) {
+    for (int j = 0; j < sentence->tags.size(); ++j) {
+        sentence->int_tags.push_back(
+            grammar->tag_index.fget(sentence->tags[j]));
+        sentence->preterms.push_back(
+            grammar->to_nonterm(sentence->tags[j]));
+        sentence->int_words.push_back(
+            grammar->to_word(sentence->words[j]));
+        sentence->int_deplabels.push_back(
+            grammar->to_deplabel(sentence->deplabels[j]));
+    }
+}
+
+int main(int argc, char* argv[]) {
     argc-=(argc>0); argv+=(argc>0); // skip program name argv[0] if present
     option::Stats  stats(usage, argc, argv);
     option::Option options[stats.options_max], buffer[stats.buffer_max];
@@ -80,12 +94,8 @@ int main(int argc, char* argv[])
 
 
     Grammar *grammar = read_rule_set(string(options[GRAMMAR].arg));
-    if (options[PRUNING]) {
-        read_pruning(options[PRUNING].arg, grammar);
-    }
-
     if (options[LABEL_PRUNING]) {
-        read_pruning(options[LABEL_PRUNING].arg, grammar);
+        read_label_pruning(options[LABEL_PRUNING].arg, grammar);
     }
 
     grammar->to_word("#START#");
@@ -96,29 +106,26 @@ int main(int argc, char* argv[])
 
     vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
     for (int i = 0; i < sentences->size(); ++i) {
-        Sentence &sentence = (*sentences)[i];
-        for (int j = 0; j < sentence.tags.size(); ++j) {
-            sentence.int_tags.push_back(
-                grammar->tag_index.fget(sentence.tags[j]));
-            sentence.preterms.push_back(
-                grammar->to_nonterm(sentence.tags[j]));
-            sentence.int_words.push_back(
-                grammar->to_word(sentence.words[j]));
-            sentence.int_deplabels.push_back(
-                grammar->to_deplabel(sentence.deplabels[j]));
-            // (*sentences)[i].struct_deplabels.push_back(
-            //     DepLabel::build((*sentences)[i].deplabels[j],
-            //                     grammar->nt_indices[0]));
+        process_sentence(&(*sentences)[i], grammar);
+    }
 
+    FeatureScorer scorer(grammar, options[DELEX],
+                         options[POSITIVE_FEATURES], options[NO_HASH]);
+    if (options[POSITIVE_FEATURES]) {
+        for (auto sentence : *sentences) {
+            for (auto rule : sentence.gold_rules) {
+                scorer.add_positive_rule(sentence, rule);
+            }
         }
     }
 
-    FeatureScorer scorer(grammar, options[DELEX], options[POSITIVE_FEATURES], options[NO_HASH]);
-    if (options[POSITIVE_FEATURES]) {
-        for (int i = 0; i < sentences->size(); ++i) {
-            Sentence &sentence = (*sentences)[i];
-            for (int j = 0; j < sentence.gold_rules.size(); ++j) {
-                scorer.add_positive_rule(sentence, sentence.gold_rules[j]);
+
+    if (options[PRUNING]) {
+        grammar->pruning = true;
+        for (auto sentence : *sentences) {
+            for (auto rule : sentence.gold_rules) {
+                int head = sentence.preterms[rule.h];
+                grammar->rule_head_tags[rule.rule][head] = 1;
             }
         }
     }
@@ -127,7 +134,6 @@ int main(int argc, char* argv[])
         scorer.read(options[FEATURE_FILE].arg);
     }
 
-
     // Make scorer.
 
     if (options[TEST]) {
@@ -135,16 +141,7 @@ int main(int argc, char* argv[])
         vector<Sentence> *sentences =
                 read_sentence(string(options[SENTENCE_TEST].arg));
         for (int i = 0; i < sentences->size(); ++i) {
-            for (int j = 0; j < (*sentences)[i].tags.size(); ++j) {
-                (*sentences)[i].int_tags.push_back(
-                    grammar->tag_index.fget((*sentences)[i].tags[j]));
-                (*sentences)[i].preterms.push_back(
-                    grammar->to_nonterm((*sentences)[i].tags[j]));
-                (*sentences)[i].int_words.push_back(
-                    grammar->to_word((*sentences)[i].words[j]));
-                (*sentences)[i].int_deplabels.push_back(
-                    grammar->to_deplabel((*sentences)[i].deplabels[j]));
-            }
+            process_sentence(&(*sentences)[i], grammar);
         }
 
         ifstream in;
@@ -184,13 +181,13 @@ int main(int argc, char* argv[])
             vector<AppliedRule> best_rules;
             OracleScorer oracle(&sentence->gold_rules, grammar);
             bool success;
+            cky(sentence->preterms, sentence->words, sentence->deps,
+                *grammar, oracle, &best_rules, options[ORACLE_TREE],
+                &success);
+
             if (options[ORACLE_TREE]) {
-                cky(sentence->preterms, sentence->words, sentence->deps,
-                    *grammar, oracle, &best_rules, true, &success);
                 cout << endl;
             } else {
-                cky(sentence->preterms, sentence->words, sentence->deps,
-                    *grammar, oracle, &best_rules, false, &success);
                 if (success) {
                     sentence->gold_rules = best_rules;
                 }

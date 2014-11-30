@@ -40,8 +40,6 @@ struct Item {
 
 };
 
-
-
 void span_pruning(const int n, const vector<int> &deps,
                   vector<vector<vector<DepSplit> > > *chart) {
 
@@ -379,7 +377,6 @@ double cky(const vector<int> &preterms,
 
     // Run the pruning stages.
     span_pruning(n, deps, &span_pruner);
-    // grammar_pruning(preterms, grammar, span_pruner, &cell_rules);
 
     Chart chart(n, grammar.n_nonterms, &words);
 
@@ -455,13 +452,18 @@ double cky(const vector<int> &preterms,
                         have_nt[Y] = 1;
                     }
 
-                    for (int index = 0; index < chart.span_nts[j+1][k][h][2].size(); ++index) {
+                    for (int index = 0;
+                         index < chart.span_nts[j+1][k][h][2].size();
+                         ++index) {
                         int Z = chart.span_nts[j+1][k][h][2][index];
                         Item item(j+1, k, h, Z, 2);
                         double item_score = chart.score(item);
 
-                        for (int r_index = 0; r_index < grammar.rules_by_second[Z].size(); ++r_index) {
-                            const BinaryRule &rule = grammar.rules_by_second[Z][r_index];
+                        for (int r_index = 0;
+                             r_index < grammar.rules_by_second[Z].size();
+                             ++r_index) {
+                            const BinaryRule &rule =
+                                    grammar.rules_by_second[Z][r_index];
                             int r = rule.rule_num;
                             int X = rule.nt_X;
                             int Y = rule.nt_Y;
@@ -471,12 +473,14 @@ double cky(const vector<int> &preterms,
 
                             if (have_nt[Y]) {
                                 Item other_item(i, j, m, Y, 2);
-                                double other_item_score = chart.score(other_item);
+                                double other_item_score =
+                                        chart.score(other_item);
                                 Item new_item(i, k, h, X, 0);
                                 AppliedRule rule(i, j, k, h, m, r);
                                 double score = scorer.score(rule);
 
-                                chart.update(new_item, score, other_item, item, rule, item_score,
+                                chart.update(new_item, score, other_item,
+                                             item, rule, item_score,
                                              other_item_score);
                                 // assert(r < G);
                             }

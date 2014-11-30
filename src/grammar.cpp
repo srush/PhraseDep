@@ -57,7 +57,9 @@ void Grammar::add_rule(BinaryRule rule) {
     }
 
     string simple_rule =
-            non_terminals_[rule.nt_X].main + "->" + non_terminals_[rule.nt_Y].main + " " +non_terminals_[rule.nt_Z].main;
+            non_terminals_[rule.nt_X].main + "->" +
+            non_terminals_[rule.nt_Y].main + " " +
+            non_terminals_[rule.nt_Z].main;
     sparse_rule_index.push_back(sparse_rules.fget(simple_rule));
 
     n_rules++;
@@ -76,7 +78,9 @@ void Grammar::add_unary_rule(UnaryRule rule) {
     is_unary.push_back(1);
     unary_rules_by_first[rule.nt_Y].push_back(rule);
 
-    string simple_rule = non_terminals_[rule.nt_X].main + "->" + non_terminals_[rule.nt_Y].main;
+    string simple_rule =
+            non_terminals_[rule.nt_X].main + "->"
+            + non_terminals_[rule.nt_Y].main;
     sparse_rule_index.push_back(sparse_rules.fget(simple_rule));
 
     n_rules++;
@@ -103,24 +107,24 @@ void Grammar::finish(const vector<int> &roots_) {
 }
 
 
-void read_pruning(string file, Grammar *grammar) {
-    ifstream in_file;
-    grammar->pruning = true;
-    in_file.open(file.c_str());
+// void read_pruning(string file, Grammar *grammar) {
+//     ifstream in_file;
+//     grammar->pruning = true;
+//     in_file.open(file.c_str());
 
-    if (in_file.is_open()) {
-        int rule_num;
-        while (in_file >> rule_num) {
-            int allowed_nt;
-            in_file >> allowed_nt;
-            for (int i = 0; i < allowed_nt; ++i) {
-                string nt;
-                in_file >> nt;
-                grammar->rule_head_tags[rule_num][grammar->to_nonterm(nt)] = 1;
-            }
-        }
-    }
-}
+//     if (in_file.is_open()) {
+//         int rule_num;
+//         while (in_file >> rule_num) {
+//             int allowed_nt;
+//             in_file >> allowed_nt;
+//             for (int i = 0; i < allowed_nt; ++i) {
+//                 string nt;
+//                 in_file >> nt;
+//                 grammar->rule_head_tags[rule_num][grammar->to_nonterm(nt)] = 1;
+//             }
+//         }
+//     }
+// }
 
 
 void read_label_pruning(string file, Grammar *grammar) {
@@ -161,7 +165,6 @@ Grammar *read_rule_set(string file) {
             in_file >>  is_unary;
             if (!is_unary) {
                 in_file >> X >> Y >> Z >> dir;
-                // cout << "[reading rule]: " << X << " " << Y << " " << Z << " " << dir << endl;
                 int nt_X = grammar->to_nonterm(X);
                 int nt_Y = grammar->to_nonterm(Y);
                 int nt_Z = grammar->to_nonterm(Z);

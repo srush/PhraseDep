@@ -231,8 +231,8 @@ class FeatureScorer : public Scorer {
 
   private:
 
-    // FeatureGen feature_gen_;
-    FeatureGenBackoff feature_gen_;
+    FeatureGen feature_gen_;
+    // FeatureGenBackoff feature_gen_;
     const Sentence *sentence_;
 
     bool use_positive_features_;

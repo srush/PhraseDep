@@ -61,6 +61,7 @@
 \newcommand{\Left}[1]{#1_{\Leftarrow}}
 \newcommand{\Right}[1]{#1_{\Rightarrow}}
 \newcommand{\Span}[1]{\langle #1 \rangle}
+\newcommand{\tri}{\langle \Left{m}, \Right{m} \rangle}
 
 \newcommand{\Tag}[1]{\texttt{#1}}
 \newcommand{\Root}{r}
@@ -376,10 +377,10 @@ the learning problem.
   \noindent\textbf{Rules:}
 
   For all   $i < m, h = d_m$  and rule  $\RuleA{A}{\beta_1}{\beta_2}$,
-  \[\infer{( \Span{ i, \Right{m} }, h, A)}{(\Span{i, \Left{m}-1}, h, \beta_1)  &  (\tri, m, \beta_2) } \]
+  \[\infer{( \Span{i, \Right{m}}, h, A)}{(\Span{i, \Left{m}-1}, h, \beta_1)  &  (\tri, m, \beta_2) } \]
 
   For all    $m < j, h = d_m$ and  rule  $\RuleB{A}{\beta_1}{\beta_2}$,
-  \[ \infer{( \Span{\Left{m}, j}, h, A)}{(\tri, m, \beta_1)  &  (\Span{\Right{m}+ 1, j}, h, \beta_2) } \]
+  \[ \infer{( \Span{ \Left{m}, j }, h, A)}{(\tri, m, \beta_1)  &  (\Span{\Right{m}+ 1, j}, h, \beta_2) } \]
 
 \noindent \textbf{Goal:}
 \[(\Span{1, n}, m, \Root) \mathrm{\ for\ any }\ m \mathrm{\ s.t. \ } d_m = 0 \]
@@ -769,7 +770,6 @@ To gauge the upper bound of the accuracy of this system we consider an oracle ve
 We also consider the mistakes that are made by the parser compared to the
 mistakes made. For each of the bracketing errors made by the parser, we can classify it as a bracketing mistake, a dependency mistake or neither.
 
-
 \begin{table}
   \centering
   \small
@@ -799,8 +799,15 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
 
 \begin{table}
   \centering
-  \begin{tabular}{ll}
-    
+  \begin{tabular}{|l|cccc|}
+    \hline
+    Class                 & Total & Pre & Rec & F1 \\ 
+    \hline
+    \textsc{+ Dep + Span +Split} &       &     &     &   \\ 
+    \textsc{+ Dep + Span -Split} &       &     &     &   \\ 
+    \textsc{- Dep + Span +Split} &       &     &     &   \\ 
+    \textsc{- Dep - Span -Split} &       &     &     &   \\ 
+    \hline
   \end{tabular}
 \end{table}
 

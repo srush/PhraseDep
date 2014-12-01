@@ -624,17 +624,15 @@ While these rules are very similar to the original, the quantifiers are
 much more constrained. Given that there are $n$ dependency links and $n$ indices, the new algorithm has $O(n^2|\rules|)$ running time.
 
 
+% \subsection{Extension: Labels}
 
+% \todo[inline]{Finish this section}
 
-\subsection{Extension: Labels}
+% Standard dependency parsers also predict labels from a set ${\cal L}$ on each dependency link.
+% In a labeled dependency parser a would be of the form $(i, j, l)$.
 
-\todo[inline]{Finish this section}
-
-Standard dependency parsers also predict labels from a set ${\cal L}$ on each dependency link.
-In a labeled dependency parser a would be of the form $(i, j, l)$.
-
-This label information can be used to encode further information about the parse structure. For instance
-if we use the label set ${\cal L} = \nonterms \times \nonterms \times \nonterms$, encoding the binary rule decisions $\Rule{A}{\beta_1}{\beta_2}$.
+% This label information can be used to encode further information about the parse structure. For instance
+% if we use the label set ${\cal L} = \nonterms \times \nonterms \times \nonterms$, encoding the binary rule decisions $\Rule{A}{\beta_1}{\beta_2}$.
 
 
 % \subsection{Extension: Pruning}
@@ -667,87 +665,9 @@ Pruning discussion
     LCFG($<20$) is the standard full lexicalized grammar limited to sentence of length 
     less than 20 words, LCFG(dep) is 
     limited to the dependency skeleton, and LCFG(prune) is the pruning described in 
-    Section~\ref{sec:prune}. \textit{Oracle} is the oracle f-score on the development data (described in Section~\ref{sec:analysis}). \textit{Speed} is the efficiency of the parser on development data in sentences per second.   
-    
-  }
+    Section~\ref{sec:prune}. \textit{Oracle} is the oracle f-score on the development data (described in Section~\ref{sec:analysis}). \textit{Speed} is the efficiency of the parser on development data in sentences per second.}
 \end{table}
 
-
-\subsection{Binarization}
-
-In order to have an efficient binary LCFG grammar, we must convert the
-non-binary treebank grammars to binary form.  While the algorithm
-itself is not dependent on the binarization used, this choice affects
-the run-time of the algorithm, through $\rules$, as well as the
-structure of the scoring function.
-
-Our binarization decomposes non-binary rules into fragments for
-each head-modifier pair.
-
-% A general LCFG can be binarized while still maintaining the lexical
-% structure and making it possible to recover the original tree.
-% Since the parser traces a fixed dependency structure
-% we select a binarization based around the head
-% structure.
-
-For simplicity, we consider binarizing rule $\langle A \rightarrow \beta_1 \ldots \beta_m,
-k\rangle$ with $m > 2$. Relative to the head $\beta_k$
-the rule has left-side $\beta_1 \ldots \beta_{k-1}$ and right-side
-$\beta_{k+1} \ldots \beta_m$.
-
-We replace this rule with binary rules that consume each side
-independently as a first-order Markov chain (horizontal Markovization).
-The main transformation is to introduce rules
-
-\begin{itemize}
-
-\item
-$\Rule{A^{\Rightarrow}_{\beta_i}}{A^{\Rightarrow*}_{\beta_{i-1}}}{\beta_i}$ for $k < i < m$
-
-\item
-$\Rule{A^{\Leftarrow}_{\beta_i}} {\beta_i}{A^{\Leftarrow*}_{\beta_{i+1}}} $ for $1< i < k$
-\end{itemize}
-
-
-% As an example consider the rule
-
-Additionally we introduce several additional rules to handle the boundary cases of starting a new rule, finishing the right side, and completing a rule. (These rules are slightly modified when $k\leq 2$ or $k=m$).
-\begin{align*}
-& \RuleA{A^{\Rightarrow}_{\beta_{k+1}}}{\beta_k}{\beta_{k+1}} & \Rule{A^{\Rightarrow*}} {A^{\Rightarrow}_{\beta_{m-1}}}{\beta_m} \\
- &\Rule{A^{\Leftarrow}_{\beta_{k-1}}}{\beta_{k-1}}{A^{\Rightarrow *}} & \Rule{A}{\beta_1}{ A^{\Leftarrow*}_{\beta_{2}}}\\
-\end{align*}
-
-\noindent For example the transformation of a common rule looks like
-
-\begin{center}
-  \scalebox{0.6}{ \Tree [ .S NP VP$^*$ NP NP ] $\Rightarrow$ \Tree [
-    .S NP [ .S$^{\Rightarrow*}$ [ .S$^{\Rightarrow*}_{NP}$ VP$^*$ NP ]
-    NP ] ] }
-\end{center}
-
-\noindent Each rule contains at most 3 original nonterminals so the size of the new binarized rule set is bounded by $O(\nonterms^3)$.
-
-% \begin{figure}
-%   \centering
-%   \scalebox{0.6}{
-%   \Tree [ .S NP VP$^*$ NP NP ]
-%   $\Rightarrow$
-%   \Tree [ .S NP   [ .S$^{\Rightarrow*}$ [ .S$^{\Rightarrow*}_{NP}$ VP$^*$  NP ]  NP ]   ]
-% }
-%   \label{fig:rule}
-% \end{figure}
-
-
-
-
-% \subsection{Complexity Analysis}
-
-% Since we know the dep tree, there are exactly $n$ $h \rightarrow m$ arcs. Therefore there are $O(n^2 |{\cal R}|)$ binary terms.
-
-
-% The unary terms are more difficult to limit. Worst case it will have $O(n^3 |{\cal R}_1|)$ terms where ${\cal R}_1$ is the set of unary rules.
-% In practice there will be $O(n \times \max_h({\#l_h \times  \#r_h}) \times |{\cal R}_1|)$ terms where $\#r_h$ and $\#l_h$ are the number of left and right modifiers
-% of $h$ respectively.
 
 \section{Structured Prediction}
 
@@ -789,25 +709,6 @@ with:
 
 The full feature set  is shown in Figure~\ref{fig:features}.
 After training there are \# non-zero features.
-
-
-% We experimented with several settings of the part features.
-% The final features are shown in  Figure~\ref{fig:features}.
-
-% The first set of features look at the rule structure $\Rule{A}{\beta_1}{\beta_2}$.
-% We have features on several combinations of rule and non-terminals.
-
-% The next set of features look at properties of the lexicalization.
-% These look at combinations of the head word and tags.
-
-
-
-
-
-
-% \cite{}
-% \cite{}
-% \cite{}
 
 
 
@@ -879,8 +780,7 @@ After training there are \# non-zero features.
 
 \subsection{Training}
 
-We train the parameters $\theta$ using standard structured SVM training \cite{}.
-
+We train the parameters $\theta$ using standard structured SVM training.
 We assume that we are given a set of gold-annotated parse examples: $( x^{1}, y^{1}), \ldots,  (x^{D}, y^{D})$. We also define $d^{1} \ldots d^{D}$ as the dependency structures induced from $y^{1} \ldots y^{D}$.
 We select parameters to minimize the regularized empirical risk
 
@@ -899,50 +799,59 @@ The objective is optimized using Adagrad \cite{}.  The gradient
 calculation requires computing a loss-augmented argmax for each
 training example which is done using the algorithm of Figure~\ref{}.
 
-% We consider two extensions to the standard setup.
+\subsection{Binarization}
 
-% First is that at training time we do not have access to the true dependency structure $d$, but instead only predicted dependencies $\hat{d}$. Past work on parsing  \cite{} has shown that it can be important to train using these predicted structures.
+In order to have an efficient binary LCFG grammar, we must convert the
+non-binary treebank grammars to binary form.  While the algorithm
+itself is not dependent on the binarization used, this choice affects
+the run-time of the algorithm, through $\rules$, as well as the
+structure of the scoring function.
 
-% However, using $\hat{d}$ may make it impossible to recover the gold LCFG parse $y$, e.g. $y \not \in \mathcal{Y}(x, \hat{d})$. To handle this issue, we also replace $y$ with the oracle parse $\bar{y}$ defined at the projection of $y$ onto $\mathcal{Y}(x, \hat{d})$
+Our binarization decomposes non-binary rules into fragments for
+each head-modifier pair.
 
-% \[ \bar{y} \gets \argmin_{y' \in \mathcal{Y}(x, \hat{d})} \Delta(y', y) \]
+% A general LCFG can be binarized while still maintaining the lexical
+% structure and making it possible to recover the original tree.
+% Since the parser traces a fixed dependency structure
+% we select a binarization based around the head
+% structure.
 
-% If $\Delta$ is linear in its first argument, this projection can be found by running the same algorithm as in Figure~\ref{}.
+For simplicity, we consider binarizing rule $\langle A \rightarrow \beta_1 \ldots \beta_m,
+k\rangle$ with $m > 2$. Relative to the head $\beta_k$
+the rule has left-side $\beta_1 \ldots \beta_{k-1}$ and right-side
+$\beta_{k+1} \ldots \beta_m$.
 
-% We replace the loss with $\ell(x^{(i)}, \hat{d}^{(i)}, \bar{y}^{(i)})
+We replace this rule with binary rules that consume each side
+independently as a first-order Markov chain (horizontal Markovization).
+The main transformation is to introduce rules
 
-% % \[l(i, \theta) = s(\bar{y}^{(i)}) + \max_{y \in \mathcal{Y}(x^{(i)}, \hat{d}^{(i)})}\left( s(y)  + \Delta(\bar{y}^{(i)}, y) \right) \]
+\begin{itemize}
 
+\item
+$\Rule{A^{\Rightarrow}_{\beta_i}}{A^{\Rightarrow*}_{\beta_{i-1}}}{\beta_i}$ for $k < i < m$
 
-
-
-
-
-% One issue with directly minimizing this objective, is that
-
-%  for this problem is the role that
-% parsing issues play. If there is a dependency parsing mistake makes it often impossible
-% for the system to recover the correct parse.
-
-
-% Define a loss function $ \Delta(\hat{y}, y)$ to determine the difference between two parses.
-% We assume that  the loss function is linear in its first argument.
-
-
-
-
-% Define the oracle parse to be the parse minimizes the loss function
-
-
-% Since this functions is linear we can use our
-
-% To learn the weight vector $\theta$ we optimize a standard structured svm objective
+\item
+$\Rule{A^{\Leftarrow}_{\beta_i}} {\beta_i}{A^{\Leftarrow*}_{\beta_{i+1}}} $ for $1< i < k$
+\end{itemize}
 
 
+% As an example consider the rule
 
+Additionally we introduce several additional rules to handle the boundary cases of starting a new rule, finishing the right side, and completing a rule. (These rules are slightly modified when $k\leq 2$ or $k=m$).
+\begin{align*}
+& \RuleA{A^{\Rightarrow}_{\beta_{k+1}}}{\beta_k}{\beta_{k+1}} & \Rule{A^{\Rightarrow*}} {A^{\Rightarrow}_{\beta_{m-1}}}{\beta_m} \\
+ &\Rule{A^{\Leftarrow}_{\beta_{k-1}}}{\beta_{k-1}}{A^{\Rightarrow *}} & \Rule{A}{\beta_1}{ A^{\Leftarrow*}_{\beta_{2}}}\\
+\end{align*}
 
-% Note that we are optimizing towards the oracle parse.
+\noindent For example the transformation of a common rule looks like
 
+\begin{center}
+  \scalebox{0.6}{ \Tree [ .S NP VP$^*$ NP NP ] $\Rightarrow$ \Tree [
+    .S NP [ .S$^{\Rightarrow*}$ [ .S$^{\Rightarrow*}_{NP}$ VP$^*$ NP ]
+    NP ] ] }
+\end{center}
+
+\noindent Each rule contains at most 3 original nonterminals so the size of the new binarized rule set is bounded by $O(\nonterms^3)$.
 
 \section{Setup}
 
@@ -1115,8 +1024,8 @@ To compare to this work, we train our parser with gold tags and run on gold depe
 
     \hline
     Xia[09]  & 88.1 & 90.7 & 89.4 \\
-    \textsc{ParseDep}(Sec19)  & 98.5 & 98.6 &  98.5  \\
-    \textsc{ParseDep}  & 99.5 & 99.7 &  99.6  \\
+    \textsc{ParseDep}(Sec19)  &  &  &    \\
+    \textsc{ParseDep}  & 97.5 &  97.8 & 97.7    \\
     \hline
 
   \end{tabular}

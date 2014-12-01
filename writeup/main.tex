@@ -171,67 +171,58 @@ though, the search space of the parser is limited by the dependency tree,
 which keeps the underlying parser simple and the system efficient.
 
 
-%  address the problem of predicting context-free trees 
-% directly from a dependency  
 
-% We consider the problem of predicting a phrase-structure tree directly  
 
+% \section{Old Introduction}
 
 
 
+% There are two main grammatical
+% frameworks used for statistical syntactic prediction: phrase-structure parsers and
+% dependency parsers \cite{}. The two offer a
+% trade-off: phrase-structure parsing is very accurate \lpkcomment{i am not sure if the accurate is the right word here... dep parser is also very accuarate.} and provides a
+% full context-free syntactic representation; dependency parsing is
+% often faster, but still
+% predicts much of the useful\lpkcomment{again... here i think maybe we should say different rather than imply which is more useful?} syntactic structure.
+
+% We can quantify this difference by looking
+% at the dependency prediction accuracy of phrase-structure parsers. Table~\ref{fig:depcomp} shows this comparison across several widely-used parsers. Note that the best models are phrase-structure parsers, but that recent advances in dependency parsing have led to comparably high-accuracy dependency parsers.\lpkcomment{this is a little confusing? there are two ways to get dependencies, c-parsing and d-parsing, but here it seems we are comparing the acc between phrase-structure and dependency parsing acc? they are two different systems....}
+
+% The natural reverse question is how well do these dependency parsers perform at phrase-structure prediction? Is it reasonable to use dependency parsers for tasks that require phrase-structure trees as input? \lpkcomment{i would like to put the benefits of doing this dep2phrase thing in the intro maybe? 1) it is very fast since dep prunes away a lot not useful cky chart item 2) dep can server as features in this problem, so that we can aim at higher acc with easy cky model. (actually, i believe the dep parsers can see syntactical information which is not easy to see when using cky, that's also the reason why your phrase+dep decomposition works right?)}
 
 
 
-\section{Old Introduction}
+% Unfortunately, as illustrated in Figure~\ref{fig:inverse},
+% recovering the best phrase-structure tree is a non-trivial problem. Given a
+% predicted dependency tree, there is a large space of possible output
+% phrase-structure trees, each tree may have many possible labelings,
+% and there are likely errors in the input dependency tree.
 
 
 
-There are two main grammatical
-frameworks used for statistical syntactic prediction: phrase-structure parsers and
-dependency parsers \cite{}. The two offer a
-trade-off: phrase-structure parsing is very accurate \lpkcomment{i am not sure if the accurate is the right word here... dep parser is also very accuarate.} and provides a
-full context-free syntactic representation; dependency parsing is
-often faster, but still
-predicts much of the useful\lpkcomment{again... here i think maybe we should say different rather than imply which is more useful?} syntactic structure.
-
-We can quantify this difference by looking
-at the dependency prediction accuracy of phrase-structure parsers. Table~\ref{fig:depcomp} shows this comparison across several widely-used parsers. Note that the best models are phrase-structure parsers, but that recent advances in dependency parsing have led to comparably high-accuracy dependency parsers.\lpkcomment{this is a little confusing? there are two ways to get dependencies, c-parsing and d-parsing, but here it seems we are comparing the acc between phrase-structure and dependency parsing acc? they are two different systems....}
-
-The natural reverse question is how well do these dependency parsers perform at phrase-structure prediction? Is it reasonable to use dependency parsers for tasks that require phrase-structure trees as input? \lpkcomment{i would like to put the benefits of doing this dep2phrase thing in the intro maybe? 1) it is very fast since dep prunes away a lot not useful cky chart item 2) dep can server as features in this problem, so that we can aim at higher acc with easy cky model. (actually, i believe the dep parsers can see syntactical information which is not easy to see when using cky, that's also the reason why your phrase+dep decomposition works right?)}
+% In this work, we pose phrase-structure recovery as a structured
+% prediction problem, and train a full lexicalized phrase-structure
+% parser, \ParseName,  to predict the syntactic tree for a given sentence. Crucially,
+% though, we limit the search space of the parser to the search space
+% that produces a given dependency tree. We show that,
 
 
 
-Unfortunately, as illustrated in Figure~\ref{fig:inverse},
-recovering the best phrase-structure tree is a non-trivial problem. Given a
-predicted dependency tree, there is a large space of possible output
-phrase-structure trees, each tree may have many possible labelings,
-and there are likely errors in the input dependency tree.
+% \begin{itemize}
+% \item The constrained parser is asymptotically  faster than
+% standard phrase-structure parser for lexicalized context-free grammar.
+% While the standard algorithm is $O(n^5 |\rules|)$, the
+% constrained dependency parser has worst case complexity $O(n^2 |\rules|)$.
+
+% \item In practice using simple pruning the parser is
+% linear time in the length of the sentence and as efficient as the fastest
+% high-accuracy dependency parsers. \%
+
+% \item Despite being constrained to hard downstream dependency decisions,
+% the parser is comparably accurate to non-reranked phrase-structure parsers. \%
 
 
-
-In this work, we pose phrase-structure recovery as a structured
-prediction problem, and train a full lexicalized phrase-structure
-parser, \ParseName,  to predict the syntactic tree for a given sentence. Crucially,
-though, we limit the search space of the parser to the search space
-that produces a given dependency tree. We show that,
-
-
-
-\begin{itemize}
-\item The constrained parser is asymptotically  faster than
-standard phrase-structure parser for lexicalized context-free grammar.
-While the standard algorithm is $O(n^5 |\rules|)$, the
-constrained dependency parser has worst case complexity $O(n^2 |\rules|)$.
-
-\item In practice using simple pruning the parser is
-linear time in the length of the sentence and as efficient as the fastest
-high-accuracy dependency parsers. \%
-
-\item Despite being constrained to hard downstream dependency decisions,
-the parser is comparably accurate to non-reranked phrase-structure parsers. \%
-
-
-\end{itemize}
+% \end{itemize}
 
 
 
@@ -502,6 +493,55 @@ without hurting oracle performance.
     Section~\ref{sec:prune}. \textit{Oracle} is the oracle f-score on the development data (described in Section~\ref{sec:analysis}). \textit{Speed} is the efficiency of the parser on development data in sentences per second.}
 \end{table}
 
+\subsection{Binarization}
+
+In order to have an efficient binary LCFG grammar, we must convert the
+non-binary treebank grammars to binary form.  While the algorithm
+itself is not dependent on the binarization used, this choice affects
+the run-time of the algorithm, through $\rules$, as well as the
+structure of the scoring function.
+
+Our binarization decomposes non-binary rules into fragments for
+each head-modifier pair.
+
+For simplicity, we consider binarizing rule $\langle A \rightarrow \beta_1 \ldots \beta_m,
+k\rangle$ with $m > 2$. Relative to the head $\beta_k$
+the rule has left-side $\beta_1 \ldots \beta_{k-1}$ and right-side
+$\beta_{k+1} \ldots \beta_m$.
+
+We replace this rule with binary rules that consume each side
+independently as a first-order Markov chain (horizontal Markovization).
+The main transformation is to introduce rules
+
+\begin{itemize}
+
+\item
+$\Rule{A^{\Rightarrow}_{\beta_i}}{A^{\Rightarrow*}_{\beta_{i-1}}}{\beta_i}$ for $k < i < m$
+
+\item
+$\Rule{A^{\Leftarrow}_{\beta_i}} {\beta_i}{A^{\Leftarrow*}_{\beta_{i+1}}} $ for $1< i < k$
+\end{itemize}
+
+
+% As an example consider the rule
+
+Additionally we introduce several additional rules to handle the boundary cases of starting a new rule, finishing the right side, and completing a rule. (These rules are slightly modified when $k\leq 2$ or $k=m$).
+\begin{align*}
+& \RuleA{A^{\Rightarrow}_{\beta_{k+1}}}{\beta_k}{\beta_{k+1}} & \Rule{A^{\Rightarrow*}} {A^{\Rightarrow}_{\beta_{m-1}}}{\beta_m} \\
+ &\Rule{A^{\Leftarrow}_{\beta_{k-1}}}{\beta_{k-1}}{A^{\Rightarrow *}} & \Rule{A}{\beta_1}{ A^{\Leftarrow*}_{\beta_{2}}}\\
+\end{align*}
+
+\noindent For example the transformation of a common rule looks like
+
+\begin{center}
+  \scalebox{0.6}{ \Tree [ .S NP VP$^*$ NP NP ] $\Rightarrow$ \Tree [
+    .S NP [ .S$^{\Rightarrow*}$ [ .S$^{\Rightarrow*}_{NP}$ VP$^*$ NP ]
+    NP ] ] }
+\end{center}
+
+\noindent Each rule contains at most 3 original nonterminals so the size of the new binarized rule set is bounded by $O(\nonterms^3)$.
+
+
 
 \section{Structured Prediction}
 
@@ -633,53 +673,6 @@ The objective is optimized using Adagrad \cite{}.  The gradient
 calculation requires computing a loss-augmented argmax for each
 training example which is done using the algorithm of Figure~\ref{fig:cky_new}.
 
-\subsection{Binarization}
-
-In order to have an efficient binary LCFG grammar, we must convert the
-non-binary treebank grammars to binary form.  While the algorithm
-itself is not dependent on the binarization used, this choice affects
-the run-time of the algorithm, through $\rules$, as well as the
-structure of the scoring function.
-
-Our binarization decomposes non-binary rules into fragments for
-each head-modifier pair.
-
-For simplicity, we consider binarizing rule $\langle A \rightarrow \beta_1 \ldots \beta_m,
-k\rangle$ with $m > 2$. Relative to the head $\beta_k$
-the rule has left-side $\beta_1 \ldots \beta_{k-1}$ and right-side
-$\beta_{k+1} \ldots \beta_m$.
-
-We replace this rule with binary rules that consume each side
-independently as a first-order Markov chain (horizontal Markovization).
-The main transformation is to introduce rules
-
-\begin{itemize}
-
-\item
-$\Rule{A^{\Rightarrow}_{\beta_i}}{A^{\Rightarrow*}_{\beta_{i-1}}}{\beta_i}$ for $k < i < m$
-
-\item
-$\Rule{A^{\Leftarrow}_{\beta_i}} {\beta_i}{A^{\Leftarrow*}_{\beta_{i+1}}} $ for $1< i < k$
-\end{itemize}
-
-
-% As an example consider the rule
-
-Additionally we introduce several additional rules to handle the boundary cases of starting a new rule, finishing the right side, and completing a rule. (These rules are slightly modified when $k\leq 2$ or $k=m$).
-\begin{align*}
-& \RuleA{A^{\Rightarrow}_{\beta_{k+1}}}{\beta_k}{\beta_{k+1}} & \Rule{A^{\Rightarrow*}} {A^{\Rightarrow}_{\beta_{m-1}}}{\beta_m} \\
- &\Rule{A^{\Leftarrow}_{\beta_{k-1}}}{\beta_{k-1}}{A^{\Rightarrow *}} & \Rule{A}{\beta_1}{ A^{\Leftarrow*}_{\beta_{2}}}\\
-\end{align*}
-
-\noindent For example the transformation of a common rule looks like
-
-\begin{center}
-  \scalebox{0.6}{ \Tree [ .S NP VP$^*$ NP NP ] $\Rightarrow$ \Tree [
-    .S NP [ .S$^{\Rightarrow*}$ [ .S$^{\Rightarrow*}_{NP}$ VP$^*$ NP ]
-    NP ] ] }
-\end{center}
-
-\noindent Each rule contains at most 3 original nonterminals so the size of the new binarized rule set is bounded by $O(\nonterms^3)$.
 
 \section{Related Work}
 

@@ -118,24 +118,26 @@
 
 \end{abstract}
 
-
-
 \section{Introduction}
 
+Statistical dependency parsers provide a fast and accurate method for
+predicting syntactic structure; however, many applications of parsing still rely on
+full phrase-structure trees, and cannot use parsers that only predict
+dependency structure. 
 
+In this work we present a new parser, \ParseName, that takes dependency trees as input and produces phrase-structure trees as output. The parser has several advantages
 
-There are two main grammatical
-frameworks used for statistical syntactic prediction: phrase-structure parsers and
-dependency parsers \cite{}. The two offer a
-trade-off: phrase-structure parsing is very accurate \lpkcomment{i am not sure if the accurate is the right word here... dep parser is also very accuarate.} and provides a
-full context-free syntactic representation; dependency parsing is
-often faster, but still
-predicts much of the useful\lpkcomment{again... here i think maybe we should say different rather than imply which is more useful?} syntactic structure.
+\begin{itemize}
+\item Accuracy; The parser is as accurate as several widely-used phrase-structure parsers \%.  
+\item Efficiency; Asymptotically it is much faster than standard phrase-structure parsers; empirically it is as fast an efficient dependency parser.
 
-We can quantify this difference by looking
-at the dependency prediction accuracy of phrase-structure parsers. Table~\ref{fig:depcomp} shows this comparison across several widely-used parsers. Note that the best models are phrase-structure parsers, but that recent advances in dependency parsing have led to comparably high-accuracy dependency parsers.\lpkcomment{this is a little confusing? there are two ways to get dependencies, c-parsing and d-parsing, but here it seems we are comparing the acc between phrase-structure and dependency parsing acc? they are two different systems....}
+\item Flexibility; The parser only requires dependencies at test-time, and so it can improve alongside dependency parsers.
+\end{itemize}
 
-The natural reverse question is how well do these dependency parsers perform at phrase-structure prediction? Is it reasonable to use dependency parsers for tasks that require phrase-structure trees as input? \lpkcomment{i would like to put the benefits of doing this dep2phrase thing in the intro maybe? 1) it is very fast since dep prunes away a lot not useful cky chart item 2) dep can server as features in this problem, so that we can aim at higher acc with easy cky model. (actually, i believe the dep parsers can see syntactical information which is not easy to see when using cky, that's also the reason why your phrase+dep decomposition works right?)}
+Recovering the best phrase-structure tree is a non-trivial problem. Given a
+predicted dependency tree, there is a large space of possible output
+phrase-structure trees, each tree may have many possible labelings,
+and there are likely errors in the input dependency tree. Figure~\ref{fig:inverse} shows the possible unlabeled trees for a single dependency tree input.
 
 \begin{figure}
   \centering
@@ -160,6 +162,43 @@ The natural reverse question is how well do these dependency parsers perform at 
   \label{fig:inverse}
   \caption{{\footnotesize While a phrase-structure parse determines a unique dependency parse, the inverse problem is non-deterministic. The figure, adapted from \cite{collins1999statistical}, shows several X-bar trees that all produce the same dependency structure. The parentheses $X(h)$ indicate the head $h$ of each internal vertex. }}
 \end{figure}
+
+
+To handle these issues, our system poses phrase-structure recovery  as a structured
+prediction problem, and uses a lexicalized phrase-structure
+parser to predict the best tree. Crucially,
+though, the search space of the parser is limited by the dependency tree, 
+which keeps the underlying parser simple and the system efficient.
+
+
+%  address the problem of predicting context-free trees 
+% directly from a dependency  
+
+% We consider the problem of predicting a phrase-structure tree directly  
+
+
+
+
+
+
+
+\section{Old Introduction}
+
+
+
+There are two main grammatical
+frameworks used for statistical syntactic prediction: phrase-structure parsers and
+dependency parsers \cite{}. The two offer a
+trade-off: phrase-structure parsing is very accurate \lpkcomment{i am not sure if the accurate is the right word here... dep parser is also very accuarate.} and provides a
+full context-free syntactic representation; dependency parsing is
+often faster, but still
+predicts much of the useful\lpkcomment{again... here i think maybe we should say different rather than imply which is more useful?} syntactic structure.
+
+We can quantify this difference by looking
+at the dependency prediction accuracy of phrase-structure parsers. Table~\ref{fig:depcomp} shows this comparison across several widely-used parsers. Note that the best models are phrase-structure parsers, but that recent advances in dependency parsing have led to comparably high-accuracy dependency parsers.\lpkcomment{this is a little confusing? there are two ways to get dependencies, c-parsing and d-parsing, but here it seems we are comparing the acc between phrase-structure and dependency parsing acc? they are two different systems....}
+
+The natural reverse question is how well do these dependency parsers perform at phrase-structure prediction? Is it reasonable to use dependency parsers for tasks that require phrase-structure trees as input? \lpkcomment{i would like to put the benefits of doing this dep2phrase thing in the intro maybe? 1) it is very fast since dep prunes away a lot not useful cky chart item 2) dep can server as features in this problem, so that we can aim at higher acc with easy cky model. (actually, i believe the dep parsers can see syntactical information which is not easy to see when using cky, that's also the reason why your phrase+dep decomposition works right?)}
+
 
 
 Unfortunately, as illustrated in Figure~\ref{fig:inverse},
@@ -195,29 +234,7 @@ the parser is comparably accurate to non-reranked phrase-structure parsers. \%
 \end{itemize}
 
 
-The problem of converting dependency to phrase-structured trees has
-been studied previously from the perspective of building
-multi-representational treebanks.  \newcite{xia2001converting} and
-\newcite{xia2009towards} develop a rule-based system for the
-converting human-annotated dependency parses. Our work differs in that
-we learn a data-driven structured prediction model that is also able
-to handle automatically predicted input.\lpkcomment{mention the table in the exp section where the comparison number show our approach better here?}
 
-There has been successful work combining dependency and phrase-structure parsing. \newcite{carreras2008tag} build a
-high-accuracy parser that uses a dependency parsing model both for
-pruning and within a richer lexicalized parser. Similarly
-\newcite{rush2010dual} use dual decomposition to combine a dependency
-parser with a simple phrase-structure model. We take this
-approach a step further by fixing the dependency structure
-entirely before parsing.\lpkcomment{only fixing the dependency structure
-entirely before parsing sounds more like a step backward than a step further... i am not sure if this is a good way to say that... i think there is a important difference here, which is, when combining the phrase-structure and dep parsing, when ppl do this, the binarization does not imply dep arcs, so even you can push info from dep to phrase structure parsing, you can't directly pruning so much like we do here...right?}
-
-
-Finally there have also been several papers that use ideas from
-dependency parsing to simplify and speed up phrase-structure prediction.
-\newcite{zhu2013fast} build a high-accuracy phrase-structure parser
-using a transition-based system. \newcite{hall2014less} use a stripped
-down parser based on a simple X-bar grammar and a small set of lexicalized features.
 
 
 
@@ -663,6 +680,32 @@ Additionally we introduce several additional rules to handle the boundary cases 
 \end{center}
 
 \noindent Each rule contains at most 3 original nonterminals so the size of the new binarized rule set is bounded by $O(\nonterms^3)$.
+
+\section{Related Work}
+
+The problem of converting dependency to phrase-structured trees has
+been studied previously from the perspective of building
+multi-representational treebanks.  \newcite{xia2001converting} and
+\newcite{xia2009towards} develop a rule-based system for the
+converting human-annotated dependency parses. Our work differs in that
+we learn a data-driven structured prediction model that is also able
+to handle automatically predicted input.\lpkcomment{mention the table in the exp section where the comparison number show our approach better here?}
+
+There has been successful work combining dependency and phrase-structure parsing. \newcite{carreras2008tag} build a
+high-accuracy parser that uses a dependency parsing model both for
+pruning and within a richer lexicalized parser. Similarly
+\newcite{rush2010dual} use dual decomposition to combine a dependency
+parser with a simple phrase-structure model. We take this
+approach a step further by fixing the dependency structure
+entirely before parsing.\lpkcomment{only fixing the dependency structure
+entirely before parsing sounds more like a step backward than a step further... i am not sure if this is a good way to say that... i think there is a important difference here, which is, when combining the phrase-structure and dep parsing, when ppl do this, the binarization does not imply dep arcs, so even you can push info from dep to phrase structure parsing, you can't directly pruning so much like we do here...right?}
+
+
+Finally there have also been several papers that use ideas from
+dependency parsing to simplify and speed up phrase-structure prediction.
+\newcite{zhu2013fast} build a high-accuracy phrase-structure parser
+using a transition-based system. \newcite{hall2014less} use a stripped
+down parser based on a simple X-bar grammar and a small set of lexicalized features.
 
 \section{Setup}
 

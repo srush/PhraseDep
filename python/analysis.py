@@ -1,4 +1,4 @@
-yyfrom collections import namedtuple
+from collections import namedtuple
 import argparse
 import pandas as pd
 class Item(namedtuple("Item", ("i", "j", "k", "h", "m", "r"))):
@@ -41,7 +41,8 @@ def read_file(handle):
 
         sent_num += 1
         sents.append( {"items" : items,
-                       "spans" : zip(left, right)
+                       "spans" : zip(left, right),
+                       "deps" : deps
                    })
     return sents
 
@@ -64,6 +65,49 @@ def fscore(s1, s2):
     print recall, precision
 
 
+def score(gold_file, predicted_file, rules):
+    s1 = read_file(open(gold_file))
+    s2 = read_file(open(predicted_file))
+    rules = read_rules(open(rules))
+
+    d = {"sent" : [],
+         "head_match" : [],
+         "mod_match" : [],
+         "exact_match" : [],
+         "span_match" : [],
+         "top_match" : [],
+         "spine" : [],
+         "top_nt" : [],
+         "dep_correct" : []
+    }
+
+    total_gold = 0
+    total_predicted = 0
+    for a, b in zip(s2, s1):
+        gold = set(b["items"])
+        total_gold += len(b["items"])
+        total_predicted += len(a["items"])
+        spans = []
+        for sent, item in b["items"]:
+            spans.append((item.i, item.k))
+        gold_spans = set(spans)
+
+        for sent, item in b["items"]:
+            spans.append((item.i, item.k, rules[item.r]))
+        gold_spans_top = set(spans)
+
+        for sent, item in a["items"]:
+            d["sent"].append(sent)
+            d["head_match"].append(a["spans"][item.h] == b["spans"][item.h])
+            d["mod_match"].append(a["spans"][item.m] == b["spans"][item.m])
+            d["exact_match"].append((sent, item) in gold)
+            d["span_match"].append((item.i, item.k) in gold_spans)
+            d["top_match"].append((item.i, item.k, rules[item.r]) in gold_spans_top)
+            d["spine"].append((item.i, item.k) == a["spans"][item.h])
+            d["dep_correct"].append(item.h == b["deps"][item.m])
+            d["top_nt"].append(rules[item.r])
+    return pd.DataFrame(d)
+
 def main():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--gold_items', type=str, metavar='', help='')
@@ -72,41 +116,9 @@ def main():
 
     args = parser.parse_args()
 
-    s1 = read_file(open(args.gold_items))
-    s2 = read_file(open(args.predicted_items))
-    rules = read_rules(open(args.rules))
-
-    d = {"sent" : [],
-         "head_match" : [],
-         "mod_match" : [],
-         "exact_match" : [],
-         "span_match" : [],
-         "top_match" : [],
-         "spine" : []
-    }
-
-    total_gold = 0
-    total_predicted = 0
-    for a, b in zip(s1, s2):
-        gold = set(b["items"])
-        total_gold += len(b["items"])
-        total_predicted += len(a["items"])
-        spans = []
-        for sent, item in b["items"]:
-            spans.append(((item.i, item.k), item.r))
-        gold_spans = dict(spans)
-
-        for sent, item in a["items"]:
-            d["sent"].append(sent)
-            d["head_match"].append(a["spans"][item.h] == b["spans"][item.h])
-            d["mod_match"].append(a["spans"][item.m] == b["spans"][item.m])
-            d["exact_match"].append((sent, item) in gold)
-            d["span_match"].append((item.i, item.j) in gold_spans)
-            d["top_match"].append(gold_spans.get((item.i, item.j), None) == rules[item.r])
-            d["spine"].append()
-    df = pd.DataFrame(d)
     hits = df["exact_match"].sum()
     recall = hits / float(total_gold)
     precision = hits / float(total_predicted)
-    print recall, precision
-main()
+
+    #print recall, precision
+# main()

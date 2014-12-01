@@ -61,6 +61,7 @@
 \newcommand{\Left}[1]{#1_{\Leftarrow}}
 \newcommand{\Right}[1]{#1_{\Rightarrow}}
 \newcommand{\Span}[1]{\langle #1 \rangle}
+\newcommand{\tri}{\langle \Left{m}, \Right{m} \rangle}
 
 \newcommand{\Tag}[1]{\texttt{#1}}
 \newcommand{\Root}{r}
@@ -123,8 +124,6 @@ the art on English and Chinese benchmarks.
 
 
 \end{abstract}
-
-
 
 \section{Introduction}
 
@@ -194,6 +193,27 @@ asymptotically faster than
 
 % The natural reverse question is how well do these dependency parsers perform at phrase-structure prediction? Is it reasonable to use dependency parsers for tasks that require phrase-structure trees as input? \lpkcomment{i would like to put the benefits of doing this dep2phrase thing in the intro maybe? 1) it is very fast since dep prunes away a lot not useful cky chart item 2) dep can server as features in this problem, so that we can aim at higher acc with easy cky model. (actually, i believe the dep parsers can see syntactical information which is not easy to see when using cky, that's also the reason why your phrase+dep decomposition works right?)}
 
+\nascomment{someone else's rewrite:}
+
+Statistical dependency parsers provide a fast and accurate method for
+predicting syntactic structure; however, many applications of parsing still rely on
+full phrase-structure trees, and cannot use parsers that only predict
+dependency structure. 
+
+In this work we present a new parser, \ParseName, that takes dependency trees as input and produces phrase-structure trees as output. The parser has several advantages
+
+\begin{itemize}
+\item Accuracy; The parser is as accurate as several widely-used phrase-structure parsers \%.  
+\item Efficiency; Asymptotically it is much faster than standard phrase-structure parsers; empirically it is as fast an efficient dependency parser.
+
+\item Flexibility; The parser only requires dependencies at test-time, and so it can improve alongside dependency parsers.
+\end{itemize}
+
+Recovering the best phrase-structure tree is a non-trivial problem. Given a
+predicted dependency tree, there is a large space of possible output
+phrase-structure trees, each tree may have many possible labelings,
+and there are likely errors in the input dependency tree. Figure~\ref{fig:inverse} shows the possible unlabeled trees for a single dependency tree input.
+
 \begin{figure}
   \centering
 
@@ -238,51 +258,12 @@ asymptotically faster than
 % parser, \ParseName,  to predict the syntactic tree for a given sentence. Crucially,
 % though, we limit the search space of the parser to the search space
 % that produces a given dependency tree. We show that,
+To handle these issues, our system poses phrase-structure recovery  as a structured
+prediction problem, and uses a lexicalized phrase-structure
+parser to predict the best tree. Crucially,
+though, the search space of the parser is limited by the dependency tree, 
+which keeps the underlying parser simple and the system efficient.
 
-
-
-% \begin{itemize}
-% \item The constrained parser is asymptotically  faster than
-% standard phrase-structure parser for lexicalized context-free grammar.
-% While the standard algorithm is $O(n^5 |\rules|)$, the
-% constrained dependency parser has worst case complexity $O(n^2 |\rules|)$.
-
-% \item In practice using simple pruning the parser is
-% linear time in the length of the sentence and as efficient as the fastest
-% high-accuracy dependency parsers. \%
-
-% \item Despite being constrained to hard downstream dependency decisions,
-% the parser is comparably accurate to non-reranked phrase-structure parsers. \%
-
-
-% \end{itemize}
-
-
-% The problem of converting dependency to phrase-structured trees has
-% been studied previously from the perspective of building
-% multi-representational treebanks.  \newcite{xia2001converting} and
-% \newcite{xia2009towards} develop a rule-based system for the
-% converting human-annotated dependency parses. Our work differs in that
-% we learn a data-driven structured prediction model that is also able
-% to handle automatically predicted input.\lpkcomment{mention the table in the exp section where the comparison number show our approach better here?}
-
-\nascomment{move these two paragraphs to related work:}
-
-There has been successful work combining dependency and phrase-structure parsing. \newcite{carreras2008tag} build a
-high-accuracy parser that uses a dependency parsing model both for
-pruning and within a richer lexicalized parser. Similarly
-\newcite{rush2010dual} use dual decomposition to combine a dependency
-parser with a simple phrase-structure model. We take this
-approach a step further by fixing the dependency structure
-entirely before parsing.\lpkcomment{only fixing the dependency structure
-entirely before parsing sounds more like a step backward than a step further... i am not sure if this is a good way to say that... i think there is a important difference here, which is, when combining the phrase-structure and dep parsing, when ppl do this, the binarization does not imply dep arcs, so even you can push info from dep to phrase structure parsing, you can't directly pruning so much like we do here...right?}
-
-
-Finally there have also been several papers that use ideas from
-dependency parsing to simplify and speed up phrase-structure prediction.
-\newcite{zhu2013fast} build a high-accuracy phrase-structure parser
-using a transition-based system. \newcite{hall2014less} use a stripped
-down parser based on a simple X-bar grammar and a small set of lexicalized features.
 
 
 
@@ -444,10 +425,10 @@ the learning problem.
   \noindent\textbf{Rules:}
 
   For all   $i < m, h = d_m$  and rule  $\RuleA{A}{\beta_1}{\beta_2}$,
-  \[\infer{( \Span{ i, \Right{m} }, h, A)}{(\Span{i, \Left{m}-1}, h, \beta_1)  &  (\tri, m, \beta_2) } \]
+  \[\infer{( \Span{i, \Right{m}}, h, A)}{(\Span{i, \Left{m}-1}, h, \beta_1)  &  (\tri, m, \beta_2) } \]
 
   For all    $m < j, h = d_m$ and  rule  $\RuleB{A}{\beta_1}{\beta_2}$,
-  \[ \infer{( \Span{\Left{m}, j}, h, A)}{(\tri, m, \beta_1)  &  (\Span{\Right{m}+ 1, j}, h, \beta_2) } \]
+  \[ \infer{( \Span{ \Left{m}, j }, h, A)}{(\tri, m, \beta_1)  &  (\Span{\Right{m}+ 1, j}, h, \beta_2) } \]
 
 \noindent \textbf{Goal:}
 \[(\Span{1, n}, m, \Root) \mathrm{\ for\ any }\ m \mathrm{\ s.t. \ } d_m = 0 \]
@@ -551,6 +532,55 @@ without hurting oracle performance.
     limited to the dependency skeleton, and LCFG(prune) is the pruning described in
     Section~\ref{sec:prune}. \textit{Oracle} is the oracle f-score on the development data (described in Section~\ref{sec:analysis}). \textit{Speed} is the efficiency of the parser on development data in sentences per second.}
 \end{table}
+
+\subsection{Binarization}
+
+In order to have an efficient binary LCFG grammar, we must convert the
+non-binary treebank grammars to binary form.  While the algorithm
+itself is not dependent on the binarization used, this choice affects
+the run-time of the algorithm, through $\rules$, as well as the
+structure of the scoring function.
+
+Our binarization decomposes non-binary rules into fragments for
+each head-modifier pair.
+
+For simplicity, we consider binarizing rule $\langle A \rightarrow \beta_1 \ldots \beta_m,
+k\rangle$ with $m > 2$. Relative to the head $\beta_k$
+the rule has left-side $\beta_1 \ldots \beta_{k-1}$ and right-side
+$\beta_{k+1} \ldots \beta_m$.
+
+We replace this rule with binary rules that consume each side
+independently as a first-order Markov chain (horizontal Markovization).
+The main transformation is to introduce rules
+
+\begin{itemize}
+
+\item
+$\Rule{A^{\Rightarrow}_{\beta_i}}{A^{\Rightarrow*}_{\beta_{i-1}}}{\beta_i}$ for $k < i < m$
+
+\item
+$\Rule{A^{\Leftarrow}_{\beta_i}} {\beta_i}{A^{\Leftarrow*}_{\beta_{i+1}}} $ for $1< i < k$
+\end{itemize}
+
+
+% As an example consider the rule
+
+Additionally we introduce several additional rules to handle the boundary cases of starting a new rule, finishing the right side, and completing a rule. (These rules are slightly modified when $k\leq 2$ or $k=m$).
+\begin{align*}
+& \RuleA{A^{\Rightarrow}_{\beta_{k+1}}}{\beta_k}{\beta_{k+1}} & \Rule{A^{\Rightarrow*}} {A^{\Rightarrow}_{\beta_{m-1}}}{\beta_m} \\
+ &\Rule{A^{\Leftarrow}_{\beta_{k-1}}}{\beta_{k-1}}{A^{\Rightarrow *}} & \Rule{A}{\beta_1}{ A^{\Leftarrow*}_{\beta_{2}}}\\
+\end{align*}
+
+\noindent For example the transformation of a common rule looks like
+
+\begin{center}
+  \scalebox{0.6}{ \Tree [ .S NP VP$^*$ NP NP ] $\Rightarrow$ \Tree [
+    .S NP [ .S$^{\Rightarrow*}$ [ .S$^{\Rightarrow*}_{NP}$ VP$^*$ NP ]
+    NP ] ] }
+\end{center}
+
+\noindent Each rule contains at most 3 original nonterminals so the size of the new binarized rule set is bounded by $O(\nonterms^3)$.
+
 
 
 \section{Structured Prediction}
@@ -683,53 +713,32 @@ The objective is optimized using Adagrad \cite{}.  The gradient
 calculation requires computing a loss-augmented argmax for each
 training example which is done using the algorithm of Figure~\ref{fig:cky_new}.
 
-\subsection{Binarization}
 
-In order to have an efficient binary LCFG grammar, we must convert the
-non-binary treebank grammars to binary form.  While the algorithm
-itself is not dependent on the binarization used, this choice affects
-the run-time of the algorithm, through $\rules$, as well as the
-structure of the scoring function.
+\section{Related Work}
 
-Our binarization decomposes non-binary rules into fragments for
-each head-modifier pair.
+The problem of converting dependency to phrase-structured trees has
+been studied previously from the perspective of building
+multi-representational treebanks.  \newcite{xia2001converting} and
+\newcite{xia2009towards} develop a rule-based system for the
+converting human-annotated dependency parses. Our work differs in that
+we learn a data-driven structured prediction model that is also able
+to handle automatically predicted input.\lpkcomment{mention the table in the exp section where the comparison number show our approach better here?}
 
-For simplicity, we consider binarizing rule $\langle A \rightarrow \beta_1 \ldots \beta_m,
-k\rangle$ with $m > 2$. Relative to the head $\beta_k$
-the rule has left-side $\beta_1 \ldots \beta_{k-1}$ and right-side
-$\beta_{k+1} \ldots \beta_m$.
-
-We replace this rule with binary rules that consume each side
-independently as a first-order Markov chain (horizontal Markovization).
-The main transformation is to introduce rules
-
-\begin{itemize}
-
-\item
-$\Rule{A^{\Rightarrow}_{\beta_i}}{A^{\Rightarrow*}_{\beta_{i-1}}}{\beta_i}$ for $k < i < m$
-
-\item
-$\Rule{A^{\Leftarrow}_{\beta_i}} {\beta_i}{A^{\Leftarrow*}_{\beta_{i+1}}} $ for $1< i < k$
-\end{itemize}
+There has been successful work combining dependency and phrase-structure parsing. \newcite{carreras2008tag} build a
+high-accuracy parser that uses a dependency parsing model both for
+pruning and within a richer lexicalized parser. Similarly
+\newcite{rush2010dual} use dual decomposition to combine a dependency
+parser with a simple phrase-structure model. We take this
+approach a step further by fixing the dependency structure
+entirely before parsing.\lpkcomment{only fixing the dependency structure
+entirely before parsing sounds more like a step backward than a step further... i am not sure if this is a good way to say that... i think there is a important difference here, which is, when combining the phrase-structure and dep parsing, when ppl do this, the binarization does not imply dep arcs, so even you can push info from dep to phrase structure parsing, you can't directly pruning so much like we do here...right?}
 
 
-% As an example consider the rule
-
-Additionally we introduce several additional rules to handle the boundary cases of starting a new rule, finishing the right side, and completing a rule. (These rules are slightly modified when $k\leq 2$ or $k=m$).
-\begin{align*}
-& \RuleA{A^{\Rightarrow}_{\beta_{k+1}}}{\beta_k}{\beta_{k+1}} & \Rule{A^{\Rightarrow*}} {A^{\Rightarrow}_{\beta_{m-1}}}{\beta_m} \\
- &\Rule{A^{\Leftarrow}_{\beta_{k-1}}}{\beta_{k-1}}{A^{\Rightarrow *}} & \Rule{A}{\beta_1}{ A^{\Leftarrow*}_{\beta_{2}}}\\
-\end{align*}
-
-\noindent For example the transformation of a common rule looks like
-
-\begin{center}
-  \scalebox{0.6}{ \Tree [ .S NP VP$^*$ NP NP ] $\Rightarrow$ \Tree [
-    .S NP [ .S$^{\Rightarrow*}$ [ .S$^{\Rightarrow*}_{NP}$ VP$^*$ NP ]
-    NP ] ] }
-\end{center}
-
-\noindent Each rule contains at most 3 original nonterminals so the size of the new binarized rule set is bounded by $O(\nonterms^3)$.
+Finally there have also been several papers that use ideas from
+dependency parsing to simplify and speed up phrase-structure prediction.
+\newcite{zhu2013fast} build a high-accuracy phrase-structure parser
+using a transition-based system. \newcite{hall2014less} use a stripped
+down parser based on a simple X-bar grammar and a small set of lexicalized features.
 
 \section{Setup}
 
@@ -837,7 +846,6 @@ To gauge the upper bound of the accuracy of this system we consider an oracle ve
 We also consider the mistakes that are made by the parser compared to the
 mistakes made. For each of the bracketing errors made by the parser, we can classify it as a bracketing mistake, a dependency mistake or neither.
 
-
 \begin{table}
   \centering
   \small
@@ -867,8 +875,15 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
 
 \begin{table}
   \centering
-  \begin{tabular}{ll}
-    
+  \begin{tabular}{|l|cccc|}
+    \hline
+    Class                 & Total & Pre & Rec & F1 \\ 
+    \hline
+    \textsc{+ Dep + Span +Split} &       &     &     &   \\ 
+    \textsc{+ Dep + Span -Split} &       &     &     &   \\ 
+    \textsc{- Dep + Span +Split} &       &     &     &   \\ 
+    \textsc{- Dep - Span -Split} &       &     &     &   \\ 
+    \hline
   \end{tabular}
 \end{table}
 

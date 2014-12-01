@@ -36,7 +36,7 @@ struct Arg: public option::Arg
 enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, LAMBDA,
                     MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE,
                     LABEL_PRUNING, POSITIVE_FEATURES, NO_HASH, FEATURE_FILE, ITEMS,
-                    NO_DEP};
+                    NO_DEP, LIMIT};
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , "", option::Arg::None, "USAGE: example [options]\n\n"
@@ -59,6 +59,7 @@ const option::Descriptor usage[] =
     {FEATURE_FILE,    0,"", "feature_file", Arg::Required, "  --feature_file  \n ." },
     {ITEMS,    0,"", "items", option::Arg::None, "  --items  \n ." },
     {NO_DEP,    0,"", "no_dep", option::Arg::None, "  --no_dep  \n ." },
+    {LIMIT,    0,"", "limit", Arg::Numeric, "  --limit  \n ." },
     {UNKNOWN, 0,"" ,  ""   , option::Arg::None, "\nExamples:\n"
                                                   "  example --unknown -- --this_is_no_option\n"
      "  example -unk --plus -ppp file1 file2\n" },
@@ -123,6 +124,7 @@ int main(int argc, char* argv[]) {
 
 
     if (options[PRUNING]) {
+        cerr << "PRUNING" << endl;
         grammar->pruning = true;
         for (auto sentence : *sentences) {
             for (auto rule : sentence.gold_rules) {
@@ -157,11 +159,25 @@ int main(int argc, char* argv[]) {
         cerr << "start " << sentences->size() << endl;
         for (int i = 0; i < sentences->size(); ++i) {
             Sentence *sentence = &(*sentences)[i];
+            if (options[LIMIT]) {
+                char *temp2 = 0;
+                int limit = strtol(options[LIMIT].arg, &temp2, 10);
+                if (sentence->words.size() > limit) {
+                    continue;
+                }
+            }
+
             scorer.set_sentence(sentence);
             vector<AppliedRule> best_rules;
             bool success;
-            cky(sentence->preterms, sentence->words, sentence->deps,
-                *grammar, scorer, &best_rules, !options[ITEMS], &success);
+            if (options[NO_DEP]) {
+                cky_full(sentence->preterms, sentence->words,
+                         *grammar, scorer, &best_rules, false,
+                         &success);
+            } else {
+                cky(sentence->preterms, sentence->words, sentence->deps,
+                    *grammar, scorer, &best_rules, !options[ITEMS], &success);
+            }
 
             if (!options[ITEMS]) {
                 cout << endl;
@@ -229,9 +245,10 @@ int main(int argc, char* argv[]) {
                 scorer.set_sentence(sentence);
                 vector<AppliedRule> best_rules;
                 bool success;
-                double dp_score =
-                        cky(sentence->preterms, sentence->words, sentence->deps,
-                            *grammar, scorer, &best_rules, false, &success);
+                double dp_score;
+                dp_score = cky(sentence->preterms, sentence->words, sentence->deps,
+                               *grammar, scorer, &best_rules, false, &success);
+
 
                 // cout << "RULES: " << best_rules.size() << endl;
 

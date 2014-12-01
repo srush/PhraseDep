@@ -510,9 +510,9 @@ double cky_full(const vector<int> &preterms,
     Item item(0, n-1, root_word, root, 2);
 
     stringstream out;
-    *success = chart.to_tree(item, grammar, best_rules, output, out);
+    // *success = chart.to_tree(item, grammar, best_rules, output, out);
     if ((*success) && out) {
         cout << out.str();
     }
-    return chart.score(item);
+    return 0.0;//chart.score(item);
 }

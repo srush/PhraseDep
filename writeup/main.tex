@@ -10,6 +10,7 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{tikz}
+\usepackage{multirow}
 
 \usepackage{tikz-qtree}
 \usepackage{tikz-dependency}
@@ -37,7 +38,7 @@
       \hskip1.5em plus0em minus0.5em \fi \nobreak
       \vrule height0.75em width0.5em depth0.25em\fi}
 
-
+\usepackage[font=footnotesize]{caption}
 \usepackage{amsfonts}
 \usepackage{amsmath}
 \DeclareMathOperator*{\argmax}{arg\,max}
@@ -369,17 +370,22 @@ down parser based on a simple X-bar grammar and a small set of lexicalized featu
 
 \begin{table}
   \centering
-  \begin{tabular}{|l|l|}
+  \small
+  \begin{tabular}{|l|l|r|}
     \hline
-    Model & sec 22 UAS  \\
+    Type & Model & UAS  \\
     \hline
 
     \hline
-    Petrov[06] & 92.66   \\
-    TurboParser & 93.59  \\
+    \multirow{4}{*}{Phrase Structure} & Petrov[06] & 92.66   \\
+    & Stanford PCFG & 88.88 \\
+    & CJ Reranking & 93.92 \\
+    & Stanford RNN & 92.23 \\
+    \hline 
+    \multirow{1}{*}{Dependency} & TurboParser & 93.59  \\
     \hline
   \end{tabular}
-  \caption{Collins Head Rules scores on Dev.  }
+  \caption{Unlabeled accuracy score (UAS) of several widely used phrase-structure and dependency parsers using the Collins head rules on development Section 22. Note that the best scoring is a reranking phrase-structure parser, but that state-of-the-art dependency parsers are comparable with the best parsers. }
   \label{fig:depcomp}
 \end{table}
 
@@ -399,7 +405,7 @@ A lexicalized context-free grammar (LCFG) is an extended context-free grammar wh
 \begin{itemize}
 \item $\nonterms$; a set of nonterminal symbols, e.g. \Tag{NP}, \Tag{VP}.
 \item $\terms$; a set of terminal symbols, often consisting of the words in the language.
-\item $\rules$; a set of lexicalized rule productions either of the form $\RuleA{A}{\beta_1}{\beta_2}$ or $\RuleB{A}{\beta_1}{\beta_2}$  consisting of a parent nonterminal $A \in \nonterms$, a sequence of children $\beta_i \in \nonterms$ for $i \in \{1\ldots 2\}$, and a distinguished head child annotated with $*$. The head child comes from the head rules associated with the grammar.
+\item $\rules$; a set of lexicalized rule productions either of the form $\RuleA{A}{\beta_1}{\beta_2}$ or $\RuleB{A}{\beta_1}{\beta_2}$  consisting of a parent nonterminal $A \in \nonterms$, a sequence of children $\beta_i \in \nonterms$ for $i \in \{1, 2\}$, and a distinguished head child annotated with $*$. The head child comes from the head rules associated with the grammar.
 \item $\Root$; a distinguished root symbol $\Root \in \nonterms$.
 \end{itemize}
 
@@ -720,18 +726,24 @@ Pruning discussion
 
 \begin{table}
   \centering
-  \begin{tabular}{|l|lll|}
+  \small
+  \begin{tabular}{|l|llrr|}
     \hline
-    Model & \% pruned & oracle  & speed \\
+    Model & Sym & Comp. & Speed & Oracle  \\
     \hline
-
     \hline
-    LCFG &   $[O(n^5)]$ &  100\% & speed  \\
-    Dep Parse Model  & $[O()]$ & oracle  &  \\
-    Pruned Model & $O(n)$ &  oracle & \\
+    LCFG($< 20$)  & $\mathcal{Y}(x)$ & $O(n^5|\nonterms|^3)$ &     0.25 & 100.0  \\
+    LCFG(dep)    & $\mathcal{Y}(x,d)$ & $O(n^2|\nonterms|^3)$ &  63.2 & 92.8    \\
+    LCFG(prune)  &  - & $O(n^2|\nonterms|^3)$ &   173.5 & 92.7 \\
     \hline
   \end{tabular}
-  \caption{Pruning }
+  \caption{Comparison of three parsing setups:
+    LCFG($<20$) is the standard full lexicalized grammar limited to sentence of length 
+    less than 20 words, LCFG(dep) is 
+    limited to the dependency skeleton, and LCFG(prune) is the pruning described in 
+    Section~\ref{sec:prune}. \textit{Oracle} is the oracle f-score on the development data (described in Section~\ref{sec:analysis}). \textit{Speed} is the efficiency of the parser on development data in sentences per second.   
+    
+  }
 \end{table}
 
 
@@ -935,7 +947,7 @@ After training there are \# non-zero features.
   \end{tabular}
   \end{multicols}
   \label{fig:features}
-  \caption{The feature templates used in the function $f(x, d, y)$ . The symbol $\RuleSym$ is expanded into two conjunction $\Rule{A}{B}{C}$ and $A$. The function $\TagFN{i}$ gives the part-of-speech tag of word $x_i$. The function $\BinFN{i}$ bins a span length into 10 bins.
+  \caption{The feature templates used in the function $f(x, d, y)$. The symbol $\RuleSym$ is expanded into two conjunction $\Rule{A}{B}{C}$ and $A$. The function $\TagFN{i}$ gives the part-of-speech tag of word $x_i$. The function $\BinFN{i}$ bins a span length into 10 bins.
   }
 \end{figure}
 
@@ -1062,21 +1074,23 @@ We ran experiments to assess the accuracy of the method, its run-time efficiency
 
 \begin{table}
   \centering
-
-  \begin{tabular}{|l|lll|}
+  \small 
+  \begin{tabular}{|l|rrr|}
     \hline
     & \multicolumn{3}{|c|}{PTB} \\
     \hline
 
     \hline
-    model &  dev fscore & & test fscore  \\
+    Model & 22 FScore & 22 UAS & 23 FScore  \\
     \hline
-    Petrov[06] \nocite{petrov2006learning} & & & \\
-    Carreras[08] \nocite{carreras2008tag} & & & \\
-    Zhu[13] \nocite{zhu2013fast} & &  & \\
-    Charniak[00] \nocite{charniak2000maximum} & & & \\
-    Stanford[] & & & \\
-    \textsc{ParseDep} & & & \\
+    Charniak          & & & 89.5\\
+    Petrov[07]        & & 92.66 & 90.1 \\
+    Carreras[08]      & &  & 91.1 \\
+    Zhu[13]           & &  & 90.4 \\
+    CJ                & & 93.92 & \\
+    Stanford[]        & & 88.88 & \\
+    StanfordRNN       & & 92.23 & \\
+    \textsc{ParseDep} & 91.03 & 93.59 & \\
     \hline
     \hline
     & \multicolumn{3}{|c|}{CTB} \\
@@ -1084,16 +1098,17 @@ We ran experiments to assess the accuracy of the method, its run-time efficiency
     \hline
 
     \hline
-    Petrov[06] \nocite{petrov2006learning} & & & \\
-    Carreras[08] \nocite{carreras2008tag} & & & \\
-    Zhu[13] \nocite{zhu2013fast} & &  & \\
-    Stanford[] & & & \\
-    Charniak[00] \nocite{charniak2000maximum} & & & \\
+    Bikel         & & & 80.6 \\
+    Petrov[07]    & & & 83.3 \\
+    Carreras[08]  & & & \\
+    Zhu[13]       & & & 83.2 \\
+    Stanford[]    & & & \\
+    CJ  & & & 82.3 \\
     \textsc{ParseDep} & & & \\
     \hline
   \end{tabular}
   \label{tab:acc}
-  \caption{ Accuracy results on the Penn Treebank and Chinese Treebank datasets. Comparisons are to state-of-the-art non-reranking phrase-structure parsers including:  Petrov[06] \cite{petrov2006learning}, Carraras[08] \cite{carreras2008tag}, Zhu[13] \cite{zhu2013fast}, Charniak[00] \cite{charniak2000maximum}, and Stanford[] \cite{}.    }
+  \caption{ Accuracy results on the Penn Treebank and Chinese Treebank datasets. Comparisons are to state-of-the-art non-reranking phrase-structure parsers including:  Petrov[07] \cite{petrov2006learning}, Carraras[08] \cite{carreras2008tag}, Zhu[13] \cite{zhu2013fast}, Charniak[00] \cite{charniak2000maximum}, and Stanford[] \cite{}.    }
 \end{table}
 
 Our first experiments, shown in Table~\ref{tab:acc}, examine the accuracy of the phrase-structure trees produced by the parser. For these experiments,
@@ -1112,7 +1127,7 @@ Finally we consider the practical run-time of the parser on sentences of differe
 
 
 \subsection{Analysis}
-
+\label{sec:analysis}
 
 To gauge the upper bound of the accuracy of this system we consider an oracle version of the parser. For a gold parse $y$ and predicted dependencies $\hat{d}$,  define the oracle parse $y'$ as
 \[ y' = \argmin_{y' \in \mathcal{Y}(x, \hat{d})} \Delta(y, y') \]
@@ -1124,16 +1139,18 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
 
 \begin{table}
   \centering
+  \small
 
-  \begin{tabular}{|l|lll|}
+  \begin{tabular}{|l|rrr|}
     \hline
-    Model & oracle & fscore & speed  \\
+    Model & Oracle & FScore & Speed  \\
     \hline
 
     \hline
-    \textsc{TurboParser}& & & \\
-    \textsc{MaltParser}& & & \\
-    \textsc{MIT}& & & \\
+    \textsc{TurboParser} & 92.90 & 91.04 & \\
+    \textsc{MaltParser}  & & & 20 \\
+    \textsc{ZPar}        & & & \\
+    \textsc{MIT}         & & & \\
     \hline
   \end{tabular}
 
@@ -1163,19 +1180,25 @@ To compare to this work, we train our parser with gold tags and run on gold depe
 
 \begin{table}
   \centering
-  \begin{tabular}{|l|ll|}
+  \begin{tabular}{|l|ccc|}
 
     \hline
-    model & dev fscore & \\
+    & \multicolumn{3}{|c|}{Dev} \\
+    Model & Prec & Rec & F1  \\
     \hline
 
     \hline
-    Xia[0] & & \\
-    \textsc{ParseDep}  & & \\
+    Xia[09]  & 88.1 & 90.7 & 89.4 \\
+    \textsc{ParseDep}[19]  & 99.5 & 99.7 &  99.6  \\
+    \textsc{ParseDep}  & 99.5 & 99.7 &  99.6  \\
     \hline
 
   \end{tabular}
-  \caption{}
+  \caption{Comparison with the rule-based system of \newcite{xia2009towards}. 
+    This experiment is run on gold dependencies and tags of Section 22. 
+    Xia[09] only trains on Sec. 19 but includes a footnote saying that more data
+    would not help. For comparison we train on full PTB as well as just Sec. 19.
+  }
   \label{tab:convert}
 \end{table}
 
@@ -1212,15 +1235,15 @@ $\ldots$
 
 \begin{table}
   \centering
-  \begin{tabular}{|l|ll|}
-    \hline
-    Model & fscore & speed  \\
-    \hline
-    \textsc{TurboParser} & & \\
-    \textsc{MaltParser} & & \\
-    \textsc{MIT} & & \\
-    \hline
-  \end{tabular}
+  % \begin{tabular}{|l|ll|}
+  %   \hline
+  %   Model & fscore & speed  \\
+  %   \hline
+  %   \textsc{TurboParser} & & \\
+  %   \textsc{MaltParser} & & \\
+  %   \textsc{MIT} & & \\
+  %   \hline
+  % \end{tabular}
 
   \missingfigure{Speed length graph}
   \label{tab:speed}

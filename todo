@@ -4,7 +4,7 @@
 
 
 - adding simple chinese language-specific features
-- adding shape feature for english
+- adding shape feature for english (These features seem really complicated, I think we should skip them.)
 
 - run the berkeley error analysis script to claim our parser different error comparsing to other traditional parsers
 
@@ -16,14 +16,15 @@ after the above:
 	- Comparison with section 22. Fei Xia paper.
 		- generate dev part file with gold dependency
 	- Runtime., Select sentences based on length
-		- 
+		-
 	- Train with only 5% of TreeBank. 100% dep, 5%. (maybe turn off
 	   lexical features.)
 
 	- Pruning in third section. Table -
 	- Pruning fast pruning.
 	- Pruning by dependency labels.
-
+    - Run oracle experiments
+    - Train delex model.
 =============================================================================
 
 - Faster?

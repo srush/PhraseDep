@@ -666,7 +666,7 @@ def getParentDic(lexTree, labelChar='^'):
                         dependent_label = remove_labelChar(c.label())
                     dep_set[ind_c] = ind_p
                     label_set[ind_c] = phrase_label + "+" + head_label + "+" + dependent_label
-    print dep_set, label_set
+    # print dep_set, label_set
     return dep_set, label_set
 
 def generateDep(ot, labelChar='^'):
@@ -892,7 +892,7 @@ def get_binarize_lex(otree, labelChar='^'):
             if len(t) == 1:
                 t.set_label(t.label() + labelChar + findIndex(t[0]))
             else:
-                
+
                 x_ind = findIndex(t[0])
                 y_ind = findIndex(t[1])
                 #print parent_dic
@@ -1054,7 +1054,7 @@ def demo():
     #sentence = """(S (NP (NNP Ms.) (NNP Haag)) (VP (VBZ plays) (NP (NNP Elianti))) (. .))"""
     #sentence = """(PRN (S (VP (VB See))))"""
     # sentence = """(M (S (A (B (B1 b1) (B2 b2) (B3 (BB1 bb1) (BB2 bb2) (BB3 bb3) ) (B4 b4)) (C (C1 c1) (C2 c2)  ) (D d) (E e) (F f) (G g)) (W w)))"""
-    
+
     chinese_sample = open('chinese_sample','r')
     for x in chinese_sample:
         sentence = x
@@ -1074,7 +1074,7 @@ def demo():
 
     collapsedTree = deepcopy(t)
     collapse_unary(collapsedTree)
-    
+
     # convert the tree to CNF
     # cnfTree = deepcopy(collapsedTree)
     # chomsky_normal_form(cnfTree)

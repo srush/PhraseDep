@@ -35,7 +35,8 @@ struct Arg: public option::Arg
 
 enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, LAMBDA,
                     MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE,
-                    LABEL_PRUNING, POSITIVE_FEATURES, NO_HASH, FEATURE_FILE, ITEMS};
+                    LABEL_PRUNING, POSITIVE_FEATURES, NO_HASH, FEATURE_FILE, ITEMS,
+                    NO_DEP};
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , "", option::Arg::None, "USAGE: example [options]\n\n"
@@ -57,6 +58,7 @@ const option::Descriptor usage[] =
     {NO_HASH,    0,"", "no_hash", option::Arg::None, "  --no_hash  \n ." },
     {FEATURE_FILE,    0,"", "feature_file", Arg::Required, "  --feature_file  \n ." },
     {ITEMS,    0,"", "items", option::Arg::None, "  --items  \n ." },
+    {NO_DEP,    0,"", "no_dep", option::Arg::None, "  --no_dep  \n ." },
     {UNKNOWN, 0,"" ,  ""   , option::Arg::None, "\nExamples:\n"
                                                   "  example --unknown -- --this_is_no_option\n"
      "  example -unk --plus -ppp file1 file2\n" },
@@ -152,7 +154,7 @@ int main(int argc, char* argv[]) {
         in.close();
 
         clock_t t = clock();
-        cerr << "start" << endl;
+        cerr << "start " << sentences->size() << endl;
         for (int i = 0; i < sentences->size(); ++i) {
             Sentence *sentence = &(*sentences)[i];
             scorer.set_sentence(sentence);
@@ -176,14 +178,27 @@ int main(int argc, char* argv[]) {
     } else if (options[ORACLE]) {
         cerr << "ORACLE mode";
 
+        vector<Sentence> *sentences =
+                read_sentence(string(options[SENTENCE_TEST].arg));
+        for (int i = 0; i < sentences->size(); ++i) {
+            process_sentence(&(*sentences)[i], grammar);
+        }
+
         for (int i = 0; i < sentences->size(); ++i) {
             Sentence *sentence = &(*sentences)[i];
             vector<AppliedRule> best_rules;
             OracleScorer oracle(&sentence->gold_rules, grammar);
             bool success;
-            cky(sentence->preterms, sentence->words, sentence->deps,
-                *grammar, oracle, &best_rules, options[ORACLE_TREE],
-                &success);
+            if (options[NO_DEP]) {
+                cky_full(sentence->preterms, sentence->words,
+                         *grammar, oracle, &best_rules, options[ORACLE_TREE],
+                         &success);
+
+            } else {
+                cky(sentence->preterms, sentence->words, sentence->deps,
+                    *grammar, oracle, &best_rules, options[ORACLE_TREE],
+                    &success);
+            }
 
             if (options[ORACLE_TREE]) {
                 cout << endl;

@@ -74,6 +74,9 @@
 \newcommand{\TagFN}[1]{\mathrm{tag}({#1})}
 \newcommand{\WordFN}[1]{x_{#1}}
 \newcommand{\Reals}{\mathbb{R}}
+
+\newcommand{\lpkcomment}[1]{\textcolor{blue}{\bf \small [#1 --lpk]}}
+
 \setlength\titlebox{6.5cm}    % Expanding the titlebox
 
 \title{Parsing Dependencies}
@@ -202,15 +205,15 @@
 There are two main grammatical
 frameworks used for statistical syntactic prediction: phrase-structure parsers and
 dependency parsers \cite{}. The two offer a
-trade-off: phrase-structure parsing is very accurate and provides a
+trade-off: phrase-structure parsing is very accurate \lpkcomment{i am not sure if the accurate is the right word here... dep parser is also very accuarate.} and provides a
 full context-free syntactic representation; dependency parsing is
 often faster, but still
-predicts much of the useful syntactic structure.
+predicts much of the useful\lpkcomment{again... here i think maybe we should say different rather than imply which is more useful?} syntactic structure.
 
 We can quantify this difference by looking 
-at the dependency prediction accuracy of phrase-structure parsers. Table~\ref{fig:depcomp} shows this comparison across several widely-used parsers. Note that the best models are phrase-structure parsers, but that recent advances in dependency parsing have led to comparably high-accuracy dependency parsers.
+at the dependency prediction accuracy of phrase-structure parsers. Table~\ref{fig:depcomp} shows this comparison across several widely-used parsers. Note that the best models are phrase-structure parsers, but that recent advances in dependency parsing have led to comparably high-accuracy dependency parsers.\lpkcomment{this is a little confusing? there are two ways to get dependencies, c-parsing and d-parsing, but here it seems we are comparing the acc between phrase-structure and dependency parsing acc? they are two different systems....}
 
-The natural reverse question is how well do these dependency parsers perform at phrase-structure prediction? Is it reasonable to use dependency parsers for tasks that require phrase-structure trees as input? 
+The natural reverse question is how well do these dependency parsers perform at phrase-structure prediction? Is it reasonable to use dependency parsers for tasks that require phrase-structure trees as input? \lpkcomment{i would like to put the benefits of doing this dep2phrase thing in the intro maybe? 1) it is very fast since dep prunes away a lot not useful cky chart item 2) dep can server as features in this problem, so that we can aim at higher acc with easy cky model. (actually, i believe the dep parsers can see syntactical information which is not easy to see when using cky, that's also the reason why your phrase+dep decomposition works right?)}
 
 % State-of-art dependency parsers
 % such as TurboParser \cite{}, and \cite
@@ -330,16 +333,17 @@ multi-representational treebanks.  \newcite{xia2001converting} and
 \newcite{xia2009towards} develop a rule-based system for the
 converting human-annotated dependency parses. Our work differs in that 
 we learn a data-driven structured prediction model that is also able 
-to handle  automatically predicted input.
+to handle automatically predicted input.\lpkcomment{mention the table in the exp section where the comparison number show our approach better here?} 
 
 There has been successful work using dependency parsing structure 
-to guide phrase-structure parsers. \newcite{carreras2008tag} build a
+to guide\lpkcomment{i think ``combine dependency and phrase structure parsing'' is probably better than use the word ``guide''? } phrase-structure parsers. \newcite{carreras2008tag} build a
 high-accuracy parser that uses a dependency parsing model both for
 pruning and within a richer lexicalized parser. Similarly
 \newcite{rush2010dual} use dual decomposition to combine a dependency
 parser with a simple phrase-structure model. We take this
 approach a step further by fixing the dependency structure
-entirely before parsing.
+entirely before parsing.\lpkcomment{only fixing the dependency structure
+entirely before parsing sounds more like a step backward than a step further... i am not sure if this is a good way to say that... i think there is a important difference here, which is, when combining the phrase-structure and dep parsing, when ppl do this, the binarization does not imply dep arcs, so even you can push info from dep to phrase structure parsing, you can't directly pruning so much like we do here...right?}
 
 
 Finally there have also been several papers that use ideas from

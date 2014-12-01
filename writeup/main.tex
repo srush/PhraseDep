@@ -271,7 +271,7 @@ and there are likely errors in the input dependency tree.
 
 In this work, we pose phrase-structure recovery as a structured
 prediction problem, and train a full lexicalized phrase-structure
-parser to predict the syntactic tree for a given sentence. Crucially,
+parser, \textsc{MiniPar},  to predict the syntactic tree for a given sentence. Crucially,
 though, we limit the search space of the parser to the search space
 that produces a given dependency tree. We show that,
 
@@ -637,30 +637,53 @@ much more constrained. Given that there are $n$ dependency links and $n$ indices
 
 % \subsection{Extension: Pruning}
 
-\subsection{Extension: Pruning}
+\subsection{Further Pruning}
 \label{sec:prune}
 
-We also experiment with a simple pruning dictionary pruning technique.
-For each context-free rule $A \rightarrow \beta_1\ \beta_2$ and POS tag $a$ we
-remove all rules that were not seen with that tag as a head in training.
+In addition to constraining the topology of the parses considered we
+also experiment with pruning to limit the non-terminal labels.  In
+dependency parsing one simple form of pruning is to limit the possible
+dependency based on the POS tag of the head word.  
 
-Pruning discussion
+We observe that in training the part-of-speech of the head word $x_h$
+greatly limits the possible rules $\Rule{A}{\beta_1}{\beta_2}$.  To
+exploit this property we build tables $\rules_t$ for each
+part-of-speech tag $t$ and limit the search to rules seen for the
+current head tag.
+
+Finally, there is question of whether these constraints make it even
+possible to find good parses. To answer this question we ran oracle
+experiments seeking to find the best phrase structure parse each
+algorithm can produce.  Table~\ref{tab:alg-oracle} shows a comparison
+among full LCFG parsing, dependency limited parsing, and
+dependency-limit pruned parsing. Full LCFG is very slow, even on very
+short sentences.  Limiting to dependency structures leads to a large
+speed up, but a drop in oracle score. Pruning gives a further speed up, 
+without hurting oracle performance.
+
+
+
+% We also experiment with a simple pruning dictionary pruning technique.
+% For each context-free rule $A \rightarrow \beta_1\ \beta_2$ and POS tag $a$ we
+% remove all rules that were not seen with that tag as a head in training.
+% Pruning discussion
 
 
 \begin{table}
   \centering
   \small
   \hspace*{-0.3cm}
-  \begin{tabular}{|l|llrr|}
+  \begin{tabular}{|l|ccrr|}
     \hline
     Model & Sym & Comp. & Speed & Oracle  \\
     \hline
     \hline
-    LCFG($< 20$)  & $\mathcal{Y}(x)$ & $O(n^5|\nonterms|^3)$ &     0.25 & 100.0  \\
-    LCFG(dep)    & $\mathcal{Y}(x,d)$ & $O(n^2|\nonterms|^3)$ &  63.2 & 92.8    \\
-    LCFG(prune)  &  - & $O(n^2|\nonterms|^3)$ &   173.5 & 92.7 \\
+    LCFG($< 20$)  & $\mathcal{Y}(x)$ & $O(n^5|\rules|)$ &     0.25 & 100.0  \\
+    LCFG(dep)    & $\mathcal{Y}(x,d)$ & $O(n^2|\rules|)$ &  63.2 & 92.8    \\
+    LCFG(prune)  &  - & $O(n^2|\rules|)$ &   173.5 & 92.7 \\
     \hline
   \end{tabular}
+  \label{tab:alg-oracle}
   \caption{Comparison of three parsing setups:
     LCFG($<20$) is the standard full lexicalized grammar limited to sentence of length 
     less than 20 words, LCFG(dep) is 
@@ -678,7 +701,7 @@ We define the scoring function $s$ as
 \[s(y;x, d, \theta) =  \theta^{\top} f(x, d, y) \]
 
 \noindent
-where $\theta \in \Reals^D $ is a weight vector  and $f(x, d, y)$ is a feature function that maps parse production (as in Figure~\ref{}) to sparse feature vectors in $\{0,1\}^D$. In this section we first discuss the features used and then training for the weight vector.
+where $\theta$ is a weight vector  and $f(x, d, y)$ is a feature function that maps parse production to sparse feature vectors. In this section we first discuss the features used and then training for the weight vector.
 
 
 \subsection{Features}
@@ -708,7 +731,7 @@ with:
 
 
 The full feature set  is shown in Figure~\ref{fig:features}.
-After training there are \# non-zero features.
+% After training there are \# non-zero features.
 
 
 
@@ -797,7 +820,7 @@ of rule productions.
 
 The objective is optimized using Adagrad \cite{}.  The gradient
 calculation requires computing a loss-augmented argmax for each
-training example which is done using the algorithm of Figure~\ref{}.
+training example which is done using the algorithm of Figure~\ref{fig:cky_new}.
 
 \subsection{Binarization}
 
@@ -862,25 +885,33 @@ For English experiments we use the standard Penn Treebank (PTB)
 experimental setup \cite{marcus1993building}. Training is done on
 section 2-21, development on section 22, and test of section 23.
 
-For Chinese experiment, we the standard Chinese Treebank 5.1 (CTB)
-experimental setup \cite{xue2005penn}.
+For Chinese experiments, we use version 5.1 of the Penn  Chinese Treebank 5.1 (CTB) \cite{xue2005penn}. We followed previous work and used 
+001-270 and 440-1151 for training, articles
+301-325 as development, and articles
+271-300 as test.
 
 Part-of-speech tagging is done using TurboTagger
 \cite{martins2013turning}. Prior to training, the train sections are
-automatically tagged using 10-fold jack-knifing. At training time, the
+automatically tagged using 10-fold jackknifing. At training time, the
 gold dependency structures are computed using the Collins head rules
 \cite{collins2003head}.\footnote{ We experimented with using
   jackknifed dependency parses $d'$ at training time with oracle tree
   structures, i.e. $\argmin_{y' \in \mathcal{Y}(x, d')} \Delta(y, y)$,
   but found that this did not improve performance.}
 
-Evaluation for phrase-structure parses is performed using the \texttt{evalb}\footnote{http://nlp.cs.nyu.edu/evalb/} script using a standard setup and for dependency parsing using unlabeled accuracy score (UAS).
+Evaluation for phrase-structure parses is performed using the
+\texttt{evalb}\footnote{http://nlp.cs.nyu.edu/evalb/} script using the
+standard setup. We report F1-Score as well as recall and
+precision. For dependency parsing using unlabeled accuracy score
+(UAS).
 
 We implemented the grammar binarization, head rules, and pruning
 tables in Python, and the parser, features, and training in C++. The
 core run-time decoding algorithm is self contained and requires less
-than 500 lines of code. Both are publicly available.\footnote{Withheld
-  for review}
+than 400 lines of code. Both are publicly available.\footnote{Withheld
+  for review} Experiments are performed on a Lenovo ThinkCentre desktop computer
+with 32GB of memory and  Core i7-3770 3.4GHz 8M cache CPU.
+
 
 % Parser is in C++, publicly available, 500 lines of code..
 % At training time, we run 10-fold jack-knifing to produce dependency parses $\hat{d}$. We then run a single pass to calculate $\bar{y}$ for each training example.
@@ -925,7 +956,7 @@ We ran experiments to assess the accuracy of the method, its run-time efficiency
     CJ                & & 93.92 & \\
     Stanford[]        & & 88.88 & \\
     StanfordRNN       & & 92.23 & \\
-    \textsc{ParseDep} & 91.04 & 93.59 & \\
+    \textsc{MiniPar} & 91.04 & 93.59 & \\
     \hline
     \hline
     & \multicolumn{3}{|c|}{CTB} \\
@@ -939,7 +970,7 @@ We ran experiments to assess the accuracy of the method, its run-time efficiency
     Zhu[13]       & & & 83.2 \\
     Stanford[]    & & & \\
     CJ  & & & 82.3 \\
-    \textsc{ParseDep} & & & \\
+    \textsc{MiniPar} & & & \\
     \hline
   \end{tabular}
   \label{tab:acc}
@@ -991,17 +1022,10 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
 
   \vspace{0.5cm}
 
-  \begin{tabular}{|lll|}
-    \hline
-     oracle & dep & dev  \\
-    \hline
-
-    \hline
-    & & \\
-    \hline
-  \end{tabular}
   \label{tab:oracle}
-  \caption{(a) Oracle accuracy for the predicted dependency trees of commonly used dependency parsers including TurboParser \cite{martins2013turning}, MaltParser \cite{nivre2006maltparser}, and MIT \cite{}. (b) Classification of the bracketing mistakes made by the parser. }
+  \caption{Comparison of the effect of downstream dependency prediction. 
+    Experiments are run on the development section with different input dependencies. \textit{Oracle} is the oracle F1 on the development data. \textit{Speed} is the efficiency of the parser in sentences per second.
+    Inputs include TurboParser \cite{martins2013turning}, MaltParser \cite{nivre2006maltparser}, and MIT \cite{}. }
 \end{table}
 
 
@@ -1024,15 +1048,17 @@ To compare to this work, we train our parser with gold tags and run on gold depe
 
     \hline
     Xia[09]  & 88.1 & 90.7 & 89.4 \\
-    \textsc{ParseDep}(Sec19) & 95.9  & 95.9 & 95.9    \\
-    \textsc{ParseDep}  & 97.5 &  97.8 & 97.7    \\
+    \textsc{MiniPar}(Sec19) & 95.9  & 95.9 & 95.9    \\
+    \textsc{MiniPar}  & 97.5 &  97.8 & 97.7    \\
     \hline
 
   \end{tabular}
   \caption{Comparison with the rule-based system of \newcite{xia2009towards}. 
-    This experiment is run on gold dependencies and tags of Section 22. 
-    Xia[09] only trains on Sec. 19 but includes a footnote saying that more data
-    would not help. For comparison we train on full PTB as well as just Sec. 19.
+    Results are from PTB development section 22 using gold tags and gold 
+    dependencies.
+    Xia[09] report results from training on only on Section 19, but 
+    include a note that further data had little effect. 
+    For comparison we report result on complete training as well as just Sec. 19.
   }
   \label{tab:convert}
 \end{table}
@@ -1053,9 +1079,9 @@ To compare to this work, we train our parser with gold tags and run on gold depe
 %     \hline
 
 %     \hline
-%     \textsc{ParseDep[5\%]}  & & \\
-%     \textsc{ParseDep[10\%]}  & & \\
-%     \textsc{ParseDep[20\%]}  & & \\
+%     \textsc{MiniPar[5\%]}  & & \\
+%     \textsc{MiniPar[10\%]}  & & \\
+%     \textsc{MiniPar[20\%]}  & & \\
 %     \hline
 
 %   \end{tabular}

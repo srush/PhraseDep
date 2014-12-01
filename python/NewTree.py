@@ -1000,8 +1000,10 @@ def get_span_info(nt, rule_to_ind_dict):
 
     # we will find the h and m and the rule_num
     rule, h, m = get_rule_for_nt(nt)
-    return (span_left, span_split, span_right, h, m, rule_to_ind_dict[rule])
-
+    if rule in rule_to_ind_dict:
+        return (span_left, span_split, span_right, h, m, rule_to_ind_dict[rule])
+    else:
+        return None
 
 
 

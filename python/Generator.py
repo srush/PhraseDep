@@ -99,7 +99,7 @@ def generate_part(treebank_file, rule_file):
         work_tree = deepcopy(t)
         NewTree.lexLabel(work_tree)
         parent_dic, dep_label_set = NewTree.getParentDic(work_tree)
-        print len(t.leaves()), len(parts)
+        print len(t.leaves()), len([item for item in parts if item != None])
         print " ".join(t.leaves())
         if not dep_from_conll:
             print " ".join([x.label() for x in t.subtrees(lambda t: t.height() == 2)])
@@ -125,7 +125,10 @@ def generate_part(treebank_file, rule_file):
             print " ".join(parent_list)
             print " ".join(label_list)
         for p in parts:
-            print " ".join(p)
+            if p != None:
+                print " ".join(p)
+            else:
+                pass
     f.close()
 
 def read_rule_file(rulef):

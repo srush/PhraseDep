@@ -179,14 +179,14 @@
 \begin{abstract}
 
   Motivated by the increase in accuracy of statistical dependency
-  parsers, we consider the problem of decoding phrase-structure
-  parses directly from predicted dependency trees. Unlike past rule-based
-  approaches, we treat this as a structured prediction problem and
-  train a constrained context-free parser for this task. Since our
-  parser is constrained by the dependency structure it is both asymptotically
-  and empirically faster than standard lexicalized parsers. However,
-  despite its simplicity, it still yields high-accuracy phrase-structure parses
-  on experiments in both English and Chinese.
+  parsers, we consider the problem of decoding phrase-structure parses
+  directly from predicted dependency trees. Unlike past rule-based
+  approaches, we treat this as a structured prediction problem using a
+  specialized context-free parser. Since our parser makes use of the
+  predicted dependency structure it is asymptotically faster and much
+  simpler than a standard lexicalized parser. However, despite its
+  simplicity, it still yields high-accuracy phrase-structure parses on
+  experiments in both English and Chinese.
 
 
 
@@ -199,25 +199,24 @@
 
 % There has been a surge of recent work on dep parsing
 
-There are two dominant grammatical
-frameworks used for statistical syntactic parsing: phrase-structure and
-dependency parsing \cite{}. The two formalisms offer a
-trade-off. Phrase-structure parsing is very accurate and provides a full
-context-free grammatical representation; while dependency parsing is
-much faster, both asymptotically and empirically, while still
-predicting much of the important structural relationships in a
-sentence.
+There are two main grammatical
+frameworks used for statistical syntactic prediction: phrase-structure parsers and
+dependency parsers \cite{}. The two offer a
+trade-off: phrase-structure parsing is very accurate and provides a
+full context-free syntactic representation; dependency parsing is
+often faster, but still
+predicts much of the useful syntactic structure.
 
-Recent advances in dependency parsing have lead to
-models that perform nearly as well as phrase-structure parsers in
-terms of dependency accuracy  \cite{}, and \cite. Table~\ref{fig:depcomp}
-shows that for Collins head rules \cite{}, the two state-of-the-art dependency parsers score only \% below the best phrase-structure parsers.
+We can quantify this difference by looking 
+at the dependency prediction accuracy of phrase-structure parsers. Table~\ref{fig:depcomp} shows this comparison across several widely-used parsers. Note that the best models are phrase-structure parsers, but that recent advances in dependency parsing have led to comparably high-accuracy dependency parsers.
+
+The natural reverse question is how well do these dependency parsers perform at phrase-structure prediction? Is it reasonable to use dependency parsers for tasks that require phrase-structure trees as input? 
 
 % State-of-art dependency parsers
 % such as TurboParser \cite{}, and \cite
 % terms of accuracy than large-scale reranking dependency parsers, while
 % still maintaining efficient run-time.
--
+% -
 
 % Since statistical phrase-structure parsers often use an internal
 % lexicalized representation, it is possible to directly compare the
@@ -251,18 +250,15 @@ shows that for Collins head rules \cite{}, the two state-of-the-art dependency p
   \caption{{\footnotesize While a phrase-structure parse determines a unique dependency parse, the inverse problem is non-deterministic. The figure, adapted from \cite{collins1999statistical}, shows several X-bar trees that all produce the same dependency structure. The parentheses $X(h)$ indicate the head $h$ of each internal vertex. }}
 \end{figure}
 
-However, dependencies alone provide less value than a full
-phrase-structure parse, and many applications still rely on having the
-phrase-structure \cite{}. But while the transformation from
-phrase-structure to dependencies is deterministic, the inverse is not, as illustrated in Figure~\ref{fig:inverse}.
+% However, dependencies alone provide less value than a full
+% phrase-structure parse, and many applications still rely on having the
+% phrase-structure \cite{}. 
 
-We explore the problem of recovering the
-phrase-structure from the dependency representation.  This recovery is
-challenging for several reasons: (a) there are an exponential number
-of phrase-structure trees for any dependency parse, (b) in addition to
-the tree structure, it is necessary to recover the non-terminal
-symbols of the tree, and (c) the parser must be robust to errors in
-the downstream predicted dependency tree.
+Unfortunately, as illustrated in Figure~\ref{fig:inverse},
+recovering the best phrase-structure tree is a non-trivial problem. Given a
+predicted dependency tree, there is a large space of possible output
+phrase-structure trees, each tree may have many possible labelings,
+and there are likely errors in the input dependency tree.
 
 
 % Because of these issues is not obvious how to directly perform this conversion without doing search over possible structures.
@@ -273,11 +269,11 @@ the downstream predicted dependency tree.
 
 % \textsc{Miniparser}
 
-We treat this task as a  structured prediction problem,
-and train a complete phrase-structure parser to predict the
-syntactic tree for a given sentence. However, we limit the
-search space of the parser to the skeleton of a given dependency
-tree. Experiments show that
+In this work, we pose phrase-structure recovery as a structured
+prediction problem, and train a full lexicalized phrase-structure
+parser to predict the syntactic tree for a given sentence. Crucially,
+though, we limit the search space of the parser to the search space
+that produces a given dependency tree. We show that,
 
 
 % To address these issue, we build a complete phrase-structure parser
@@ -292,10 +288,10 @@ tree. Experiments show that
 \begin{itemize}
 \item The constrained parser is asymptotically  faster than
 standard phrase-structure parser for lexicalized context-free grammar.
-A standard algorithm for this problem is $O(n^5 |\rules|)$, but with
-constrained dependency structure the worst case $is O(n^2 |\rules|)$.
+While the standard algorithm is $O(n^5 |\rules|)$, the 
+constrained dependency parser has worst case complexity $O(n^2 |\rules|)$.
 
-\item In practice using simple pruning that parser is
+\item In practice using simple pruning the parser is
 linear time in the length of the sentence and as efficient as the fastest
 high-accuracy dependency parsers. \%
 
@@ -329,20 +325,21 @@ the parser is comparably accurate to non-reranked phrase-structure parsers. \%
 
 
 The problem of converting dependency to phrase-structured trees has
-been studied previously from a treebanking perspective.
-\newcite{xia2001converting} and \newcite{xia2009towards} develop a
-rule-based system for the converting human-annotated dependency
-parses. In this work we learn the conversion from data, and consider
-the case of automatically predicted parses.
+been studied previously from the perspective of building
+multi-representational treebanks.  \newcite{xia2001converting} and
+\newcite{xia2009towards} develop a rule-based system for the
+converting human-annotated dependency parses. Our work differs in that 
+we learn a data-driven structured prediction model that is also able 
+to handle  automatically predicted input.
 
-This task is similar to phrase-structure parsers that utilize
-dependency parsing techniques. \newcite{carreras2008tag} build a
+There has been successful work using dependency parsing structure 
+to guide phrase-structure parsers. \newcite{carreras2008tag} build a
 high-accuracy parser that uses a dependency parsing model both for
 pruning and within a richer lexicalized parser. Similarly
 \newcite{rush2010dual} use dual decomposition to combine a dependency
-parser with a simple phrase-structure model. However, we take this
+parser with a simple phrase-structure model. We take this
 approach a step further by fixing the dependency structure
-entirely.
+entirely before parsing.
 
 
 Finally there have also been several papers that use ideas from
@@ -385,7 +382,11 @@ down parser based on a simple X-bar grammar and a small set of lexicalized featu
     \multirow{1}{*}{Dependency} & TurboParser & 93.59  \\
     \hline
   \end{tabular}
-  \caption{Unlabeled accuracy score (UAS) of several widely used phrase-structure and dependency parsers using the Collins head rules on development Section 22. Note that the best scoring is a reranking phrase-structure parser, but that state-of-the-art dependency parsers are comparable with the best parsers. }
+  \caption{Dependency accuracy for several several widely used phrase-structure and dependency parsers.
+    Score are reported as the unlabeled accuracy score (UAS) of dependencies on PTB  Section 22. 
+    Conversion are performed using the Collins head rules \cite{collins2003head}.
+    Note that the best scoring is a reranking phrase-structure parser, but that state-of-the-art 
+    dependency parsers are comparable with the best parsers. }
   \label{fig:depcomp}
 \end{table}
 
@@ -397,15 +398,15 @@ down parser based on a simple X-bar grammar and a small set of lexicalized featu
 % The parser
 \section{Background}
 
-We begin by developing notation for a lexicalized phrase-structure formalism and for dependency parsing. The notation aims to highlight the similarity between the two formalisms.
+We begin by developing notation for a lexicalized context-free formalism and for dependency parsing. The notation aims to highlight the similarity between the two formalisms.
 
 \subsection{Lexicalized CFG Parsing}
 
-A lexicalized context-free grammar (LCFG) is an extended context-free grammar where each vertex in a parse has a unique lexical head word. Define an binarized LCFG as a 4-tuple $(\nonterms, \rules, \terms, \Root)$ where:
+A lexicalized context-free grammar (LCFG) is a context-free grammar where each vertex in a parse has a unique lexical head. Define an binarized\footnote{For notational simplicity we ignore unary rules for this section.} LCFG as a 4-tuple $(\nonterms, \rules, \terms, \Root)$ where:
 \begin{itemize}
 \item $\nonterms$; a set of nonterminal symbols, e.g. \Tag{NP}, \Tag{VP}.
-\item $\terms$; a set of terminal symbols, often consisting of the words in the language.
-\item $\rules$; a set of lexicalized rule productions either of the form $\RuleA{A}{\beta_1}{\beta_2}$ or $\RuleB{A}{\beta_1}{\beta_2}$  consisting of a parent nonterminal $A \in \nonterms$, a sequence of children $\beta_i \in \nonterms$ for $i \in \{1, 2\}$, and a distinguished head child annotated with $*$. The head child comes from the head rules associated with the grammar.
+\item $\terms$; a set of terminal symbols, consisting of the words in the language.
+\item $\rules$; a set of lexicalized rule productions either of the form $\RuleA{A}{\beta_1}{\beta_2}$ or $\RuleB{A}{\beta_1}{\beta_2}$  consisting of a parent nonterminal $A \in \nonterms$, a sequence of children $\beta_i \in \nonterms \cup \terms$ for $i \in \{1, 2\}$, and a distinguished head child annotated with $*$. The head child comes from the head rules associated with the grammar.
 \item $\Root$; a distinguished root symbol $\Root \in \nonterms$.
 \end{itemize}
 
@@ -422,7 +423,7 @@ we further associate a triple $v = (\Span{i, j}, h, A)$ with each vertex in the 
 \begin{itemize}
 \item $\Span{i,j}$; the \textit{span}  of the vertex, i.e. the contiguous sequence $\{x_i, \ldots, x_j\}$ of the sentence covered by the vertex.
 
-\item $h(v) \in \{1, \ldots n\}$; index indicating that $x_h$ is the \textit{head} of the vertex, defined recursively by the following rules:
+\item $h(v) \in \{1, \ldots, n\}$; index indicating that $x_h$ is the \textit{head} of the vertex, defined recursively by the following rules:
   \begin{enumerate}
   \item  If the vertex is leaf $x_i$, then $h=i$.
   \item Otherwise,  $h$ matches the head child where $\RuleA{A}{\beta_1}{\beta_2}$ or $\RuleB{A}{\beta_1}{\beta_2}$  is the rule production at this vertex.
@@ -431,8 +432,8 @@ we further associate a triple $v = (\Span{i, j}, h, A)$ with each vertex in the 
 \item $A \in \terms \cup \nonterms$; the terminal or nonterminal symbol of the vertex.
 \end{itemize}
 
-Note that each word $x_i$ but one has an ancestor vertex $v$ where $h(v) \neq i$.  Define the
-\textit{spine} of word $x_i$ to be the longest chain connected vertices $v_1,
+Note that all but one word $x_i$ has an ancestor vertex $v$ where $h(v) \neq i$.  Define the
+\textit{spine} of word $x_i$ to be the longest of chain connected vertices $v_1,
 \ldots, v_p$ where $h(v_j) = i$ for $j \in \{1, \ldots, p\}$.
 Also if it exists, let vertex $v_{p+1}$  be the parent of vertex~$v_p$,
 where $h(v_{p+1}) \neq i$. The full notation is illustrated in Figure~\ref{fig:spine}.
@@ -466,8 +467,8 @@ Dependency trees provide an alternative, and in some sense simpler,
 representation of grammatical structure.
 
 
-Given an input sentence $x_1
-\ldots x_n$, define a dependency parse $d$ as a sequence $d_1 \ldots d_n$ where for all $i$, $d_i \in \{0, \ldots, n\}$. These dependency relations can be seen as arcs $(d_i, i)$ in a directed graph over the word indices where $0$ is a special pseudo-root vertex.  A dependency parse is valid  if the corresponding directed graph is a directed tree rooted at vertex~$0$. Figure~\ref{fig:spine} contains an example of a dependency tree.
+For sentence $x_1,
+\ldots, x_n$, define a dependency parse $d$ as a sequence $d_1, \ldots, d_n$ where for all $i$, $d_i \in \{0, \ldots, n\}$. These dependency relations can be seen as arcs $(d_i, i)$ in a directed graph over the sentence, where $w_0$ is a special pseudo-root vertex.  A dependency parse is valid  if the corresponding directed graph is a directed tree rooted at vertex~$0$. Figure~\ref{fig:spine} contains an example of a dependency tree.
 % to be the head of the sentence, i.e. it modifies $g_i \in \{0, n\}$
 % where $0$ is a special pseudo-root symbol.
 % If each word and the pseudo-root is represented as a vertex, than
@@ -504,81 +505,30 @@ in the induced dependency parse.
 % In the binarized case,
 
 
-The conversion produces a directed tree rooted by preserving the tree structure of the original LCFG parse.
+% The conversion produces a directed tree rooted by preserving the tree structure of the original LCFG parse.
 
-However the reverse conversion is not unique, and in fact, it can be shown that in the worst-case there are an
-exponential number of possible phrase structure trees that match a given dependency parse. We give the proof in
-Appendix~\ref{app:proof}.
-
-
-
-
-% Any lexicalized
-
-
-
-
-
-
-
-% For a specific parse $p$ the head rules induce a projective dependency parse over the sentence.
-% To see this, as a base case associate a head word $i$ with each node $(i, i)$ in the tree.
-% Then inductively at each inner node with span $(i,j)$ assign the head word $i \leq h \leq$ where
-% $h$ is the head word of the $H(r)$th child node.
-
-% The span of a word $i$ is the span $(i, j)$ of $p_n$.
-
-
-% Define the spine of a word $i$ as the sequence of nodes $p_1, \ldots p_n$ such that $h(p_j) = i$.
-% Let $p_{n+1}$ be the parent of $p_n$, then we say that $i$ is the dependent of $h(p_{n+1})$. By convention
-% if $p_n$ is the root of the tree then $i$ is the dependent of the pseudo-root $0$.
-
-% We can think of these dependencies as a directed graph over the nodes $\{0, \ldots n\}$ where the arc $(j, i)$ indicates that
-% word $i$ is a dependent of word $j$.
-
-
-% $l,r:\{1\ldots n\} \mapsto \{1\ldots n\}$
-
-
-% While we have described dependencies as the deterministic by-product
-% of phrase-structure parsing, in recent years there has been extensive
-% work on directly predicting the dependency structure $(j,i)$ without
-% predicting the full parse structure. The main benefit of this approach
-% is that these structures can be predicted efficiently which has allowed
-% for extensive use of powerful structured prediction techniques.
-
-
-
-
-
-
-% A labeled dependency parse is one with a set $\mathcal{L}$
-% and $(i, j, l)$.
-
-
-% \subsection{Dependency Parsing}
-
-
-% A dependency parse is any directed tree over this graph rooted
-% at node $0$.
-
-
-% If there exists a path from $w_i$ to $w_j$ than $w_j$ is a
-% an ancestor of word $i$.
-
-% Define a \textit{projective} dependency parse as one where for any word
-% the ancestors are contiguous.
-
-% We can specify a dependency parse as a sequence $(i,j)$.
+However the conversion from dependency tree to phrase-structure tree not unique, and in fact, it can be shown that in the worst-case there are an
+exponential number of possible unlabeled phrase-structure trees that induce the same dependency parse (proof given in Appendix~\ref{app:proof}).
 
 
 \section{Parsing Dependencies}
 
-Our main problem of interest is to predict the best
-phrase-structure tree for a given dependency parse.
-We frame this problem as a combinatorial decoding problem.
-First, we describe the standard lexicalized CKY algorithm
-and then give a constrained version of this algorithm.
+Since the inverse problem is ill-posed, our goal will
+be to learn a scoring function to help predict a 
+phrase-structure tree for any dependency parse. In 
+this section we assume this function is given and describe
+the prediction problem. In the next section we consider 
+the learning problem.
+
+% The goal of this work is to learn to select the best
+% phrase-structure tree for a predicted dependency parse.
+% We first describe how to decode the best phrase-structure 
+% parse in this section and describe the learning problem in 
+% the next section.
+
+
+% First, we describe the standard lexicalized CKY algorithm
+% and then give a constrained version of this algorithm.
 
 
  % To solve this inverse problem we set up as simple variant of the
@@ -587,7 +537,42 @@ and then give a constrained version of this algorithm.
 % asymptotically faster.
 
 
+\begin{figure*}
+  \begin{multicols}{2}
+  \noindent \textbf{Premise:}
+  \[(\Span{i, i}, i, A)\ \ \ \forall i \in \{1 \ldots n\}, A \in {\cal N}\]
 
+  \noindent\textbf{Rules:}
+
+   For $i\leq h \leq k < m \leq j$,  and  rule  $\RuleA{A}{\beta_1}{\beta_2}$,
+   \[\infer{( \Span{i, j},  h,  A)}{( \Span{i, k}, h, \beta_1)  &  ( \Span{k+1, j}, m, \beta_2) } \]
+
+   For $i\leq m \leq k < h \leq j$, rule  $\RuleB{A}{\beta_1}{\beta_2}$,
+   \[\infer{(\Span{i, j},  h, A)}{(\Span{i, k}, m, \beta_1)  &  (\Span{k+1, j}, h, \beta_2) }  \]
+
+\noindent \textbf{Goal:} 
+\[ (\Span{1, n}, m, \Root) \mathrm{\ for\ any }\ m\]
+
+\label{fig:cky}
+
+  \noindent \textbf{Premise:}
+  \[(\langle i,i \rangle, i, A)\ \ \ \forall i \in \{1 \ldots n\}, A \in {\cal N}\]
+
+  \noindent\textbf{Rules:}
+
+  For all   $i < m, h = d_m$  and rule  $\RuleA{A}{\beta_1}{\beta_2}$,
+  \[\infer{( \Span{ i, \Right{m} }, h, A)}{(\Span{i, \Left{m}-1}, h, \beta_1)  &  (\tri, m, \beta_2) } \]
+
+  For all    $m < j, h = d_m$ and  rule  $\RuleB{A}{\beta_1}{\beta_2}$,
+  \[ \infer{( \Span{\Left{m}, j}, h, A)}{(\tri, m, \beta_1)  &  (\Span{\Right{m}+ 1, j}, h, \beta_2) } \]
+
+\noindent \textbf{Goal:} 
+\[(\Span{1, n}, m, \Root) \mathrm{\ for\ any }\ m \mathrm{\ s.t. \ } d_m = 0 \]
+
+\end{multicols}
+\label{fig:cky_new}
+\caption{(a) Standard CKY algorithm for LCFG parsing stated as inductive rules. Starting from the \textit{premise}, any valid application of \textit{rules} that leads to a \textit{goal} is a valid parse. Finding the optimal parse with dynamic programming is linear in the number of rules. For this algorithm there are $O(n^5|\rules|)$ rules where $n$ is the length of the sentence. (b) The constrained CKY parsing algorithm for $\mathcal{Y}(x, d)$. The algorithm is nearly identical except that many of the free indices are now fixed to the dependency parse. Finding the optimal parse is now $O(n^2|\rules|)$.}
+\end{figure*}
 
 \subsection{Constrained Parsing Algorithm}
 
@@ -596,7 +581,9 @@ and then give a constrained version of this algorithm.
 % In the next section we show how to convert our original grammar to this form while
 % preserving the head structure.
 
-For a given lexicalized context-free grammar,
+Our prediction algorithm will be a simple extension of the standard lexicalized CKY parsing algorithm. 
+
+Assume that we are given a binarized LCFG,  
 define the set of valid parses for a sentence as $\mathcal{Y}(x)$.
 The parsing problem is to find the highest-scoring parse in this set, i.e.  \[ \hat{y} \gets \argmax_{y \in {\cal Y}(x)} s(y;x) \] where
 $s$ is a scoring function.
@@ -604,98 +591,37 @@ $s$ is a scoring function.
 If the scoring function factors over rule productions, then
 the highest-scoring parse can be found using the lexicalized
 CKY algorithm. This algorithm is defined as a
-collection of inductive rules shown in Figure~\ref{fig:cky}.
+collection of inductive rules shown in Figure~\ref{fig:cky_new}.
+The inductives rules are of the form
 
-For example consider the inductive rule
+\[ \infer{(\Span{i, j}, h, A)}{(\Span{i, k}, m, \beta_1) & (\Span{k+1,
+    j}, h, \beta_2)} \] for all rules $\RuleA{A}{\beta_1}{\beta_2}\in
+\rules$ and spans $i \leq k < j$. This indicates that
+rule $\RuleA{A}{\beta_1}{\beta_2}$ was applied at a vertex covering
+$\Span{i, j}$ to produce two vertices covering $\Span{i, k}$ and
+$\Span{k+1, j}$, and that the new head is index $h$ which is modified
+by index $m$. 
 
-\[ \infer{(\Span{i, j}, h, A)}{(\Span{i, k}, m, \beta_1) &  (\Span{k+1, j}, h, \beta_2)} \]
- for all rules $\RuleA{A}{\beta_1}{\beta_2}\in \rules$ and spans $i \leq k < j$. This rule indicates that grammatical rule $\RuleA{A}{\beta_1}{\beta_2}$  was applied at a vertex covering $\Span{i, j}$ to produce two vertices covering $\Span{i, k}$ and $\Span{k+1, j}$.
-
- The best parse can found by bottom-up dynamic programming
- over this set. The running time of this algorithm is linear in the
- number of rules. The standard algorithm requires $O(n^5 |\rules|)$ time, which is intractable to run without heavy pruning.
-
-
+ The highest parse can found by bottom-up dynamic programming (CKY)
+ over this set. The running time is linear in the
+ number of rules. This algorithm requires $O(n^5 |\rules|)$ time, which is intractable to run without heavy pruning.
 
  However, in this work, we are interested in a constrained variant of
  this problem. We assume that we additionally have access to a
  projective dependency parse for the sentence, $d_1, \ldots, d_n$.
  Define the set $\mathcal{Y}(x,d)$ as all valid LCFG parses that match
  this dependency parse. For all inductive rules with head $h$ and modifier
-$m$, there must be a dependency $(h, m)$ in $d$.  Our aim is to find
+$m$, there must be a dependency $d_m = h$.  Our aim is to find
 
 \[ \argmax_{y \in \mathcal{Y}(x, d)} s(y; x, d)\]
 
-This new problem has a nice property. For any word $x_m$ with spine $v_1 \ldots v_p$ the LCFG span  $\Span{i,j}$ of $v_p$ is equal to the dependency span $\langle \Left{m},\Right{m}\rangle$ of $x_m$. Furthermore these spans can be easily computed directly from given $d$.
+This new problem has a nice property. For any word $x_m$ with spine $v_1, \ldots, v_p$ the LCFG span  $\Span{i,j}$ of $v_p$ is equal to the dependency span $\Span{\Left{m},\Right{m}}$ of $x_m$. These dependency spans can be efficiently computed directly from the dependency parse $d$.
 
 This property greatly limits the search space of the parsing problem.
 Instead of searching over all possible spans $\Span{i, j}$ of each modifier, we can
 precompute $\langle \Left{m},\Right{m}\rangle$. Figure~\ref{fig:cky_new} shows the new set inductive rules.
-
-While these rules are very similar to the original, the quantifier are
-much more constrained. Given that there are $n$ dependency links $(h, m)$ and $n$ indices, the new algorithm has $O(n^2|\rules|)$ running time.
-
-
-
-% Now we make a simple extension to this algorithm. In the last section $x$ was just the sentence, now we assume that we also are given the dependency parse. Define ${\cal Y}(x)$ to the be the set of parse tree that agree with the dependency structure.
-
-
-% That is if a rule in the parse $y \in \mathcal{Y}$ then the implied dependency is $(h, m)$ is in the dependency parse. The new problem is to solve
-
-% \[ \argmax_{y \in {\cal Y}(x)} s(y;x) \]
-
-%
-% Recall that $\Left{m}$ and $\Right{m}$ are the precomputed left- and right- boundary words of the cover of word $m$.
-
-% While the algorithm is virtually identical to the standard lexicalized CKY algorithm, we are now able to fix many of the free indices.
-
-\begin{figure*}
-  \begin{multicols}{2}
-  \noindent \textbf{Premise:}
-  \[(\Span{i, i}, i, A)\ \ \ \forall i \in \{1 \ldots n\}, A \in {\cal N}\]
-
-  \noindent\textbf{Rules:}
-
-
-   For $i\leq h \leq k < m \leq j$,  and  rule  $\RuleA{A}{\beta_1}{\beta_2}$,
-   \[\infer{( \Span{i, j},  h,  A)}{( \Span{i, k}, h, \beta_1)  &  ( \Span{k+1, j}, m, \beta_2) } \]
-
-   For $i\leq m \leq k < h \leq j$, rule  $\RuleB{A}{\beta_1}{\beta_2}$,
-   \[\infer{(\Span{i, j},  h, A)}{(\Span{i, k}, m, \beta_1)  &  (\Span{k+1, j}, h, \beta_2) }  \]
-
-\noindent \textbf{Goal:}\[ (\Span{1, n}, m, \Root) \mathrm{\ for\ any }\ m\]
-\label{fig:cky}
-
-% \end{figure}
-
-% \begin{figure}
-  \noindent \textbf{Premise:}
-  \[(\langle i,i \rangle, i, A)\ \ \ \forall i \in \{1 \ldots n\}, A \in {\cal N}\]
-
-  \noindent\textbf{Rules:}
-
-   % For all    $h$,  nonterminals $A \in \nonterms$,
-   % \[ \infer{( \tri, h, A)}{(\Span{\Left{h}, \Right{h}}, h, A) } \]
-
-
-   For all   $i < m, h = d_m$  and rule  $\RuleA{A}{\beta_1}{\beta_2}$,
-  \[\infer{( \Span{ i, \Right{m} }, h, A)}{(\Span{i, \Left{m}-1}, h, \beta_1)  &  (\tri, m, \beta_2) } \]
-
-  For all    $m < j, h = d_m$ and  rule  $\RuleB{A}{\beta_1}{\beta_2}$,
-  \[ \infer{( \Span{\Left{m}, j}, h, A)}{(\tri, m, \beta_1)  &  (\Span{\Right{m}+ 1, j}, h, \beta_2) } \]
-
-
-% \forall  i, j, h, A \rightarrow B^* \\\\
-%   \infer{(\Span{i, j}, h, A)}{(\Span{i, j}, h, \beta_1)}  \\\
-% \\
-
-\noindent \textbf{Goal:}\[ (\Span{1, n}, m, \Root) \mathrm{\ for\ any }\ m \mathrm{\ s.t. \ } d_m = 0  \]
-\end{multicols}
-\label{fig:cky_new}
-\caption{(a) Standard CKY algorithm for LCFG parsing stated as inductive rules. Starting from the \textit{premise}, any valid application of \textit{rules} that leads to a \textit{goal} is a valid parse. Finding the optimal parse with dynamic programming is linear in the number of rules. For this algorithm there are $O(n^5|\rules|)$ rules where $n$ is the length of the sentence. (b) The constrained CKY parsing algorithm for $\mathcal{Y}(x, d)$. The algorithm is nearly identical to Figure~\ref{fig:cky} except that many of the free indices are now fixed to the dependency parse. Finding the optimal parse is now $O(n^2|\rules|)$}.
-\end{figure*}
-
-% Here we assume there can
+While these rules are very similar to the original, the quantifiers are
+much more constrained. Given that there are $n$ dependency links and $n$ indices, the new algorithm has $O(n^2|\rules|)$ running time.
 
 
 
@@ -720,13 +646,13 @@ We also experiment with a simple pruning dictionary pruning technique.
 For each context-free rule $A \rightarrow \beta_1\ \beta_2$ and POS tag $a$ we
 remove all rules that were not seen with that tag as a head in training.
 
-
 Pruning discussion
 
 
 \begin{table}
   \centering
   \small
+  \hspace*{-0.3cm}
   \begin{tabular}{|l|llrr|}
     \hline
     Model & Sym & Comp. & Speed & Oracle  \\

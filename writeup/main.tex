@@ -955,7 +955,7 @@ After training there are \# non-zero features.
 
 We train the parameters $\theta$ using standard structured SVM training \cite{}.
 
-We assume that we are given a set of gold-annotated parse examples: $( x^{1}, y^{1}), \ldots,  (x^{D}, y^{D})$. We also define $d^{(1)} \ldots d^{(D)}$ as the dependency structures induced from $y^{1} \ldots y^{D}$.
+We assume that we are given a set of gold-annotated parse examples: $( x^{1}, y^{1}), \ldots,  (x^{D}, y^{D})$. We also define $d^{1} \ldots d^{D}$ as the dependency structures induced from $y^{1} \ldots y^{D}$.
 We select parameters to minimize the regularized empirical risk
 
 \[ \min_{\theta} \sum_{i = 1}^D \max\{0,  \ell( x^{i}, d^{i} , y^{i}, \theta) \} + \frac{\lambda}{2} ||\theta||_1 \]
@@ -1090,7 +1090,7 @@ We ran experiments to assess the accuracy of the method, its run-time efficiency
     CJ                & & 93.92 & \\
     Stanford[]        & & 88.88 & \\
     StanfordRNN       & & 92.23 & \\
-    \textsc{ParseDep} & 91.03 & 93.59 & \\
+    \textsc{ParseDep} & 91.04 & 93.59 & \\
     \hline
     \hline
     & \multicolumn{3}{|c|}{CTB} \\
@@ -1189,7 +1189,7 @@ To compare to this work, we train our parser with gold tags and run on gold depe
 
     \hline
     Xia[09]  & 88.1 & 90.7 & 89.4 \\
-    \textsc{ParseDep}[19]  & 99.5 & 99.7 &  99.6  \\
+    \textsc{ParseDep}(Sec19)  & 98.5 & 98.6 &  98.5  \\
     \textsc{ParseDep}  & 99.5 & 99.7 &  99.6  \\
     \hline
 

@@ -1,4 +1,4 @@
-from collections import namedtuple
+yyfrom collections import namedtuple
 import argparse
 import pandas as pd
 class Item(namedtuple("Item", ("i", "j", "k", "h", "m", "r"))):
@@ -81,7 +81,8 @@ def main():
          "mod_match" : [],
          "exact_match" : [],
          "span_match" : [],
-         "top_match" : []
+         "top_match" : [],
+         "spine" : []
     }
 
     total_gold = 0
@@ -102,7 +103,7 @@ def main():
             d["exact_match"].append((sent, item) in gold)
             d["span_match"].append((item.i, item.j) in gold_spans)
             d["top_match"].append(gold_spans.get((item.i, item.j), None) == rules[item.r])
-
+            d["spine"].append()
     df = pd.DataFrame(d)
     hits = df["exact_match"].sum()
     recall = hits / float(total_gold)

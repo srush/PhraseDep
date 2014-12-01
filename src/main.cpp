@@ -36,7 +36,7 @@ struct Arg: public option::Arg
 enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, LAMBDA,
                     MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE,
                     LABEL_PRUNING, POSITIVE_FEATURES, NO_HASH, FEATURE_FILE, ITEMS,
-                    NO_DEP, LIMIT, SIMPLE_FEATURES};
+                    NO_DEP, LIMIT, LOWER_LIMIT, SIMPLE_FEATURES};
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , "", option::Arg::None, "USAGE: example [options]\n\n"
@@ -60,6 +60,7 @@ const option::Descriptor usage[] =
     {ITEMS,    0,"", "items", option::Arg::None, "  --items  \n ." },
     {NO_DEP,    0,"", "no_dep", option::Arg::None, "  --no_dep  \n ." },
     {LIMIT,    0,"", "limit", Arg::Numeric, "  --limit  \n ." },
+    {LOWER_LIMIT,    0,"", "lower_limit", Arg::Numeric, "  --lower_limit  \n ." },
     {SIMPLE_FEATURES,    0,"", "simple_features", option::Arg::None, "  --simple_features  \n ." },
     {UNKNOWN, 0,"" ,  ""   , option::Arg::None, "\nExamples:\n"
                                                   "  example --unknown -- --this_is_no_option\n"
@@ -157,6 +158,7 @@ int main(int argc, char* argv[]) {
         in.close();
 
         clock_t t = clock();
+        int total_tokens = 0;
         cerr << "start " << sentences->size() << endl;
         for (int i = 0; i < sentences->size(); ++i) {
             Sentence *sentence = &(*sentences)[i];
@@ -168,6 +170,14 @@ int main(int argc, char* argv[]) {
                 }
             }
 
+            if (options[LOWER_LIMIT]) {
+                char *temp2 = 0;
+                int limit = strtol(options[LOWER_LIMIT].arg, &temp2, 10);
+                if (sentence->words.size() < limit) {
+                    continue;
+                }
+            }
+            total_tokens += sentence->words.size();
             scorer.set_sentence(sentence);
             vector<AppliedRule> best_rules;
             bool success;
@@ -191,7 +201,9 @@ int main(int argc, char* argv[]) {
         }
 
         t = clock() - t;
-        cerr << "(" << ((float)t)/CLOCKS_PER_SEC << ")" << endl;
+        float sec = ((float)t)/CLOCKS_PER_SEC;
+        cerr << "(" << sec << ")" << endl;
+        cerr << total_tokens / (float)sec << endl;
     } else if (options[ORACLE]) {
         cerr << "ORACLE mode";
 
@@ -243,6 +255,7 @@ int main(int argc, char* argv[]) {
             int total = 0;
             for (int i = 0; i < sentences->size(); ++i) {
                 const Sentence *sentence = &(*sentences)[i];
+                if (sentence->words.size() <= 5) continue;
                 scorer.set_sentence(sentence);
                 vector<AppliedRule> best_rules;
                 bool success;

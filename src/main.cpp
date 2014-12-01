@@ -36,7 +36,7 @@ struct Arg: public option::Arg
 enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, LAMBDA,
                     MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE,
                     LABEL_PRUNING, POSITIVE_FEATURES, NO_HASH, FEATURE_FILE, ITEMS,
-                    NO_DEP, LIMIT};
+                    NO_DEP, LIMIT, SIMPLE_FEATURES};
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , "", option::Arg::None, "USAGE: example [options]\n\n"
@@ -60,6 +60,7 @@ const option::Descriptor usage[] =
     {ITEMS,    0,"", "items", option::Arg::None, "  --items  \n ." },
     {NO_DEP,    0,"", "no_dep", option::Arg::None, "  --no_dep  \n ." },
     {LIMIT,    0,"", "limit", Arg::Numeric, "  --limit  \n ." },
+    {SIMPLE_FEATURES,    0,"", "simple_features", option::Arg::None, "  --simple_features  \n ." },
     {UNKNOWN, 0,"" ,  ""   , option::Arg::None, "\nExamples:\n"
                                                   "  example --unknown -- --this_is_no_option\n"
      "  example -unk --plus -ppp file1 file2\n" },
@@ -113,7 +114,7 @@ int main(int argc, char* argv[]) {
     }
 
     FeatureScorer scorer(grammar, options[DELEX],
-                         options[POSITIVE_FEATURES], options[NO_HASH]);
+                         options[POSITIVE_FEATURES], options[NO_HASH], options[SIMPLE_FEATURES]);
     if (options[POSITIVE_FEATURES]) {
         for (auto sentence : *sentences) {
             for (auto rule : sentence.gold_rules) {

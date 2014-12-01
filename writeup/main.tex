@@ -1202,36 +1202,36 @@ To compare to this work, we train our parser with gold tags and run on gold depe
   \label{tab:convert}
 \end{table}
 
-\subsection{Training Size}
+% \subsection{Training Size}
 
-Finally we consider a variant setup. It is often cheaper to develop
-dependency treebanks than full phrase-structure treebanks, and they
-exists for more languages \cite{}. For these languages we may have a small
-amount of phrase-structure annotations and a large amount of dependency annotations.
+% Finally we consider a variant setup. It is often cheaper to develop
+% dependency treebanks than full phrase-structure treebanks, and they
+% exists for more languages \cite{}. For these languages we may have a small
+% amount of phrase-structure annotations and a large amount of dependency annotations.
 
-\begin{table}
-  \centering
-  \begin{tabular}{|l|ll|}
+% \begin{table}
+%   \centering
+%   \begin{tabular}{|l|ll|}
 
-    \hline
-    model & dev fscore & \\
-    \hline
+%     \hline
+%     model & dev fscore & \\
+%     \hline
 
-    \hline
-    \textsc{ParseDep[5\%]}  & & \\
-    \textsc{ParseDep[10\%]}  & & \\
-    \textsc{ParseDep[20\%]}  & & \\
-    \hline
+%     \hline
+%     \textsc{ParseDep[5\%]}  & & \\
+%     \textsc{ParseDep[10\%]}  & & \\
+%     \textsc{ParseDep[20\%]}  & & \\
+%     \hline
 
-  \end{tabular}
-  \caption{}
-  \label{tab:size}
-\end{table}
+%   \end{tabular}
+%   \caption{}
+%   \label{tab:size}
+% \end{table}
 
 
-To simulate this setup, we consider training a dependency parser on the full PTB, but limit our model to a small slice of the treebank. Table~\ref{size} shows the development set results with different splits of the training data.
+% To simulate this setup, we consider training a dependency parser on the full PTB, but limit our model to a small slice of the treebank. Table~\ref{size} shows the development set results with different splits of the training data.
 
-$\ldots$
+% $\ldots$
 
 \begin{table}
   \centering

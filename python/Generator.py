@@ -32,6 +32,7 @@ dep_from_conll = A.dep_from_conll
 def generate_rule(treebank_file):
     # if you use unicode here, there is a bug...
     f = open(treebank_file, "r")
+    pos_set = set([])
     full_rule_set = set([])
     s_ind = 0
     for sentence in f:
@@ -41,12 +42,15 @@ def generate_rule(treebank_file):
         if s_ind % 10 == 0:
             sys.stderr.write("Sentence:\t" + str(s_ind) + "\n")
             sys.stderr.write("Rule number:\t" + str(len(full_rule_set)) + "\n")
-        t = Tree.fromstring(sentence, remove_empty_top_bracketing=False)
+        tree = Tree.fromstring(sentence, remove_empty_top_bracketing=False)
+        preterminals = [t.label() for t in tree.subtrees(lambda t: t.height() == 2)]
+        pos_set.update(preterminals)
+
         # sys.stderr.write(t.pprint())
         # First, collapse the unary, notice that the POS tags should not be affected
         if unary_collapse:
-            NewTree.collapse_unary(t)
-        bt = NewTree.get_binarize_lex(t)
+            NewTree.collapse_unary(tree)
+        bt = NewTree.get_binarize_lex(tree)
         # Extract rules from the tree
         rule_set = NewTree.generate_rules(bt)
         #sys.stderr.write("1:\t" + str(len(rule_set)) + "\n")
@@ -60,8 +64,33 @@ def generate_rule(treebank_file):
         #sys.stderr.write( "finish adding\n")
 
     f.close()
+    #core_pos_set = [pos for pos in pos_set if pos[0] <= 'Z' and pos[0] >= 'A']
+    core_pos_set = pos_set
+    # print core_pos_set
+    # Generate the back-off rules
+    backoff_rule_set = set([])
+    for r in full_rule_set:
+        args = r.split(" ")
+        #print "___".join(args)
+        for i in xrange(1, len(args)-1):
+            #sys.stdout.write("*" + args[i] + "*")
+            if args[i] in core_pos_set:
+                # change the pos to others
+                #print "for rule " + " ".join(args)
+                args_copy = deepcopy(args)
+                for pos in core_pos_set:
+                    args_copy[i] = pos
+                    if (" ".join(args_copy)) not in full_rule_set:
+                        backoff_rule_set.add(" ".join(args_copy))
+                    #print "\tadding: " + " ".join(args_copy)
+        #sys.stdout.write("\n")
+
+
     ind = 0
     for r in full_rule_set:
+        print str(ind) + " " + r
+        ind += 1
+    for r in backoff_rule_set:
         print str(ind) + " " + r
         ind += 1
 

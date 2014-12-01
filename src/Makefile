@@ -1,4 +1,4 @@
-CPPFLAGS=-g -O2   -DNDEBUG -std=c++11
+CPPFLAGS=-g -O2   -DNDEBUG  -std=c++11
 LDFLAGS=-g -O2  -DNDEBUG
 LDLIBS=-Wall
 

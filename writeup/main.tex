@@ -210,7 +210,7 @@ full context-free syntactic representation; dependency parsing is
 often faster, but still
 predicts much of the useful\lpkcomment{again... here i think maybe we should say different rather than imply which is more useful?} syntactic structure.
 
-We can quantify this difference by looking 
+We can quantify this difference by looking
 at the dependency prediction accuracy of phrase-structure parsers. Table~\ref{fig:depcomp} shows this comparison across several widely-used parsers. Note that the best models are phrase-structure parsers, but that recent advances in dependency parsing have led to comparably high-accuracy dependency parsers.\lpkcomment{this is a little confusing? there are two ways to get dependencies, c-parsing and d-parsing, but here it seems we are comparing the acc between phrase-structure and dependency parsing acc? they are two different systems....}
 
 The natural reverse question is how well do these dependency parsers perform at phrase-structure prediction? Is it reasonable to use dependency parsers for tasks that require phrase-structure trees as input? \lpkcomment{i would like to put the benefits of doing this dep2phrase thing in the intro maybe? 1) it is very fast since dep prunes away a lot not useful cky chart item 2) dep can server as features in this problem, so that we can aim at higher acc with easy cky model. (actually, i believe the dep parsers can see syntactical information which is not easy to see when using cky, that's also the reason why your phrase+dep decomposition works right?)}
@@ -255,7 +255,7 @@ The natural reverse question is how well do these dependency parsers perform at 
 
 % However, dependencies alone provide less value than a full
 % phrase-structure parse, and many applications still rely on having the
-% phrase-structure \cite{}. 
+% phrase-structure \cite{}.
 
 Unfortunately, as illustrated in Figure~\ref{fig:inverse},
 recovering the best phrase-structure tree is a non-trivial problem. Given a
@@ -291,7 +291,7 @@ that produces a given dependency tree. We show that,
 \begin{itemize}
 \item The constrained parser is asymptotically  faster than
 standard phrase-structure parser for lexicalized context-free grammar.
-While the standard algorithm is $O(n^5 |\rules|)$, the 
+While the standard algorithm is $O(n^5 |\rules|)$, the
 constrained dependency parser has worst case complexity $O(n^2 |\rules|)$.
 
 \item In practice using simple pruning the parser is
@@ -331,9 +331,9 @@ The problem of converting dependency to phrase-structured trees has
 been studied previously from the perspective of building
 multi-representational treebanks.  \newcite{xia2001converting} and
 \newcite{xia2009towards} develop a rule-based system for the
-converting human-annotated dependency parses. Our work differs in that 
-we learn a data-driven structured prediction model that is also able 
-to handle automatically predicted input.\lpkcomment{mention the table in the exp section where the comparison number show our approach better here?} 
+converting human-annotated dependency parses. Our work differs in that
+we learn a data-driven structured prediction model that is also able
+to handle automatically predicted input.\lpkcomment{mention the table in the exp section where the comparison number show our approach better here?}
 
 There has been successful work combining dependency and phrase-structure parsing. \newcite{carreras2008tag} build a
 high-accuracy parser that uses a dependency parsing model both for
@@ -381,14 +381,14 @@ down parser based on a simple X-bar grammar and a small set of lexicalized featu
     & Stanford PCFG & 88.88 \\
     & CJ Reranking & 93.92 \\
     & Stanford RNN & 92.23 \\
-    \hline 
+    \hline
     \multirow{1}{*}{Dependency} & TurboParser & 93.59  \\
     \hline
   \end{tabular}
   \caption{Dependency accuracy for several several widely used phrase-structure and dependency parsers.
-    Score are reported as the unlabeled accuracy score (UAS) of dependencies on PTB  Section 22. 
+    Score are reported as the unlabeled accuracy score (UAS) of dependencies on PTB  Section 22.
     Conversion are performed using the Collins head rules \cite{collins2003head}.
-    Note that the best scoring is a reranking phrase-structure parser, but that state-of-the-art 
+    Note that the best scoring is a reranking phrase-structure parser, but that state-of-the-art
     dependency parsers are comparable with the best parsers. }
   \label{fig:depcomp}
 \end{table}
@@ -517,16 +517,16 @@ exponential number of possible unlabeled phrase-structure trees that induce the 
 \section{Parsing Dependencies}
 
 Since the inverse problem is ill-posed, our goal will
-be to learn a scoring function to help predict a 
-phrase-structure tree for any dependency parse. In 
+be to learn a scoring function to help predict a
+phrase-structure tree for any dependency parse. In
 this section we assume this function is given and describe
-the prediction problem. In the next section we consider 
+the prediction problem. In the next section we consider
 the learning problem.
 
 % The goal of this work is to learn to select the best
 % phrase-structure tree for a predicted dependency parse.
-% We first describe how to decode the best phrase-structure 
-% parse in this section and describe the learning problem in 
+% We first describe how to decode the best phrase-structure
+% parse in this section and describe the learning problem in
 % the next section.
 
 
@@ -553,7 +553,7 @@ the learning problem.
    For $i\leq m \leq k < h \leq j$, rule  $\RuleB{A}{\beta_1}{\beta_2}$,
    \[\infer{(\Span{i, j},  h, A)}{(\Span{i, k}, m, \beta_1)  &  (\Span{k+1, j}, h, \beta_2) }  \]
 
-\noindent \textbf{Goal:} 
+\noindent \textbf{Goal:}
 \[ (\Span{1, n}, m, \Root) \mathrm{\ for\ any }\ m\]
 
 \label{fig:cky}
@@ -569,7 +569,7 @@ the learning problem.
   For all    $m < j, h = d_m$ and  rule  $\RuleB{A}{\beta_1}{\beta_2}$,
   \[ \infer{( \Span{\Left{m}, j}, h, A)}{(\tri, m, \beta_1)  &  (\Span{\Right{m}+ 1, j}, h, \beta_2) } \]
 
-\noindent \textbf{Goal:} 
+\noindent \textbf{Goal:}
 \[(\Span{1, n}, m, \Root) \mathrm{\ for\ any }\ m \mathrm{\ s.t. \ } d_m = 0 \]
 
 \end{multicols}
@@ -584,9 +584,9 @@ the learning problem.
 % In the next section we show how to convert our original grammar to this form while
 % preserving the head structure.
 
-Our prediction algorithm will be a simple extension of the standard lexicalized CKY parsing algorithm. 
+Our prediction algorithm will be a simple extension of the standard lexicalized CKY parsing algorithm.
 
-Assume that we are given a binarized LCFG,  
+Assume that we are given a binarized LCFG,
 define the set of valid parses for a sentence as $\mathcal{Y}(x)$.
 The parsing problem is to find the highest-scoring parse in this set, i.e.  \[ \hat{y} \gets \argmax_{y \in {\cal Y}(x)} s(y;x) \] where
 $s$ is a scoring function.
@@ -603,7 +603,7 @@ The inductives rules are of the form
 rule $\RuleA{A}{\beta_1}{\beta_2}$ was applied at a vertex covering
 $\Span{i, j}$ to produce two vertices covering $\Span{i, k}$ and
 $\Span{k+1, j}$, and that the new head is index $h$ which is modified
-by index $m$. 
+by index $m$.
 
  The highest parse can found by bottom-up dynamic programming (CKY)
  over this set. The running time is linear in the
@@ -646,7 +646,7 @@ much more constrained. Given that there are $n$ dependency links and $n$ indices
 In addition to constraining the topology of the parses considered we
 also experiment with pruning to limit the non-terminal labels.  In
 dependency parsing one simple form of pruning is to limit the possible
-dependency based on the POS tag of the head word.  
+dependency based on the POS tag of the head word.
 
 We observe that in training the part-of-speech of the head word $x_h$
 greatly limits the possible rules $\Rule{A}{\beta_1}{\beta_2}$.  To
@@ -661,7 +661,7 @@ algorithm can produce.  Table~\ref{tab:alg-oracle} shows a comparison
 among full LCFG parsing, dependency limited parsing, and
 dependency-limit pruned parsing. Full LCFG is very slow, even on very
 short sentences.  Limiting to dependency structures leads to a large
-speed up, but a drop in oracle score. Pruning gives a further speed up, 
+speed up, but a drop in oracle score. Pruning gives a further speed up,
 without hurting oracle performance.
 
 
@@ -688,9 +688,9 @@ without hurting oracle performance.
   \end{tabular}
   \label{tab:alg-oracle}
   \caption{Comparison of three parsing setups:
-    LCFG($<20$) is the standard full lexicalized grammar limited to sentence of length 
-    less than 20 words, LCFG(dep) is 
-    limited to the dependency skeleton, and LCFG(prune) is the pruning described in 
+    LCFG($<20$) is the standard full lexicalized grammar limited to sentence of length
+    less than 20 words, LCFG(dep) is
+    limited to the dependency skeleton, and LCFG(prune) is the pruning described in
     Section~\ref{sec:prune}. \textit{Oracle} is the oracle f-score on the development data (described in Section~\ref{sec:analysis}). \textit{Speed} is the efficiency of the parser on development data in sentences per second.}
 \end{table}
 
@@ -888,7 +888,7 @@ For English experiments we use the standard Penn Treebank (PTB)
 experimental setup \cite{marcus1993building}. Training is done on
 section 2-21, development on section 22, and test of section 23.
 
-For Chinese experiments, we use version 5.1 of the Penn  Chinese Treebank 5.1 (CTB) \cite{xue2005penn}. We followed previous work and used 
+For Chinese experiments, we use version 5.1 of the Penn  Chinese Treebank 5.1 (CTB) \cite{xue2005penn}. We followed previous work and used
 001-270 and 440-1151 for training, articles
 301-325 as development, and articles
 271-300 as test.
@@ -943,7 +943,7 @@ We ran experiments to assess the accuracy of the method, its run-time efficiency
 
 \begin{table}
   \centering
-  \small 
+  \small
   \begin{tabular}{|l|rrr|}
     \hline
     & \multicolumn{3}{|c|}{PTB} \\
@@ -1026,7 +1026,7 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
   \vspace{0.5cm}
 
   \label{tab:oracle}
-  \caption{Comparison of the effect of downstream dependency prediction. 
+  \caption{Comparison of the effect of downstream dependency prediction.
     Experiments are run on the development section with different input dependencies. \textit{Oracle} is the oracle F1 on the development data. \textit{Speed} is the efficiency of the parser in sentences per second.
     Inputs include TurboParser \cite{martins2013turning}, MaltParser \cite{nivre2006maltparser}, and MIT \cite{}. }
 \end{table}
@@ -1056,11 +1056,11 @@ To compare to this work, we train our parser with gold tags and run on gold depe
     \hline
 
   \end{tabular}
-  \caption{Comparison with the rule-based system of \newcite{xia2009towards}. 
-    Results are from PTB development section 22 using gold tags and gold 
+  \caption{Comparison with the rule-based system of \newcite{xia2009towards}.
+    Results are from PTB development section 22 using gold tags and gold
     dependencies.
-    Xia[09] report results from training on only on Section 19, but 
-    include a note that further data had little effect. 
+    Xia[09] report results from training on only on Section 19, but
+    include a note that further data had little effect.
     For comparison we report result on complete training as well as just Sec. 19.
   }
   \label{tab:convert}
@@ -1109,7 +1109,7 @@ To compare to this work, we train our parser with gold tags and run on gold depe
   %   \hline
   % \end{tabular}
 
-  \missingfigure{Speed length graph}
+  \includegraphics[scale=0.4]{../notebooks/comp}
   \label{tab:speed}
   \caption{Experiments of parsing speed. (a) The speed of the parser on its own and with pruning. (b) The end-to-end speed of the parser when combined with different dependency parsers. }
 \end{table}

@@ -158,6 +158,8 @@ FeatureGenBackoff::FeatureGenBackoff(const Grammar *grammar, bool delex, bool si
         add_template(grammar_->tag_index.size(), grammar_->n_nonterms, 1);
         add_template(grammar_->tag_index.size(), grammar_->tag_index.size(), grammar_->n_nonterms);
         add_template(grammar_->tag_index.size(), grammar_->tag_index.size(), grammar_->n_rules);
+        add_template(grammar_->n_nonterms, 1, 1);
+        add_template(grammar_->n_nonterms, 1, 1);
     }
 }
 
@@ -208,7 +210,7 @@ double FeatureGenBackoff::generate(const Sentence &sentence,
     int m_tag = sentence.int_tags[rule.m];
     int h_tag = sentence.int_tags[rule.h];
     bool is_unary = grammar_->is_unary[rule.rule];
-    long m_deplabel = sentence.int_deplabels[rule.m];
+    long m_deplabel = 1; //sentence.int_deplabels[rule.m];
 
     // 8 backed off position rules.
     vector<int> rules = {rule.i, rule.k, rule.j, rule.j + 1,
@@ -256,6 +258,8 @@ double FeatureGenBackoff::generate(const Sentence &sentence,
         state.inc(m_tag, X, 1);
         state.inc(m_tag, h_tag, X);
         state.inc(m_tag, h_tag, rule.rule);
+        state.inc(Y, 1);
+        state.inc(Z, 1);
     }
 
     return state.score;
@@ -435,13 +439,21 @@ double FeatureGen::generate(const Sentence &sentence,
     inc2(doubles[11], X, (size == sentence_size)? 1:0, base, &tally, weights, &score);
 
     // Adding features for dependency labels
-    inc2(doubles[12], X, m_deplabel, base, &tally, weights, &score);
-    inc2(doubles[13], Y, m_deplabel, base, &tally, weights, &score);
-    inc2(doubles[14], Z, m_deplabel, base, &tally, weights, &score);
-    inc2(doubles[15], rule.rule, m_deplabel, base, &tally, weights, &score);
+    // inc2(doubles[12], X, m_deplabel, base, &tally, weights, &score);
+    // inc2(doubles[13], Y, m_deplabel, base, &tally, weights, &score);
+    // inc2(doubles[14], Z, m_deplabel, base, &tally, weights, &score);
+    // inc2(doubles[15], rule.rule, m_deplabel, base, &tally, weights, &score);
 
-    inc3(triples[5], X, Y, m_deplabel, base, &tally, weights, &score);
-    inc3(triples[6], X, Z, m_deplabel, base, &tally, weights, &score);
+    // inc3(triples[5], X, Y, m_deplabel, base, &tally, weights, &score);
+    // inc3(triples[6], X, Z, m_deplabel, base, &tally, weights, &score);
+
+    inc2(doubles[12], X, 1, base, &tally, weights, &score);
+    inc2(doubles[13], Y, 1, base, &tally, weights, &score);
+    inc2(doubles[14], Z, 1, base, &tally, weights, &score);
+    inc2(doubles[15], rule.rule, 1, base, &tally, weights, &score);
+
+    inc3(triples[5], X, Y, 1, base, &tally, weights, &score);
+    inc3(triples[6], X, Z, 1, base, &tally, weights, &score);
 
     // Adding one more feature to be similar to the PCFG part?
     inc2(doubles[16], X, rule.rule, base, &tally, weights, &score);

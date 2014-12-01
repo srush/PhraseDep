@@ -4,15 +4,17 @@
 using namespace std;
 
 struct Item {
-    Item() {}
+    Item() : used(false) {}
     Item(int i_, int k_, int h_, int nt_, int layer_)
-            : i(i_), k(k_), h(h_), nt(nt_), layer(layer_){}
+            : i(i_), k(k_), h(h_), nt(nt_), layer(layer_), used(true) {}
     int i;
     int k;
     int h;
     int nt;
     int layer;
+    bool used;
 };
+
 
 struct BackPointer {
     BackPointer() : terminal(false), single(false), promotion(false) {}

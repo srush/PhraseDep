@@ -175,6 +175,11 @@ class Chart {
         } else if (bp.promotion) {
             success &= to_tree(bp.item1, grammar, best_rules, output, out);
         } else {
+            if (!item.used || !bp.item1.used) {
+                cerr << "FAIL" << endl;
+                return false;
+            }
+
             best_rules->push_back(bp.rule);
             NonTerminal nt = grammar.non_terminals_[item.nt];
 

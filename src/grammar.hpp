@@ -272,7 +272,7 @@ class Grammar {
 
 
 Grammar *read_rule_set(string file);
-void read_pruning(string file, Grammar *grammar);
+// void read_pruning(string file, Grammar *grammar);
 void read_label_pruning(string file, Grammar *grammar);
 
 #endif  // GRAMMAR_H_

@@ -320,7 +320,7 @@ paired with a set of head rules. Define an binarized\footnote{For notational sim
 Given an input sentence $x_1, \ldots, x_n$ of terminal symbols from $\terms$, define $\mathcal{Y}(x)$ as the set of c-parses for the sentence. This set consists of all binary ordered trees with fringe $x_1, \ldots,  x_n$, internal nodes labeled from $\nonterms$, all tree productions  $A \rightarrow \beta$ consisting of members of $\rules$, and root label $\Root$.
 
 
-For an c-parse $y \in \mathcal{Y}(x)$,
+For a c-parse $y \in \mathcal{Y}(x)$,
 we further associate a triple $v = (\Span{i, j}, h, A)$ with each vertex in the tree, where
 
 
@@ -397,12 +397,21 @@ exponential number of possible unlabeled phrase-structure trees that induce the 
 
 \section{Parsing Dependencies}
 
-Since the inverse problem is ill-posed, our goal will
-be to learn a scoring function to help predict a
-phrase-structure tree for any dependency parse. In
-this section we assume this function is given and describe
-the prediction problem. In the next section we consider
-the learning problem.
+The aim of this work is to predict the best c-parse
+from a given d-parse. Since this problem is ill-posed,
+we will learn a function to score possible c-parses
+and generate the highest-scoring parse. In this section
+we assume we have this function and discuss the prediction
+problem. We return to training in the next section.
+
+
+
+% Since the inverse problem is ill-posed, our goal will
+% be to learn a scoring function to help predict a
+% phrase-structure tree for any dependency parse. In
+% this section we assume this function is given and describe
+% the prediction problem. In the next section we consider
+% the learning problem.
 
 
 \begin{figure*}
@@ -439,7 +448,7 @@ the learning problem.
 
 \end{multicols}
 \label{fig:cky_new}
-\caption{(a) Standard CKY algorithm for LCFG parsing stated as inductive rules. Starting from the \textit{premise}, any valid application of \textit{rules} that leads to a \textit{goal} is a valid parse. Finding the optimal parse with dynamic programming is linear in the number of rules. For this algorithm there are $O(n^5|\rules|)$ rules where $n$ is the length of the sentence. (b) The constrained CKY parsing algorithm for $\mathcal{Y}(x, d)$. The algorithm is nearly identical except that many of the free indices are now fixed to the dependency parse. Finding the optimal parse is now $O(n^2|\rules|)$.}
+\caption{(a) Standard CKY algorithm for LCFG parsing stated as deductive rules. Starting from the \textit{premise}, any valid application of \textit{rules} that leads to a \textit{goal} is a valid parse. Finding the optimal parse with dynamic programming is linear in the number of rules. For this algorithm there are $O(n^5|\rules|)$ rules where $n$ is the length of the sentence. (b) The constrained CKY parsing algorithm for $\mathcal{Y}(x, d)$. The algorithm is nearly identical except that many of the free indices are now fixed to the dependency parse. Finding the optimal parse is now $O(n^2|\rules|)$.}
 \end{figure*}
 
 \subsection{Constrained Parsing Algorithm}
@@ -447,16 +456,15 @@ the learning problem.
 
 Our prediction algorithm will be a simple extension of the standard lexicalized CKY parsing algorithm.
 
-Assume that we are given a binarized LCFG,
-define the set of valid parses for a sentence as $\mathcal{Y}(x)$.
+Assume that we are given a binarized LCFG defining a set of valid c-parses $\mathcal{Y}(x)$.
 The parsing problem is to find the highest-scoring parse in this set, i.e.  \[ \hat{y} \gets \argmax_{y \in {\cal Y}(x)} s(y;x) \] where
 $s$ is a scoring function.
 
 If the scoring function factors over rule productions, then
 the highest-scoring parse can be found using the lexicalized
 CKY algorithm. This algorithm is defined as a
-collection of inductive rules shown in Figure~\ref{fig:cky_new}.
-The inductives rules are of the form
+collection of deductive rules shown in Figure~\ref{fig:cky_new}.
+The deductives rules are of the form
 
 \[ \infer{(\Span{i, j}, h, A)}{(\Span{i, k}, m, \beta_1) & (\Span{k+1,
     j}, h, \beta_2)} \] for all rules $\RuleA{A}{\beta_1}{\beta_2}\in
@@ -474,7 +482,7 @@ by index $m$.
  this problem. We assume that we additionally have access to a
  projective dependency parse for the sentence, $d_1, \ldots, d_n$.
  Define the set $\mathcal{Y}(x,d)$ as all valid LCFG parses that match
- this dependency parse. For all inductive rules with head $h$ and modifier
+ this dependency parse. For all deductive rules with head $h$ and modifier
 $m$, there must be a dependency $d_m = h$.  Our aim is to find
 
 \[ \argmax_{y \in \mathcal{Y}(x, d)} s(y; x, d)\]
@@ -483,7 +491,7 @@ This new problem has a nice property. For any word $x_m$ with spine $v_1, \ldots
 
 This property greatly limits the search space of the parsing problem.
 Instead of searching over all possible spans $\Span{i, j}$ of each modifier, we can
-precompute $\langle \Left{m},\Right{m}\rangle$. Figure~\ref{fig:cky_new} shows the new set inductive rules.
+precompute $\langle \Left{m},\Right{m}\rangle$. Figure~\ref{fig:cky_new} shows the new set deductive rules.
 While these rules are very similar to the original, the quantifiers are
 much more constrained. Given that there are $n$ dependency links and $n$ indices, the new algorithm has $O(n^2|\rules|)$ running time.
 

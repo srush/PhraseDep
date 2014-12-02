@@ -76,6 +76,7 @@
 \newcommand{\Reals}{\mathbb{R}}
 \newcommand{\ParseName}{\textsc{ParPar}}
 
+\newcommand{\smrcomment}[1]{\textcolor{green}{\bf \small [#1 --smr]}}
 \newcommand{\lpkcomment}[1]{\textcolor{red}{\bf \small [#1 --lpk]}}
 \newcommand{\nascomment}[1]{\textcolor{blue}{\bf \small [#1 --nas]}}
 
@@ -448,7 +449,7 @@ problem. We return to training in the next section.
 
 \end{multicols}
 \label{fig:cky_new}
-\caption{(a) Standard CKY algorithm for LCFG parsing stated as deductive rules. Starting from the \textit{premise}, any valid application of \textit{rules} that leads to a \textit{goal} is a valid parse. Finding the optimal parse with dynamic programming is linear in the number of rules. For this algorithm there are $O(n^5|\rules|)$ rules where $n$ is the length of the sentence. (b) The constrained CKY parsing algorithm for $\mathcal{Y}(x, d)$. The algorithm is nearly identical except that many of the free indices are now fixed to the dependency parse. Finding the optimal parse is now $O(n^2|\rules|)$.}
+\caption{The two algorithms written as deductive parsers. Starting from the \textit{premise}, any valid application of \textit{rules} that leads to a \textit{goal} is a valid parse.  (a) Lexicalized CKY algorithm for LCFG parsing. For this algorithm there are $O(n^5|\rules|)$ rules where $n$ is the length of the sentence. (b) The constrained CKY parsing algorithm for $\mathcal{Y}(x, d)$. The algorithm is nearly identical except that many of the free indices are now fixed to the dependency parse. Finding the optimal parse is now $O(n^2|\rules|)$.}
 \end{figure*}
 
 \subsection{Constrained Parsing Algorithm}
@@ -460,30 +461,29 @@ Assume that we are given a binarized LCFG defining a set of valid c-parses $\mat
 The parsing problem is to find the highest-scoring parse in this set, i.e.  \[ \hat{y} \gets \argmax_{y \in {\cal Y}(x)} s(y;x) \] where
 $s$ is a scoring function.
 
-If the scoring function factors over rule productions, then
-the highest-scoring parse can be found using the lexicalized
-CKY algorithm. This algorithm is defined as a
-collection of deductive rules shown in Figure~\ref{fig:cky_new}.
-The deductives rules are of the form
+We further assume that scoring function factors over rule productions, 
+and so the highest-scoring parse can be found using the lexicalized
+CKY algorithm. This algorithm is defined deductively
+in Figure~\ref{fig:cky_new}. The productions are of the form
 
 \[ \infer{(\Span{i, j}, h, A)}{(\Span{i, k}, m, \beta_1) & (\Span{k+1,
-    j}, h, \beta_2)} \] for all rules $\RuleA{A}{\beta_1}{\beta_2}\in
-\rules$ and spans $i \leq k < j$. This indicates that
-rule $\RuleA{A}{\beta_1}{\beta_2}$ was applied at a vertex covering
+    j}, h, \beta_2)} \] for all rules $\RuleB{A}{\beta_1}{\beta_2}\in
+\rules$ and spans $i \leq k < j$. This particular production indicates that
+rule $\RuleB{A}{\beta_1}{\beta_2}$ was applied at a vertex covering
 $\Span{i, j}$ to produce two vertices covering $\Span{i, k}$ and
 $\Span{k+1, j}$, and that the new head is index $h$ which is modified
 by index $m$.
 
- The highest parse can found by bottom-up dynamic programming (CKY)
- over this set. The running time is linear in the
- number of rules. This algorithm requires $O(n^5 |\rules|)$ time, which is intractable to run without heavy pruning.
+The highest-scoring parse can found by bottom-up dynamic programming
+over these productions, and the running time is linear in the number
+of production. The standard lexicalized CKY algorithm requires $O(n^5
+|\rules|)$ time, which is intractable to run without heavy pruning.
 
- However, in this work, we are interested in a constrained variant of
- this problem. We assume that we additionally have access to a
- projective dependency parse for the sentence, $d_1, \ldots, d_n$.
- Define the set $\mathcal{Y}(x,d)$ as all valid LCFG parses that match
- this dependency parse. For all deductive rules with head $h$ and modifier
-$m$, there must be a dependency $d_m = h$.  Our aim is to find
+ Fortunately, the parsing problem becomes much simpler if 
+ we are constrained to a given d-parse, $d_1, \ldots, d_n$.
+ Define the set $\mathcal{Y}(x,d)$ as all valid LCFG parses that map
+ to this dependency parse (as defined in the previous section). 
+  Our aim is to find
 
 \[ \argmax_{y \in \mathcal{Y}(x, d)} s(y; x, d)\]
 
@@ -491,34 +491,35 @@ This new problem has a nice property. For any word $x_m$ with spine $v_1, \ldots
 
 This property greatly limits the search space of the parsing problem.
 Instead of searching over all possible spans $\Span{i, j}$ of each modifier, we can
-precompute $\langle \Left{m},\Right{m}\rangle$. Figure~\ref{fig:cky_new} shows the new set deductive rules.
-While these rules are very similar to the original, the quantifiers are
-much more constrained. Given that there are $n$ dependency links and $n$ indices, the new algorithm has $O(n^2|\rules|)$ running time.
+precompute $\langle \Left{m},\Right{m}\rangle$. Figure~\ref{fig:cky_new} shows the new algorithm.
+While the productions are the same as the original algorithm, there are many fewer of them. 
+There is one production for each index and each possible modifier, leading to an algorithm with $O(n^2|\rules|)$ running time.
 
 
-\subsection{Further Pruning}
-\label{sec:prune}
+% \subsection{Further Pruning}
+% \label{sec:prune}
 
-In addition to constraining the topology of the parses considered we
-also experiment with pruning to limit the non-terminal labels.  In
-dependency parsing one simple form of pruning is to limit the possible
-dependency based on the POS tag of the head word.
-
+Finally in addition to constraining the topology of c-parses, we
+also experiment with pruning to limit the space of rules. 
 We observe that in training the part-of-speech of the head word $x_h$
 greatly limits the possible rules $\Rule{A}{\beta_1}{\beta_2}$.  To
 exploit this property we build tables $\rules_t$ for each
 part-of-speech tag $t$ and limit the search to rules seen for the
 current head tag.
 
-Finally, there is question of whether these constraints make it even
-possible to find good parses. To answer this question we ran oracle
-experiments seeking to find the best phrase structure parse each
-algorithm can produce.  Table~\ref{tab:alg-oracle} shows a comparison
-among full LCFG parsing, dependency limited parsing, and
-dependency-limit pruned parsing. Full LCFG is very slow, even on very
-short sentences.  Limiting to dependency structures leads to a large
-speed up, but a drop in oracle score. Pruning gives a further speed up,
-without hurting oracle performance.
+An important concern is whether it is even possible to recover
+c-parses under these constraints. To answer this question we ran
+oracle experiments to find the best c-parse possible under each
+algorithm.  Table~\ref{tab:alg-oracle} shows a
+comparison among full LCFG parsing, dependency limited parsing, and
+dependency-limit pruned parsing. These experiments show that there 
+is a sizable drop in oracle accuracy with the d-parse constraints, but that
+the upper-bound on accuracy is still high enough to make this task interesting. 
+
+% Full LCFG is very slow, even on very
+% short sentences.  Limiting to dependency structures leads to a large
+% speed up, but a drop in oracle score. Pruning gives a further speed
+% up, without hurting oracle performance.
 
 
 
@@ -547,14 +548,18 @@ without hurting oracle performance.
 
 \subsection{Binarization}
 
-In order to have an efficient binary LCFG grammar, we must convert the
-non-binary treebank grammars to binary form.  While the algorithm
+\smrcomment{This section is wrong, start over}
+
+% So far we have assumed the grammar is binarized, we must convert the
+% non-binary treebank grammars to binary form.  
+To this point we have assumed the grammar is binarized, 
+While the algorithm
 itself is not dependent on the binarization used, this choice affects
 the run-time of the algorithm, through $\rules$, as well as the
 structure of the scoring function.
 
-Our binarization decomposes non-binary rules into fragments for
-each head-modifier pair.
+% Our binarization decomposes non-binary rules into fragments for
+% each head-modifier pair.
 
 For simplicity, we consider binarizing rule $\langle A \rightarrow \beta_1 \ldots \beta_m,
 k\rangle$ with $m > 2$. Relative to the head $\beta_k$
@@ -568,10 +573,10 @@ The main transformation is to introduce rules
 \begin{itemize}
 
 \item
-$\Rule{A^{\Rightarrow}_{\beta_i}}{A^{\Rightarrow*}_{\beta_{i-1}}}{\beta_i}$ for $k < i < m$
+$\Rule{A^{|}}{A^{|*}}{\beta_i}$ for $k < i < m$
 
 \item
-$\Rule{A^{\Leftarrow}_{\beta_i}} {\beta_i}{A^{\Leftarrow*}_{\beta_{i+1}}} $ for $1< i < k$
+$\Rule{A^{|}} {\beta_i}{A^{|*}} $ for $1< i < k$
 \end{itemize}
 
 
@@ -597,14 +602,16 @@ Additionally we introduce several additional rules to handle the boundary cases 
 
 \section{Structured Prediction}
 
-To learn the scoring function for the transformation from dependency trees to phrase-structure trees,
+To learn the scoring function for the transformation from d-parses to c-parses,
 we use a standard structured prediction setup.
-We define the scoring function $s$ as
+Define the scoring function $s$ as
 
 \[s(y;x, d, \theta) =  \theta^{\top} f(x, d, y) \]
 
 \noindent
-where $\theta$ is a weight vector  and $f(x, d, y)$ is a feature function that maps parse production to sparse feature vectors. In this section we first discuss the features used and then training for the weight vector.
+where $\theta$ is a parameter vector and $f(x, d, y)$ is a feature
+function that maps parse productions to sparse feature vectors. We
+first discuss the features used and then estimating the parameters of the model.
 
 
 \subsection{Features}
@@ -641,7 +648,7 @@ The full feature set  is shown in Figure~\ref{fig:features}.
 \begin{figure}
   \footnotesize
   \centering
-  For a part $ \infer{(\Span{i, j}, h, A)}{(\Span{i, k}, m, \beta_1) &  (\Span{k+1, j}, h, \beta_2)} $
+  For a production $ \infer{(\Span{i, j}, h, A)}{(\Span{i, k}, m, \beta_1) &  (\Span{k+1, j}, h, \beta_2)} $
 
   \vspace{0.5cm}
 
@@ -700,13 +707,13 @@ The full feature set  is shown in Figure~\ref{fig:features}.
   \end{tabular}
   \end{multicols}
   \label{fig:features}
-  \caption{The feature templates used in the function $f(x, d, y)$. The symbol $\RuleSym$ is expanded into two conjunction $\Rule{A}{B}{C}$ and $A$. The function $\TagFN{i}$ gives the part-of-speech tag of word $x_i$. The function $\BinFN{i}$ bins a span length into 10 bins.
+  \caption{The feature templates used in the function $f(x, d, y)$. The symbol $\RuleSym$ is expanded into both $\Rule{A}{B}{C}$ and $A$. The function $\TagFN{i}$ gives the part-of-speech tag of word $x_i$. The function $\BinFN{i}$ partitions a span length into one of 10 bins.
   }
 \end{figure}
 
 \subsection{Training}
 
-We train the parameters $\theta$ using standard structured SVM training.
+The parameters $\theta$ are estimated using standard structured SVM training.
 We assume that we are given a set of gold-annotated parse examples: $( x^{1}, y^{1}), \ldots,  (x^{D}, y^{D})$. We also define $d^{1} \ldots d^{D}$ as the dependency structures induced from $y^{1} \ldots y^{D}$.
 We select parameters to minimize the regularized empirical risk
 

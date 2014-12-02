@@ -159,6 +159,7 @@ int main(int argc, char* argv[]) {
 
         clock_t t = clock();
         int total_tokens = 0;
+        int total_sentences = 0;
         cerr << "start " << sentences->size() << endl;
         for (int i = 0; i < sentences->size(); ++i) {
             Sentence *sentence = &(*sentences)[i];
@@ -178,6 +179,7 @@ int main(int argc, char* argv[]) {
                 }
             }
             total_tokens += sentence->words.size();
+            total_sentences += 1;
             scorer.set_sentence(sentence);
             vector<AppliedRule> best_rules;
             bool success;
@@ -204,6 +206,7 @@ int main(int argc, char* argv[]) {
         float sec = ((float)t)/CLOCKS_PER_SEC;
         cerr << "(" << sec << ")" << endl;
         cerr << total_tokens / (float)sec << endl;
+        cerr << total_sentences / (float)sec << endl;
     } else if (options[ORACLE]) {
         cerr << "ORACLE mode";
 

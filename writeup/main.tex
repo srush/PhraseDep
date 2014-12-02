@@ -149,8 +149,9 @@ despite extensive work on direct-to-dependency parsing algorithms
 (which we call \emph{d-parsing}), the most accurate dependency
 parsers for English still involve phrase-structure parsing (which we
 call \emph{c-parsing}) followed by rule-based extraction of
-dependencies \cite{??} \nascomment{could reference the table here, or
-  just cite}.
+dependencies \cite{kong2014empirical}.
+ % \nascomment{could reference the table here, or
+ %  just cite}.
 
 What if dependency annotations had come first?  Because d-parsers are
 generally much faster than c-parsers, we consider an alternate
@@ -168,8 +169,7 @@ asymptotically faster than
   parsing with a lexicalized context-free grammar:  $O(n^2)$ plus
   d-parsing,
   vs.~$O(n^5)$ worst case runtime in sentence length $n$, with the same grammar constant.
-  \nascomment{felt misleading before, since the first ignores the runtime of
-    dependency parsing!}  With simple pruning, our approach achieves
+   With simple pruning, our approach achieves
   linear observable runtime.  The accuracy of the approach is similar
   to state-of-the-art phrase-structure parsers without reranking or
   semisupervised training.
@@ -193,26 +193,26 @@ asymptotically faster than
 
 % The natural reverse question is how well do these dependency parsers perform at phrase-structure prediction? Is it reasonable to use dependency parsers for tasks that require phrase-structure trees as input? \lpkcomment{i would like to put the benefits of doing this dep2phrase thing in the intro maybe? 1) it is very fast since dep prunes away a lot not useful cky chart item 2) dep can server as features in this problem, so that we can aim at higher acc with easy cky model. (actually, i believe the dep parsers can see syntactical information which is not easy to see when using cky, that's also the reason why your phrase+dep decomposition works right?)}
 
-\nascomment{someone else's rewrite:}
+% \nascomment{someone else's rewrite:}
 
-Statistical dependency parsers provide a fast and accurate method for
-predicting syntactic structure; however, many applications of parsing still rely on
-full phrase-structure trees, and cannot use parsers that only predict
-dependency structure. 
+% Statistical dependency parsers provide a fast and accurate method for
+% predicting syntactic structure; however, many applications of parsing still rely on
+% full phrase-structure trees, and cannot use parsers that only predict
+% dependency structure. 
 
-In this work we present a new parser, \ParseName, that takes dependency trees as input and produces phrase-structure trees as output. The parser has several advantages
+% In this work we present a new parser, \ParseName, that takes dependency trees as input and produces phrase-structure trees as output. The parser has several advantages
 
-\begin{itemize}
-\item Accuracy; The parser is as accurate as several widely-used phrase-structure parsers \%.  
-\item Efficiency; Asymptotically it is much faster than standard phrase-structure parsers; empirically it is as fast an efficient dependency parser.
+% \begin{itemize}
+% \item Accuracy; The parser is as accurate as several widely-used phrase-structure parsers \%.  
+% \item Efficiency; Asymptotically it is much faster than standard phrase-structure parsers; empirically it is as fast an efficient dependency parser.
 
-\item Flexibility; The parser only requires dependencies at test-time, and so it can improve alongside dependency parsers.
-\end{itemize}
+% \item Flexibility; The parser only requires dependencies at test-time, and so it can improve alongside dependency parsers.
+% \end{itemize}
 
-Recovering the best phrase-structure tree is a non-trivial problem. Given a
-predicted dependency tree, there is a large space of possible output
-phrase-structure trees, each tree may have many possible labelings,
-and there are likely errors in the input dependency tree. Figure~\ref{fig:inverse} shows the possible unlabeled trees for a single dependency tree input.
+% Recovering the best phrase-structure tree is a non-trivial problem. Given a
+% predicted dependency tree, there is a large space of possible output
+% phrase-structure trees, each tree may have many possible labelings,
+% and there are likely errors in the input dependency tree. Figure~\ref{fig:inverse} shows the possible unlabeled trees for a single dependency tree input.
 
 \begin{figure}
   \centering
@@ -235,9 +235,12 @@ and there are likely errors in the input dependency tree. Figure~\ref{fig:invers
     \Tree [ .X(2) [ .X(2) [ .N I$_1$ ]   [ .V saw$_2$ ] ]  [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
   }
   \label{fig:inverse}
-  \caption{{\footnotesize While a phrase-structure parse determines a
-      unique dependency parse \nascomment{only given head rules!  misleading}, the inverse problem is
-      non-deterministic. The figure, adapted from
+  \caption{{\footnotesize 
+      % While a phrase-structure parse determines a
+      % unique dependency parse \nascomment{only given head rules!  misleading}, the inverse problem is
+      % non-deterministic.
+      It is standard to transform c-parses to d-parses using deterministic head rules.
+      The figure, adapted from
       \cite{collins1999statistical}, shows several X-bar trees that
       all produce the same dependency structure. The parentheses
       $X(h)$ indicate the head $h$ of each internal vertex. }
@@ -258,54 +261,55 @@ and there are likely errors in the input dependency tree. Figure~\ref{fig:invers
 % parser, \ParseName,  to predict the syntactic tree for a given sentence. Crucially,
 % though, we limit the search space of the parser to the search space
 % that produces a given dependency tree. We show that,
-To handle these issues, our system poses phrase-structure recovery  as a structured
-prediction problem, and uses a lexicalized phrase-structure
-parser to predict the best tree. Crucially,
-though, the search space of the parser is limited by the dependency tree, 
-which keeps the underlying parser simple and the system efficient.
+% To handle these issues, our system poses phrase-structure recovery  as a structured
+% prediction problem, and uses a lexicalized phrase-structure
+% parser to predict the best tree. Crucially,
+% though, the search space of the parser is limited by the dependency tree, 
+% which keeps the underlying parser simple and the system efficient.
 
 
 
 
 
 
-\begin{table}
-  \centering
-  \small
-  \begin{tabular}{|l|l|r|}
-    \hline
-    Type & Model & UAS  \\
-    \hline
+% \begin{table}
+%   \centering
+%   \small
+%   \begin{tabular}{|l|l|r|}
+%     \hline
+%     Type & Model & UAS  \\
+%     \hline
 
-    \hline
-    \multirow{4}{*}{Phrase Structure} & Petrov[06] & 92.66   \\
-    & Stanford PCFG & 88.88 \\
-    & CJ Reranking & 93.92 \\
-    & Stanford RNN & 92.23 \\
-    \hline
-    \multirow{1}{*}{Dependency} & TurboParser & 93.59  \\
-    \hline
-  \end{tabular}
-  \caption{Dependency accuracy for several several widely used phrase-structure and dependency parsers.
-    Score are reported as the unlabeled accuracy score (UAS) of dependencies on PTB  Section 22.
-    Conversion are performed using the Collins head rules \cite{collins2003head}.
-    Note that the best scoring is a reranking phrase-structure parser, but that state-of-the-art
-    dependency parsers are comparable with the best parsers.
-    \nascomment{not sure this is worth keeping; could just make the
-      point and cite Kong and Smith 2014 arXiv paper.}}
-  \label{fig:depcomp}
-\end{table}
+%     \hline
+%     \multirow{4}{*}{Phrase Structure} & Petrov[06] & 92.66   \\
+%     & Stanford PCFG & 88.88 \\
+%     & CJ Reranking & 93.92 \\
+%     & Stanford RNN & 92.23 \\
+%     \hline
+%     \multirow{1}{*}{Dependency} & TurboParser & 93.59  \\
+%     \hline
+%   \end{tabular}
+%   \caption{Dependency accuracy for several several widely used phrase-structure and dependency parsers.
+%     Score are reported as the unlabeled accuracy score (UAS) of dependencies on PTB  Section 22.
+%     Conversion are performed using the Collins head rules \cite{collins2003head}.
+%     Note that the best scoring is a reranking phrase-structure parser, but that state-of-the-art
+%     dependency parsers are comparable with the best parsers.
+%     \nascomment{not sure this is worth keeping; could just make the
+%       point and cite Kong and Smith 2014 arXiv paper.}}
+%   \label{fig:depcomp}
+% \end{table}
 
 
 
 
 \section{Background}
 
-We begin by developing notation for a lexicalized context-free formalism and for dependency parsing. The notation aims to highlight the similarity between the two formalisms.
+We begin by developing notation for a c-parsing, using a lexicalized context-free grammar, and for d-parsing. The notation aims to highlight the similarity between the two formalisms.
 
 \subsection{Lexicalized CFG Parsing}
 
-A lexicalized context-free grammar (LCFG) is a context-free grammar where each vertex in a parse has a unique lexical head. Define an binarized\footnote{For notational simplicity we ignore unary rules for this section.} LCFG as a 4-tuple $(\nonterms, \rules, \terms, \Root)$ where:
+A lexicalized context-free grammar (LCFG) is a context-free grammar 
+paired with a set of head rules. Define an binarized\footnote{For notational simplicity we ignore unary rules for this section.} LCFG as a 4-tuple $(\nonterms, \rules, \terms, \Root)$ where:
 \begin{itemize}
 \item $\nonterms$; a set of nonterminal symbols, e.g. \Tag{NP}, \Tag{VP}.
 \item $\terms$; a set of terminal symbols, consisting of the words in the language.
@@ -313,10 +317,10 @@ A lexicalized context-free grammar (LCFG) is a context-free grammar where each v
 \item $\Root$; a distinguished root symbol $\Root \in \nonterms$.
 \end{itemize}
 
-Given an input sentence $x_1, \ldots, x_n$ of terminal symbols from $\terms$, define $\mathcal{Y}(x)$ as the set of valid lexicalized parses for the sentence. This set consists of all binary ordered trees with fringe $x_1, \ldots,  x_n$, internal nodes labeled from $\nonterms$, all tree productions  $A \rightarrow \beta$ consisting of members of $\rules$, and root label $\Root$.
+Given an input sentence $x_1, \ldots, x_n$ of terminal symbols from $\terms$, define $\mathcal{Y}(x)$ as the set of c-parses for the sentence. This set consists of all binary ordered trees with fringe $x_1, \ldots,  x_n$, internal nodes labeled from $\nonterms$, all tree productions  $A \rightarrow \beta$ consisting of members of $\rules$, and root label $\Root$.
 
 
-For an LCFG parse $y \in \mathcal{Y}(x)$,
+For an c-parse $y \in \mathcal{Y}(x)$,
 we further associate a triple $v = (\Span{i, j}, h, A)$ with each vertex in the tree, where
 
 
@@ -369,25 +373,25 @@ representation of grammatical structure.
 
 
 For sentence $x_1,
-\ldots, x_n$, define a dependency parse $d$ as a sequence $d_1, \ldots, d_n$ where for all $i$, $d_i \in \{0, \ldots, n\}$. These dependency relations can be seen as arcs $(d_i, i)$ in a directed graph over the sentence, where $w_0$ is a special pseudo-root vertex.  A dependency parse is valid  if the corresponding directed graph is a directed tree rooted at vertex~$0$. Figure~\ref{fig:spine} contains an example of a dependency tree.
+\ldots, x_n$, define a d-parse $d$ as a sequence $d_1, \ldots, d_n$ where for all $i$, $d_i \in \{0, \ldots, n\}$. These dependency relations can be seen as arcs $(d_i, i)$ in a directed graph over the sentence, where $x_0$ is a special pseudo-root vertex.  A dependency parse is valid  if the corresponding directed graph is a directed tree rooted at vertex~$0$. Figure~\ref{fig:spine} contains an example of a d-parse.
 
 For a valid dependency tree, define the \textit{span} of any word $x_m$ as the set of indices reachable from vertex $m$ in the directed tree. A dependency parse is \textit{projective} if the descendants of every word in the tree form a contiguous span of the original sentence \cite{}. We use the notation $\Left{m}$ and $\Right{m}$ to represent the left- and
 right-boundaries of this span.
 
 
-Any lexicalized context-free parse can be converted to a unique projective dependency tree.
+Any lexicalized c-parse can be converted to a unique projective d-parse.
 For an input symbol $x_m$ with spine $v_1, \ldots, v_p$,
 
 \begin{enumerate}
 \item If $v_p$ is the root of the tree,
 then $d_m = 0$.
 \item Otherwise let $v_{p+1}$ be the parent vertex of
-$v_p$ and $d_m = h(v_{p+1})$. The span $\Span{i, j}$ of $v_p$ in the lexicalized parse is equivalent to $\Span{\Left{m}, \Right{m}}$
-in the induced dependency parse.
+$v_p$ and $d_m = h(v_{p+1})$. The span $\Span{i, j}$ of $v_p$ in the lexicalized c-parse is equal to  $\Span{\Left{m}, \Right{m}}$
+in the  d-parse.
 \end{enumerate}
 
 
-However the conversion from dependency tree to phrase-structure tree not unique, and in fact, it can be shown that in the worst-case there are an
+However the conversion from d-parse to c-parse tree is more challenging, and in fact, it can be shown that in the worst-case there are an
 exponential number of possible unlabeled phrase-structure trees that induce the same dependency parse (proof given in Appendix~\ref{app:proof}).
 
 

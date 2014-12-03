@@ -240,11 +240,11 @@ asymptotically faster than
       % While a phrase-structure parse determines a
       % unique dependency parse \nascomment{only given head rules!  misleading}, the inverse problem is
       % non-deterministic.
-      It is standard to transform c-parses to d-parses using deterministic head rules.
+      Head rules specify a deterministic transformation from c-parses to d-parses.
       The figure, adapted from
-      \cite{collins1999statistical}, shows several X-bar trees that
-      all produce the same dependency structure. The parentheses
-      $X(h)$ indicate the head $h$ of each internal vertex. }
+      \cite{collins1999statistical}, shows several simple CFG trees that
+      all map the same d-parse. The parentheses
+      $X(h)$ indicate the head $h$ of each internal vertex.  }
     }
 \end{figure}
 
@@ -303,15 +303,15 @@ asymptotically faster than
 
 \section{Background}
 
-Before describing our method, We begin by developing notation for a c-parsing and the conversion process to d-parses. 
+We begin by following the conventional development by first introducing c-parsing and 
+then defining d-parses through a mechanical conversion using head-rules. 
+In the next section, we flip this development and consider the reverse transformation. 
 
 % consisting of a parent nonterminal $A \in \nonterms$, a sequence of children $\beta_i \in \nonterms \cup \terms$ for $i \in \{1, 2\}$, and a distinguished head child annotated with $*$. The head child comes from the head rules associated with the grammar.
 
 \subsection{CFG Parsing}
 
 The phrase-structure trees annotated in the Penn Treebank are derivation trees from a context-free grammar. 
-A c-parser is any system that directly predicts the best context-free parse for a sentence.
-
 Define a binarized\footnote{For notational simplicity we ignore unary rules for this section.} context-free grammar (CFG) as a 4-tuple $(\nonterms, \rules, \terms, \Root)$ where:
 \begin{itemize}
 \item $\nonterms$; a set of nonterminal symbols, e.g. \Tag{NP},
@@ -357,11 +357,11 @@ sequence $\{x_i, \ldots, x_j\}$ of the sentence covered by this vertex.
 \begin{figure}
   \centering
 
+  \Tree [ .\node[color=red]{$\Tag{S}(3)$}; [ .\node[color=red]{$\Tag{VP}(3)$}; [ .\node[color=blue]{$\Tag{NP}(2)$}; [  .\node{$\Tag{DT}(1)$}; The$_1$ ]  
+  [ .\node[color=blue]{$\Tag{NN}(2)$}; \textcolor{blue}{automaker$_2$} ] ] [ .\node[color=red]{$\Tag{VBD}$}; \textcolor{red}{sold$_3$}  ]  ] $\ldots$  ]
 
-  \Tree [ .\node[color=red]{$\Tag{S}(3)$}; [ .\node[color=blue]{$\Tag{NP}(2)$}; [  .\node{$\Tag{DT}(1)$}; The$_1$ ]  [ .\node[color=blue]{$\Tag{NN}(2)$}; \textcolor{blue}{automaker$_2$} ] ] [ .\node{$\Tag{VBD}(3)$}; sold$_3$ ] [ .\node{..}; ] ]
 
-
-
+  
   \begin{dependency}[theme=simple]
     \begin{deptext}[column sep=0.7cm]
       The$_1$ \& automaker$_2$ \& sold$_3$ \& $\ldots$ \\
@@ -373,45 +373,55 @@ sequence $\{x_i, \ldots, x_j\}$ of the sentence covered by this vertex.
 
 
   % \Tree [ .A [ .B  C ] ]
-  \caption{Figure illustrating an LCFG parse. The parse is an ordered tree with fringe $x_1, \ldots, x_n$. Each vertex is annotated with a span, head, and syntactic tag. The blue vertices represent the 3-vertex spine $v_1, v_2, v_3$ of the word \texttt{automaker$_2$}. The root vertex is $v_4$, which implies that \texttt{automaker$_2$} modifies \texttt{sold$_3$} in the induced dependency graph.     }
+  \caption{ Illustration of c-parse to d-parse conversion with head rules $\{ \Tag{VP} \rightarrow \Tag{NP}^*\ \Tag{VBD},  \Tag{NP} \rightarrow \Tag{DT}\ \Tag{NP}^*, \ldots \} $. The c-parse is an ordered tree with fringe $x_1, \ldots, x_n$. Each vertex is annotated with a span, head, and syntactic tag. The blue and vertices have the words \texttt{automaker$_2$} and \texttt{sold$_3$} as heads respectively. The vertex $\Tag{VP}_3$  implies that \texttt{automaker$_2$} is a dependent of \texttt{sold$_3$}, and that $d_2 = 3$ in the d-parse.     }
   \label{fig:spine}
 \end{figure}
 
 \subsection{Dependency Parsing}
 
 Dependency trees provide an alternative, and in some sense simpler,
-representation of sentence structure. These trees were originally
-derived through mechanical transformation from context-free trees,
-known as head rules.  There are several popular head rules in use that
-provide different representations of the sentences structures \cite{}.
-In this work we consider head rules that are local to the context-free rules.
+representation of sentence structure. These d-parses can be
+derived through mechanical transformation from context-free trees.
+There are several popular transformation in wide use; each 
+provides a different representations of a sentences structure \cite{}.
+In this work we consider transformations that are defined through local transformations known 
+as head rules.
 
-For a binarized CFG, define the head rules as a function $\mathcal{H} : \rules \mapsto \{L, R\}$ 
-mapping each CFG rule to its preferred, left or right head child. We use the notation 
+For a binarized CFG, define a collection of head rules as a function $\mathcal{H} : \rules \mapsto \{L, R\}$ 
+mapping each CFG rule to its head preference for its left- or right-child. We use the notation 
 $\RuleA{A}{\beta_1}{\beta_2}$ and $\RuleB{A}{\beta_1}{\beta_2}$ to indicate a left-
 or right-headed rule respectively. 
-The head rules can be used to map a c-parse to a dependency tree through the following transformation. 
 
-First, for each vertex $v$ of the tree let the head of the vertex $h(v)$ be defined recursively,
+For each vertex $v$ of a c-parse let the head of the vertex $h(v)$ be defined recursively,
  
  \begin{enumerate}
-  \item  If the vertex is leaf $x_i$, then $h(v)=i$.
+  \item  If the vertex is leaf $x_m$, then $h(v)=m$.
   \item Otherwise,  $h(v)$ matches the head child where $\RuleA{A}{\beta_1}{\beta_2}$ or $\RuleB{A}{\beta_1}{\beta_2}$  is the rule production at this vertex.
   \end{enumerate}
 
-  Next, for each word $x_i$ let the \textit{spine} of the word be the
-  longest chain of connected vertices with $x_i$ as head, i.e. $v_1, \ldots, v_p$ where $h(v_j) =
-  i$ for $j \in \{1, \ldots, p\}$. An example spine is shown in Figure~\ref{}.
+The head rules can be used to map a c-parse to a dependency tree.
+Define a sentence's dependencies as a sequence $d_1, \ldots d_n$ 
+where word $m$ is a dependent of word $d_m \{0, \ldots n\}$ and $0$ is 
+a special pseudo-root symbol. Let vertex $v$ be the first 
+parent vertex of $x_m$ not headed by $m$, i.e. $h(v) \neq m$. 
+If this vertex exists, then $d_m = h(v)$, otherwise $d_m = 0$.  
+Figure~\ref{} illustrates the conversion.
 
-Finally, define the d-parse $d_1 \ldots d_n$ for a sentence through the spines. If it exists, we define $v_{p+1}$ be the parent of $v_p$, and let $x_i$ be a dependent of the head of this vertex, $d_i = h(v_{p+1})$. Otherwise we say $x_i$ is the root word of the sentence, and let $d_i = 0$. 
+  % Next, for each word $x_i$ let the \textit{spine} of the word be the
+  % longest chain of connected vertices with $x_i$ as head, i.e. $v_1, \ldots, v_p$ where $h(v_j) =
+  % i$ for $j \in \{1, \ldots, p\}$. An example spine is shown in Figure~\ref{}.
 
-These dependency relations can be viewed as a directed tree with arcs
-$(d_i, i)$ for all $i$. This tree differs from the original c-parse
+
+
+% Finally, define the d-parse $d_1 \ldots d_n$ for a sentence through the spines. If it exists, we define $v_{p+1}$ be the parent of $v_p$, and let $x_i$ be a dependent of the head of this vertex, $d_i = h(v_{p+1})$. Otherwise we say $x_i$ is the root word of the sentence, and let $d_i = 0$. 
+
+These dependencies $d_1, \ldots, d_n$ can be viewed as a directed tree with arcs
+$(d_m, m)$ for all $m$. This tree differs from the original c-parse
 since the words are directly connected. However we can relate the two
 trees through their spans. Define a dependency span $\Span{\Left{m},
-  \Right{m}}$ as the sequence of words reachable from word $i$. By
+  \Right{m}}$ as the sequence of words reachable from word $m$. By
 construction this span is the same as the span $\Span{i, j}$
-of the top vertex $v_p$ of the spine of $x_i$.
+of the top vertex $v$ with $h(v) = m$.
 
 % Define the span  
 
@@ -545,13 +555,25 @@ of the top vertex $v_p$ of the spine of $x_i$.
 
 \section{Parsing Dependencies}
 
-The aim of this work is to predict the best c-parse
-from a given d-parse. Since this problem is ill-posed,
-we will learn a function to score possible c-parses
-and generate the highest-scoring parse. In this section
-we assume we have this function and discuss the prediction
-problem. We return to training in the next section.
+Now let us flip this setup. In recent years there has been significant
+progress in developing efficient direct-to-dependency parsers. These
+parsers can be trained only on dependency annotations and do not
+require full phrase-structure trees.\footnote{For English these
+  parsers are still often trained on trees converted from c-parses;
+  however for other languages d-parse-only treebanks are common.}  In
+many ways this setup is preferable since the parser can be trained on
+the specific dependencies required for a downstream task.  However,
+there are many applications that require or prefer full c-parses as input,
+and so c-parsers are still widely-used.
 
+With these applications in mind, we consider the problem of converting
+a d-parser to a c-parser by converting fixed d-parses into c-parses.
+Since this problem is more challenging than its inverse, we use a
+structured prediction setup: learn a function to score possible
+c-parse conversions, and then generate the highest-scoring c-parse possible.
+
+We start by considering the search problem of finding 
+the best c-parse conversion under a given scoring function. 
 
 
 % Since the inverse problem is ill-posed, our goal will
@@ -596,21 +618,19 @@ problem. We return to training in the next section.
 
 \end{multicols}
 \label{fig:cky_new}
-\caption{The two algorithms written as deductive parsers. Starting from the \textit{premise}, any valid application of \textit{rules} that leads to a \textit{goal} is a valid parse.  (a) Lexicalized CKY algorithm for LCFG parsing. For this algorithm there are $O(n^5|\rules|)$ rules where $n$ is the length of the sentence. (b) The constrained CKY parsing algorithm for $\mathcal{Y}(x, d)$. The algorithm is nearly identical except that many of the free indices are now fixed to the dependency parse. Finding the optimal parse is now $O(n^2|\rules|)$.\lpkcomment{$d_m$ is a little confusing when i first saw that, we can mention that in the caption. And the premise of the second algorithm is on the bottom of the first algorithm, probably we want to move it to the right. }}
+\caption{The two algorithms written as deductive parsers. Starting from the \textit{premise}, any valid application of \textit{rules} that leads to a \textit{goal} is a valid parse.  (a) Lexicalized CKY algorithm for CFG parsing with head rules. For this algorithm there are $O(n^5|\rules|)$ rules where $n$ is the length of the sentence. (b) The constrained CKY parsing algorithm for $\mathcal{Y}(x, d)$. The algorithm is nearly identical except that many of the free indices are now fixed to the dependency parse. Finding the optimal parse is now $O(n^2|\rules|)$.\lpkcomment{$d_m$ is a little confusing when i first saw that, we can mention that in the caption. And the premise of the second algorithm is on the bottom of the first algorithm, probably we want to move it to the right. }}
 \end{figure*}
 
-\subsection{Constrained Parsing Algorithm}
+\subsection{Parsing Algorithm}
 
-
-Our prediction algorithm will be a simple extension of the standard lexicalized CKY parsing algorithm.
-
-Assume that we are given a binarized LCFG defining a set of valid c-parses $\mathcal{Y}(x)$.
+First consider the standard problem of predicting the best c-parse under a CFG with head rules. 
+Assume that we are given a binarized CFG defining a set of valid c-parses $\mathcal{Y}(x)$.
 The parsing problem is to find the highest-scoring parse in this set, i.e.  \[ \hat{y} \gets \argmax_{y \in {\cal Y}(x)} s(y;x) \] where
-$s$ is a scoring function.
+$s$ is a scoring function that factors over rule productions.
 
-We further assume that scoring function factors over rule productions, 
-and so the highest-scoring parse can be found using the lexicalized
-CKY algorithm. This algorithm is defined deductively
+This problem is known as lexicalized context-free parsing. It can be
+solved using the standard lexicalized CKY parsing algorithm.
+This algorithm is defined by the productions
 in Figure~\ref{fig:cky_new}. The productions are of the form
 
 \[ \infer{(\Span{i, j}, h, A)}{(\Span{i, k}, m, \beta_1) & (\Span{k+1,
@@ -622,37 +642,59 @@ $\Span{k+1, j}$, and that the new head is index $h$ which is modified
 by index $m$.
 
 The highest-scoring parse can found by bottom-up dynamic programming
-over these productions, and the running time is linear in the number
-of production. The standard lexicalized CKY algorithm requires $O(n^5
-|\rules|)$ time, which is intractable to run without heavy pruning.
+over these productions. The standard lexicalized CKY algorithm requires $O(n^5
+|\rules|)$ time. While simple to implement, this algorithm is intractable to run without heavy pruning or
+further assumptions on the scoring function.
 
- Fortunately, the parsing problem becomes much simpler if 
- we are constrained to a given d-parse, $d_1, \ldots, d_n$.
- Define the set $\mathcal{Y}(x,d)$ as all valid LCFG parses that map
- to this dependency parse (as defined in the previous section). 
-  Our aim is to find
+Now, consider the same setup, but constrained to parses
+that will be converted to a given d-parse, $d_1, \ldots, d_n$.
+Define this set as  $\mathcal{Y}(x,d)$.
+
+% Fortunately, the parsing problem becomes much simpler if 
+% we are constrained to a given d-parse
 
 \[ \argmax_{y \in \mathcal{Y}(x, d)} s(y; x, d)\]
 
-This new problem has a nice property. For any word $x_m$ with spine $v_1, \ldots, v_p$ the LCFG span  $\Span{i,j}$ of $v_p$ is equal to the dependency span $\Span{\Left{m},\Right{m}}$ of $x_m$. These dependency spans can be efficiently computed directly from the dependency parse $d$.
+This new problem has a nice property. For any word $x_m$ the span $\Span{i,j}$ of the highest $v$ with $h(v) = n$  is the same as span $\Span{\Left{m},\Right{m}}$ in the dependency parse. Since we have the dependency parse these spans can be efficiently pre-computed..
 
 This property greatly limits the search space of the parsing problem.
-Instead of searching over all possible spans $\Span{i, j}$ of each modifier, we can
-precompute $\langle \Left{m},\Right{m}\rangle$. Figure~\ref{fig:cky_new} shows the new algorithm.
+Instead of searching over all possible spans $\Span{i, j}$ of each modifier, we simple precompute the span $\langle \Left{m},\Right{m}\rangle$. Figure~\ref{fig:cky_new} shows the new algorithm.
 While the productions are the same as the original algorithm, there are many fewer of them. 
 There is one production for each index and each possible modifier, leading to an algorithm with $O(n^2|\rules|)$ running time.
 
 
-% \subsection{Further Pruning}
-% \label{sec:prune}
+\subsection{Pruning}
+\label{sec:prune}
 
-Finally in addition to constraining the topology of c-parses, we
-also experiment with pruning to limit the space of rules. 
-We observe that in training the part-of-speech of the head word $x_h$
-greatly limits the possible rules $\Rule{A}{\beta_1}{\beta_2}$.  To
+In addition to constraining the number of c-parses possible, 
+the d-parse also provides valuable information about the labeling 
+and structure of the c-parse. We can use this information to provide 
+further pruning of the search space. We experimented with two 
+heuristic pruning methods based on this information
+
+\begin{itemize}
+\item We observe that in training the part-of-speech of the head word $x_h$
+greatly limits the possible rules $\Rule{A}{\beta_1}{\beta_2}$ available.  To
 exploit this property we build tables $\rules_t$ for each
 part-of-speech tag $t$ and limit the search to rules seen for the
-current head tag.
+current head tag. 
+
+\item For a word $x_h$ with $L$ dependents to its left and $R$ dependents to 
+its right, there are $L\times R$ possible orders to select dependents in the 
+algorithm, since at any point a rule can take a left or right dependent. 
+ 
+
+
+\end{itemize}
+
+We observe that in training the part-of-speech of the head word $x_h$
+greatly limits the possible rules $\Rule{A}{\beta_1}{\beta_2}$ available.  To
+exploit this property we build tables $\rules_t$ for each
+part-of-speech tag $t$ and limit the search to rules seen for the
+current head tag. 
+
+we
+also experiment with pruning to limit the space of rules. 
 
 An important concern is whether it is even possible to recover
 c-parses under these constraints. To answer this question we ran
@@ -720,10 +762,10 @@ The main transformation is to introduce rules
 \begin{itemize}
 
 \item
-$\Rule{A^{|}}{A^{|*}}{\beta_i}$ for $k < i < m$
+$\Rule{\bar{A}}{A^{|*}}{\beta_i}$ for $k < i < m$
 
 \item
-$\Rule{A^{|}} {\beta_i}{A^{|*}} $ for $1< i < k$
+$\Rule{\bar{A}} {\beta_i}{\bar{A}^{*}} $ for $1< i < k$
 \end{itemize}
 
 
@@ -739,7 +781,7 @@ Additionally we introduce several additional rules to handle the boundary cases 
 
 \begin{center}
   \scalebox{0.6}{ \Tree [ .S NP VP$^*$ NP NP ] $\Rightarrow$ \Tree [
-    .S NP [ .S$^{|*}$ [ .S$^{|*}$ VP$^*$ NP ]
+    .S NP [ .$\bar{\mathrm{S}}^{*}$ [ .$\bar{\mathrm{S}}^{*}$ VP$^*$ NP ]
     NP ] ] }
 \end{center}
 \lpkcomment{I change the rule based on current system. I think I want to add the lesson we learnt about binarization here. That is, the NT should remember as less as possible. This is saying the the fully lexiconlized model has the ability to figure out what rule to use as well as the topological structure. The more information only
@@ -1128,42 +1170,42 @@ structure parsers on languages with only dependency annotations.
 
 
 
-\appendix{}
+% \appendix{}
 
-\section{Proof of PS Size}
-\label{app:proof}
+% \section{Proof of PS Size}
+% \label{app:proof}
 
-Consider the LCFG grammar with two rules $A = \RuleA{X}{X}{X}$ and  $ B = \RuleB{X}{X}{X}$ and a sentence $x_1, \ldots, x_{2n+1}$. Let the dependency parse be defined as $d_{n+1} = 0$ and $d_i = n+1$ for all $i \neq n + 1$, i.e.
+% Consider the LCFG grammar with two rules $A = \RuleA{X}{X}{X}$ and  $ B = \RuleB{X}{X}{X}$ and a sentence $x_1, \ldots, x_{2n+1}$. Let the dependency parse be defined as $d_{n+1} = 0$ and $d_i = n+1$ for all $i \neq n + 1$, i.e.
 
-\begin{center}
+% \begin{center}
 
-\scalebox{0.5}{
-\begin{dependency}[theme=simple]
-  \begin{deptext}[column sep=0.7cm]
-    $1$ \& $2$ \& \ldots \& $n+1$ \& $\ldots$ \& $2n$ \& $2n+1$ \\
-  \end{deptext}
-  \deproot{4}{ROOT}
-  \depedge{4}{1}{}
-  \depedge{4}{2}{}
-  \depedge{4}{6}{}
-  \depedge{4}{7}{}
-\end{dependency}
-}
-\end{center}
+% \scalebox{0.5}{
+% \begin{dependency}[theme=simple]
+%   \begin{deptext}[column sep=0.7cm]
+%     $1$ \& $2$ \& \ldots \& $n+1$ \& $\ldots$ \& $2n$ \& $2n+1$ \\
+%   \end{deptext}
+%   \deproot{4}{ROOT}
+%   \depedge{4}{1}{}
+%   \depedge{4}{2}{}
+%   \depedge{4}{6}{}
+%   \depedge{4}{7}{}
+% \end{dependency}
+% }
+% \end{center}
 
-\noindent Since all rules have $h = x_n$ as head, a parse is a chain of $2n$ rules with each rule in $\{A, B\}$, e.g. the following are $BB...$, $BA...$, $AA...$
+% \noindent Since all rules have $h = x_n$ as head, a parse is a chain of $2n$ rules with each rule in $\{A, B\}$, e.g. the following are $BB...$, $BA...$, $AA...$
 
-\begin{center}
+% \begin{center}
 
-\scalebox{0.6} {
-\Tree [ .X $x_1$ [ .X $x_2$  [ .$\vdots$ $x_{n+1}$ ]   ] ]
-\Tree [ .X $x_1$ [ .X  [ .$\vdots$ $x_{n+1}$ ] $x_{2n+1}$  ] ]
-\Tree [ .X  [ .X  [ .$\vdots$ $x_{n+1}$ ]   $x_{2n}$ ] $x_{2n+1}$ ]
-}
-\end{center}
+% \scalebox{0.6} {
+% \Tree [ .X $x_1$ [ .X $x_2$  [ .$\vdots$ $x_{n+1}$ ]   ] ]
+% \Tree [ .X $x_1$ [ .X  [ .$\vdots$ $x_{n+1}$ ] $x_{2n+1}$  ] ]
+% \Tree [ .X  [ .X  [ .$\vdots$ $x_{n+1}$ ]   $x_{2n}$ ] $x_{2n+1}$ ]
+% }
+% \end{center}
 
 
-\noindent Since there must be equal $A$s and $B$s and all orders are possible, there are $2n \choose n$ valid parses and $|\mathcal{Y}(x, d)|$ is $O(2^n)$.
+% \noindent Since there must be equal $A$s and $B$s and all orders are possible, there are $2n \choose n$ valid parses and $|\mathcal{Y}(x, d)|$ is $O(2^n)$.
 % \textbf{Acknowledgment} sections should go as a last (unnumbered) section immediately
 % before the references.
 

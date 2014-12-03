@@ -821,35 +821,43 @@ of the tree \cite{}, but we found that this increased the size of the grammar wi
 
 \section{Structured Prediction}
 
-To learn the scoring function for the transformation from d-parses to c-parses,
-we use a standard structured prediction setup.
-Define the scoring function $s$ as
+While the parser only requires a d-parse at prediction time, 
+it uses annotated c-parses to learn the transformation. 
+Define this scoring function $s$ as 
 
 \[s(y;x, d, \theta) =  \theta^{\top} f(x, d, y) \]
 
 \noindent
 where $\theta$ is a parameter vector and $f(x, d, y)$ is a feature
-function that maps parse productions to sparse feature vectors. We
-first discuss the features used and then estimating the parameters of the model.
+function that maps parse productions to sparse feature vectors. 
 
+To learn the parameter for scoring possible c-parses we use a standard
+structured prediction setup. In this section, we describe the features
+of the model and then the learning algorithm.
+
+% We first discuss the features used and then estimating the parameters of the model.
 
 \subsection{Features}
 
-We implemented a small set of standard dependency and phrase-structure features.
+In theory, the scoring function for this system could be directly
+adapted from existing c-parsers. However, the existing structure of
+the dependency parse limits the number of decisions that need to be
+made, and allows for a smaller set of features.
 
-For the dependency style features, we replicated the basic arc-factored features
-used by \newcite{mcdonald2006discriminative}. These include combinations of:
+We model our features after two bare-bones parsing systems. 
+The first set is the basic arc-factored features 
+used by \newcite{mcdonald2006discriminative}. These features include combinations of:
 
 \begin{itemize}
-\item nonterminal combinations
-\item rule and top nonterminal
+\item rule and top non-terminal
 \item modifier word and part-of-speech
-\item head word word and part-of-speech
+\item head word and part-of-speech
 \end{itemize}
 
-Additionally we included the span features described for the X-Bar style
-parser of \newcite{hall2014less}. These include conjunction of the rule
-with:
+
+The second set of features is modeled after the span features
+described in the X-Bar style parser of \newcite{hall2014less}. These
+include conjunction of the rule with:
 
 \begin{itemize}
 \item first and last word of current span.
@@ -857,7 +865,6 @@ with:
 \item adjacent words at split of current span
 \item length of the span
 \end{itemize}
-
 
 The full feature set  is shown in Figure~\ref{fig:features}.
 % After training there are \# non-zero features.
@@ -926,15 +933,17 @@ The full feature set  is shown in Figure~\ref{fig:features}.
   \end{tabular}
   \end{multicols}
   \label{fig:features}
-  \caption{The feature templates used in the function $f(x, d, y)$. The symbol $\RuleSym$ is expanded into both $\Rule{A}{B}{C}$ and $A$. The function $\TagFN{i}$ gives the part-of-speech tag of word $x_i$. The function $\BinFN{i}$ partitions a span length into one of 10 bins.
+  \caption{The feature templates used in the function $f(x, d, y)$. For the span features, the symbol $\RuleSym$ is expanded into both $\Rule{A}{B}{C}$ and $A$. The function $\TagFN{i}$ gives the part-of-speech tag of word $x_i$. The function $\BinFN{i}$ partitions a span length into one of 10 bins.
   }
 \end{figure}
 
 \subsection{Training}
 
-The parameters $\theta$ are estimated using standard structured SVM training.
-We assume that we are given a set of gold-annotated parse examples: $( x^{1}, y^{1}), \ldots,  (x^{D}, y^{D})$. We also define $d^{1} \ldots d^{D}$ as the dependency structures induced from $y^{1} \ldots y^{D}$.
-We select parameters to minimize the regularized empirical risk
+The parameters $\theta$ are estimated using a structured SVM setup.
+Given a set of gold-annotated parse examples, $(x^{1}, y^{1}), \ldots,
+(x^{D}, y^{D})$, and paired dependency structures $d^{1} \ldots d^{D}$ induced
+from the head rules, we estimate the
+parameters to minimize the regularized empirical risk
 
 \[ \min_{\theta} \sum_{i = 1}^D \max\{0,  \ell( x^{i}, d^{i} , y^{i}, \theta) \} + \frac{\lambda}{2} ||\theta||_1 \]
 
@@ -942,9 +951,8 @@ We select parameters to minimize the regularized empirical risk
 
 \[\ell(x, d, y, \theta) = s(y) + \max_{y' \in \mathcal{Y}(x, d)}\left(s(y')  + \Delta(y, y') \right) \]
 
-
-\noindent where $\Delta$ is a problem specific cost-function that we assume is linear in either arguments.
-In experiments, we use a hamming loss  $\Delta(y, \bar{y}) = || y - \bar{y}||$ where $y$ is an indicator
+\noindent and where $\Delta$ is a problem specific cost-function.
+In experiments, we use a hamming loss  $\Delta(y, y') = || y -y'||$ where $y$ is an indicator
 of rule productions.
 
 The objective is optimized using Adagrad \cite{}.  The gradient
@@ -978,10 +986,13 @@ dependency parsing to simplify and speed up phrase-structure prediction.
 using a transition-based system. \newcite{hall2014less} use a stripped
 down parser based on a simple X-bar grammar and a small set of lexicalized features.
 
-\section{Setup}
 
 
-\subsection{Data and Methods}
+\section{Methods}
+
+We ran a series of experiments to assess the accuracy, efficiency,
+and applicability of the parser to several tasks. These experiments
+use the following setup.  
 
 For English experiments we use the standard Penn Treebank (PTB)
 experimental setup \cite{marcus1993building}. Training is done on
@@ -993,18 +1004,28 @@ For Chinese experiments, we use version 5.1 of the Penn  Chinese Treebank 5.1 (C
 271-300 as test.
 
 Part-of-speech tagging is done using TurboTagger
-\cite{martins2013turning}. Prior to training, the train sections are
-automatically tagged using 10-fold jackknifing. At training time, the
-gold dependency structures are computed using the Collins head rules
-\cite{collins2003head}.\footnote{ We experimented with using
+\cite{martins2013turning}. Unless otherwise noted, 
+the input d-parsing is done using TurboParser  
+\cite{martins2013turning}. 
+Prior to training the d-parser, the train sections are
+automatically tagged using 10-fold jackknifing. The 
+d-parser is trained to produce Collins head rules 
+\cite{collins2003head}.
+
+
+For our model the ``gold'' d-parses $d^1, \ldots, d^D$   
+used at training come from the gold c-parse converted with 
+the Collins head rules\footnote{ We experimented with using
   jackknifed dependency parses $d'$ at training time with oracle tree
   structures, i.e. $\argmin_{y' \in \mathcal{Y}(x, d')} \Delta(y, y)$,
-  but found that this did not improve performance.}
+  but found that this did not improve performance.}. Since the trained
+model is independent of the d-parser,  
+for all experiments with other d-parsers we used the same model.
 
 Evaluation for phrase-structure parses is performed using the
 \texttt{evalb}\footnote{http://nlp.cs.nyu.edu/evalb/} script using the
 standard setup. We report F1-Score as well as recall and
-precision. For dependency parsing using unlabeled accuracy score
+precision. For dependency parsing we use unlabeled accuracy score
 (UAS).
 
 We implemented the grammar binarization, head rules, and pruning

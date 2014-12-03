@@ -446,7 +446,7 @@ of the top vertex $v$ with $h(v) = m$.
 
 
 
-\lpkcomment{I think here maybe instead of directly giving the dependneny tree notation like this, it would be easier for ppl to understand if we fisrt when we have the phrase-structure tree, through head rules (popluar head rules including cite collins, cite ym and cite stanford. They basically defined in all the children a NT has, which one he loves the most.} 
+% \lpkcomment{I think here maybe instead of directly giving the dependneny tree notation like this, it would be easier for ppl to understand if we fisrt when we have the phrase-structure tree, through head rules (popluar head rules including cite collins, cite ym and cite stanford. They basically defined in all the children a NT has, which one he loves the most.} 
 
 
 
@@ -618,7 +618,7 @@ the best c-parse conversion under a given scoring function.
 
 \end{multicols}
 \label{fig:cky_new}
-\caption{The two algorithms written as deductive parsers. Starting from the \textit{premise}, any valid application of \textit{rules} that leads to a \textit{goal} is a valid parse.  (a) Lexicalized CKY algorithm for CFG parsing with head rules. For this algorithm there are $O(n^5|\rules|)$ rules where $n$ is the length of the sentence. (b) The constrained CKY parsing algorithm for $\mathcal{Y}(x, d)$. The algorithm is nearly identical except that many of the free indices are now fixed to the dependency parse. Finding the optimal parse is now $O(n^2|\rules|)$.\lpkcomment{$d_m$ is a little confusing when i first saw that, we can mention that in the caption. And the premise of the second algorithm is on the bottom of the first algorithm, probably we want to move it to the right. }}
+\caption{The two algorithms written as deductive parsers. Starting from the \textit{premise}, any valid application of \textit{rules} that leads to a \textit{goal} is a valid parse.  (a) Lexicalized CKY algorithm for CFG parsing with head rules. For this algorithm there are $O(n^5|\rules|)$ rules where $n$ is the length of the sentence. (b) The constrained CKY parsing algorithm for $\mathcal{Y}(x, d)$. The algorithm is nearly identical except that many of the free indices are now fixed to the dependency parse. Finding the optimal parse is now $O(n^2|\rules|)$.}
 \end{figure*}
 
 \subsection{Parsing Algorithm}
@@ -677,33 +677,47 @@ heuristic pruning methods based on this information
 greatly limits the possible rules $\Rule{A}{\beta_1}{\beta_2}$ available.  To
 exploit this property we build tables $\rules_t$ for each
 part-of-speech tag $t$ and limit the search to rules seen for the
-current head tag. 
+current head tag. This reduces the effect of $|\rules|$ at runtime.
 
-\item For a word $x_h$ with $L$ dependents to its left and $R$ dependents to 
-its right, there are $L\times R$ possible orders to select dependents in the 
-algorithm, since at any point a rule can take a left or right dependent. 
+\item A word $x_h$ with $L$ dependents to its left and $R$ dependents to 
+its right may at any point  combine with a left or right dependent. There 
+are therefore  $L\times R$ ($O(n^2)$) possible orderings of these dependents.
+
+However, we can often predict with very high accuracy which side will come next. 
+To make this prediction, we estimate a distribution \[p(\textrm{side} | \TagFN{x_h}, \TagFN{x_l}, \TagFN{x_r})\]
+where $x_l$ is the next left dependent, $x_r$ is the next right dependent, and $\TagFN$ is the part-of-speech tag of the word. This reduces the  effect of the $n^2$ at runtime.
+%  to select dependents in the 
+% algorithm, since
  
-
 
 \end{itemize}
 
-We observe that in training the part-of-speech of the head word $x_h$
-greatly limits the possible rules $\Rule{A}{\beta_1}{\beta_2}$ available.  To
-exploit this property we build tables $\rules_t$ for each
-part-of-speech tag $t$ and limit the search to rules seen for the
-current head tag. 
+Table~\ref{tab:alg-oracle} shows a comparison of these pruning
+methods.  In addition to speed, an important question whether it is
+even possible to recover c-parses under these constraints.  These
+experiments show that there is a small drop from pruning, but that
+there is a sizable drop in oracle accuracy with the d-parse
+constraints. Still this upper-bound on accuracy is high enough
+to make it possible to still recover high-accuracy parses. We return 
+to this discussion in Section~\ref{}.
 
-we
-also experiment with pruning to limit the space of rules. 
+% We observe that in training the part-of-speech of the head word $x_h$
+% greatly limits the possible rules $\Rule{A}{\beta_1}{\beta_2}$ available.  To
+% exploit this property we build tables $\rules_t$ for each
+% part-of-speech tag $t$ and limit the search to rules seen for the
+% current head tag. 
 
-An important concern is whether it is even possible to recover
-c-parses under these constraints. To answer this question we ran
-oracle experiments to find the best c-parse possible under each
-algorithm.  Table~\ref{tab:alg-oracle} shows a
-comparison among full LCFG parsing, dependency limited parsing, and
-dependency-limit pruned parsing. These experiments show that there 
-is a sizable drop in oracle accuracy with the d-parse constraints, but that
-the upper-bound on accuracy is still high enough to make this task interesting. 
+% we
+% also experiment with pruning to limit the space of rules. 
+
+% An important concern is whether it is even possible to recover
+% c-parses under these constraints. To answer this question we ran
+% oracle experiments to find the best c-parse possible under each
+% algorithm.  Table~\ref{tab:alg-oracle} shows a
+% comparison among full LCFG parsing, dependency limited parsing, and
+% dependency-limit pruned parsing. These experiments show that there 
+% is a sizable drop in oracle accuracy with the d-parse constraints, but that
+% the upper-bound on accuracy is still high enough to make this task interesting. 
 
 % Full LCFG is very slow, even on very
 % short sentences.  Limiting to dependency structures leads to a large
@@ -737,57 +751,71 @@ the upper-bound on accuracy is still high enough to make this task interesting.
 
 \subsection{Binarization}
 
-\smrcomment{This section is wrong, start over}
-
 % So far we have assumed the grammar is binarized, we must convert the
 % non-binary treebank grammars to binary form.  
-To this point we have assumed the grammar is binarized, 
-While the algorithm
-itself is not dependent on the binarization used \lpkcomment{but one important thing is, we must binarize in a way preserve the head each time. (i.e. one binarization rule implies one arc.)}, this choice affects
-the run-time of the algorithm, through $\rules$, as well as the
-structure of the scoring function.
+
+To this point, we have assumed that the CFG and head rules are binary;
+however the standard treebank grammars have arbitrarily large rules.
+In order to apply the algorithm, we need to binarize the grammar and
+ preserve the head relations.  
+
+ Consider a non-binarized rule of the form $ A \rightarrow \beta_1
+ \ldots \beta_m$ with head rule $\mathcal{H}(A \rightarrow \beta_1
+ \ldots \beta_m) = k$. Relative to the head $\beta_k$ the rule has
+ left-side $\beta_1 \ldots \beta_{k-1}$ and right-side $\beta_{k+1}
+ \ldots \beta_m$.
+
+% The algorithm requires that the conversion preserves the 
+% itself is not dependent on the binarization used \lpkcomment{but one important thing is, we must binarize in a way preserve the head each time. (i.e. one binarization rule implies one arc.)}, this choice affects
+% the run-time of the algorithm, through $\rules$, as well as the
+% structure of the scoring function.
 
 % Our binarization decomposes non-binary rules into fragments for
 % each head-modifier pair.
 
-For simplicity, we consider binarizing rule $\langle A \rightarrow \beta_1 \ldots \beta_m,
-k\rangle$ with $m > 2$. Relative to the head $\beta_k$
-the rule has left-side $\beta_1 \ldots \beta_{k-1}$ and right-side
-$\beta_{k+1} \ldots \beta_m$.
 
 We replace this rule with binary rules that consume each side
-independently as a first-order Markov chain (horizontal Markovization).
-The main transformation is to introduce rules
+independently as a simple chain.
+The transformation introduces new rules\footnote{These rules are slightly modified when $k=1$}
 
 \begin{itemize}
+\item
+$\Rule{\bar{A}} {\beta_i}{\bar{A}^{*}} $ for $i \in \{2, \ldots, k\}$
 
 \item
-$\Rule{\bar{A}}{A^{|*}}{\beta_i}$ for $k < i < m$
+$\Rule{\bar{A}}{\bar{A}^{*}}{\beta_i}$ for $i \in \{k, \ldots, m\}$
 
 \item
-$\Rule{\bar{A}} {\beta_i}{\bar{A}^{*}} $ for $1< i < k$
+$\Rule{A}{\beta_1}{\bar{A}^{*}}$ 
+
 \end{itemize}
-
 
 % As an example consider the rule
 
-Additionally we introduce several additional rules to handle the boundary cases of starting a new rule, finishing the right side, and completing a rule. (These rules are slightly modified when $k\leq 2$ or $k=m$).
+% Additionally we introduce several additional rules to handle the boundary cases of starting a new rule, finishing the right side, and completing a rule. 
 % \begin{align*}
 % & \RuleA{A^{\Rightarrow}_{\beta_{k+1}}}{\beta_k}{\beta_{k+1}} & \Rule{A^{\Rightarrow*}} {A^{\Rightarrow}_{\beta_{m-1}}}{\beta_m} \\
 %  &\Rule{A^{\Leftarrow}_{\beta_{k-1}}}{\beta_{k-1}}{A^{\Rightarrow *}} & \Rule{A}{\beta_1}{ A^{\Leftarrow*}_{\beta_{2}}}\\
 % \end{align*}
 
-\noindent For example the transformation of a common rule looks like
+\noindent As an example consider the transformation of a rule with four children:
 
 \begin{center}
   \scalebox{0.6}{ \Tree [ .S NP VP$^*$ NP NP ] $\Rightarrow$ \Tree [
     .S NP [ .$\bar{\mathrm{S}}^{*}$ [ .$\bar{\mathrm{S}}^{*}$ VP$^*$ NP ]
     NP ] ] }
 \end{center}
-\lpkcomment{I change the rule based on current system. I think I want to add the lesson we learnt about binarization here. That is, the NT should remember as less as possible. This is saying the the fully lexiconlized model has the ability to figure out what rule to use as well as the topological structure. The more information only
-adds to the runtime and make estimation more sparse. }
+% \lpkcomment{I change the rule based on current system. I think I want to add the lesson we learnt about binarization here. That is, the NT should remember as less as possible. This is saying the the fully lexiconlized model has the ability to figure out what rule to use as well as the topological structure. The more information only
+% adds to the runtime and make estimation more sparse. }
 
-\noindent Each rule contains at most 3 original nonterminals so the size of the new binarized rule set is bounded by $O(\nonterms^3)$.\lpkcomment{it's quite important to adding the pruning algorithm stuff... they are very interesting i think}
+Note that each rule contains at most two nonterminals from the original grammar, so the size of the new binarized rule set is bounded by $O(\nonterms^2)$. The small size of the grammar further helps the speed of the algorithm.
+
+We experimented with binarization that use horizontal and vertical markovization to include additional context 
+of the tree \cite{}, but we found that this increased the size of the grammar without leading to improvements in accuracy.
+
+
+
+\lpkcomment{it's quite important to adding the pruning algorithm stuff... they are very interesting i think}
 
 
 

@@ -894,14 +894,15 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
 
 \begin{table}
   \centering
-  \begin{tabular}{|l|cccc|}
+  \begin{tabular}{|lll|cccc|}
+    \hline 
+    Class & \\
+    Dep & Span & Split & Total & Pre & Rec & F1 \\ 
     \hline
-    Class                 & Total & Pre & Rec & F1 \\ 
-    \hline
-    \textsc{+ Dep + Span +Split} &       &     &     &   \\ 
-    \textsc{+ Dep + Span -Split} &       &     &     &   \\ 
-    \textsc{- Dep + Span +Split} &       &     &     &   \\ 
-    \textsc{- Dep - Span -Split} &       &     &     &   \\ 
+    + & + & +  &       &     &     &   \\ 
+    + & + & -  &       &     &     &   \\ 
+    - & + & + &       &     &     &   \\ 
+    - & - & -  &       &     &     &   \\ 
     \hline
   \end{tabular}
 \end{table}

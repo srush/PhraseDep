@@ -128,10 +128,6 @@ the art on English and Chinese benchmarks.
 
 \section{Introduction}
 
-\nascomment{rewrote the intro.  I think the paper will be more
-  exciting if, instead of making claims about informativeness or
-  suggesting preferences, we just say the way the world turned out, and then
-  ask how things might have turned out if it had been different.}
 
 Natural language parsers typically produce phrase-structure (or
 constituent) trees or dependency trees.  These representations capture
@@ -145,7 +141,7 @@ parsing researchers.
 Further, it appears to be a historical accident that phrase-structure
 syntax was used in annotating the Penn Treebank, and that English
 dependency annotations are largely derived through mechanical,
-rule-based transformations applied to the Penn Treebank.  Indeed,
+rule-based transformations (reviewed in Section~\ref{sec:background}).  Indeed,
 despite extensive work on direct-to-dependency parsing algorithms
 (which we call \emph{d-parsing}), the most accurate dependency
 parsers for English still involve phrase-structure parsing (which we
@@ -156,28 +152,25 @@ dependencies \cite{kong2014empirical}.
 
 What if dependency annotations had come first?  Because d-parsers are
 generally much faster than c-parsers, we consider an alternate
-pipeline: d-parse first, then transform the dependency representation
+pipeline in Section~\ref{sec:pardeps}: d-parse first, then transform the dependency representation
 into a phrase-structure tree constrained to be consistent with the
 dependency parse.  This idea was explored by  \newcite{xia2001converting} and
-\newcite{xia2009towards} using hand-written rules.  Here we present a data-driven
-algorithm in the structured prediction framework.  The approach can be
+\newcite{xia2009towards} using hand-written rules.  Instead, we present a data-driven
+algorithm in Section~\ref{sec:strpred} using the structured prediction framework.  The approach can be
 understood as a pipeline, or as a specially-trained coarse-to-fine
 decoding algorithm where a d-parser provides ``coarse'' structure and
 the second stage refines it \cite{??}.
 
-Our lexicalized phrase-structure parser is
-asymptotically faster than
-  parsing with a lexicalized context-free grammar:  $O(n^2)$ plus
-  d-parsing,
-  vs.~$O(n^5)$ worst case runtime in sentence length $n$, with the same grammar constant.
-   With simple pruning, our approach achieves
-  linear observable runtime.  The accuracy of the approach is similar
-  to state-of-the-art phrase-structure parsers without reranking or
-  semisupervised training.
+Our lexicalized phrase-structure parser is asymptotically faster than
+parsing with a lexicalized context-free grammar: $O(n^2)$ plus
+d-parsing, vs.~$O(n^5)$ worst case runtime in sentence length $n$,
+with the same grammar constant.  Experiments in Section~\ref{sec:exper} show
+that with simple pruning, our approach achieves linear observable
+runtime, and that accuracy similar to
+state-of-the-art phrase-structure parsers without reranking or
+semisupervised training.
 
 
-\nascomment{I suggest giving a brief roadmap here, or (better) integrating it
-  into the discussion above}
 
 
 
@@ -215,38 +208,6 @@ asymptotically faster than
 % phrase-structure trees, each tree may have many possible labelings,
 % and there are likely errors in the input dependency tree. Figure~\ref{fig:inverse} shows the possible unlabeled trees for a single dependency tree input.
 
-\begin{figure}
-  \centering
-
-  \vspace{-1cm}
-
-  \begin{dependency}[theme=simple]
-    \begin{deptext}[column sep=0.7cm]
-      I$_1$ \& saw$_2$ \& the$_3$ \& man$_4$ \\
-    \end{deptext}
-    \deproot{2}{ROOT}
-      \depedge{2}{1}{}
-      \depedge{4}{3}{}
-      \depedge{2}{4}{}
-  \end{dependency}
-
-  \scalebox{0.7}{
-    \Tree [ .X(2) [ .X(1) [ .N I$_1$ ] ]  [ .V saw$_2$ ] [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
-    \Tree [ .X(2)  [ .N I$_1$ ] [ .X(2)  [ .V saw$_2$ ] [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ] ]
-    \Tree [ .X(2) [ .X(2) [ .N I$_1$ ]   [ .V saw$_2$ ] ]  [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
-  }
-  \label{fig:inverse}
-  \caption{{\footnotesize 
-      % While a phrase-structure parse determines a
-      % unique dependency parse \nascomment{only given head rules!  misleading}, the inverse problem is
-      % non-deterministic.
-      Head rules specify a deterministic transformation from c-parses to d-parses.
-      The figure, adapted from
-      \cite{collins1999statistical}, shows several simple CFG trees that
-      all map the same d-parse. The parentheses
-      $X(h)$ indicate the head $h$ of each internal vertex.  }
-    }
-\end{figure}
 
 
 % Unfortunately, as illustrated in Figure~\ref{fig:inverse},
@@ -302,7 +263,7 @@ asymptotically faster than
 
 
 \section{Background}
-
+\label{sec:background}
 We begin by following the conventional development by first introducing c-parsing and 
 then defining d-parses through a mechanical conversion using head-rules. 
 In the next section, we flip this development and consider the reverse transformation. 
@@ -357,9 +318,10 @@ sequence $\{x_i, \ldots, x_j\}$ of the sentence covered by this vertex.
 \begin{figure}
   \centering
 
+  \scalebox{0.8} {
   \Tree [ .\node[color=red]{$\Tag{S}(3)$}; [ .\node[color=red]{$\Tag{VP}(3)$}; [ .\node[color=blue]{$\Tag{NP}(2)$}; [  .\node{$\Tag{DT}(1)$}; The$_1$ ]  
   [ .\node[color=blue]{$\Tag{NN}(2)$}; \textcolor{blue}{automaker$_2$} ] ] [ .\node[color=red]{$\Tag{VBD}$}; \textcolor{red}{sold$_3$}  ]  ] $\ldots$  ]
-
+}
 
   
   \begin{dependency}[theme=simple]
@@ -373,7 +335,7 @@ sequence $\{x_i, \ldots, x_j\}$ of the sentence covered by this vertex.
 
 
   % \Tree [ .A [ .B  C ] ]
-  \caption{ Illustration of c-parse to d-parse conversion with head rules $\{ \Tag{VP} \rightarrow \Tag{NP}^*\ \Tag{VBD},  \Tag{NP} \rightarrow \Tag{DT}\ \Tag{NP}^*, \ldots \} $. The c-parse is an ordered tree with fringe $x_1, \ldots, x_n$. Each vertex is annotated with a span, head, and syntactic tag. The blue and vertices have the words \texttt{automaker$_2$} and \texttt{sold$_3$} as heads respectively. The vertex $\Tag{VP}_3$  implies that \texttt{automaker$_2$} is a dependent of \texttt{sold$_3$}, and that $d_2 = 3$ in the d-parse.     }
+  \caption{ Illustration of c-parse to d-parse conversion with head rules $\{ \Tag{VP} \rightarrow \Tag{NP}\ \Tag{VBD}^*,  \Tag{NP} \rightarrow \Tag{DT}\ \Tag{NP}^*, \ldots \} $. The c-parse is an ordered tree with fringe $x_1, \ldots, x_n$. Each vertex is annotated with a non-terminal tag and a derived head index. The blue and red vertices have the words \texttt{automaker$_2$} and \texttt{sold$_3$} as heads respectively. The vertex $\Tag{VP}_3$  implies that \texttt{automaker$_2$} is a dependent of \texttt{sold$_3$}, and that $d_2 = 3$ in the d-parse.     }
   \label{fig:spine}
 \end{figure}
 
@@ -554,6 +516,7 @@ of the top vertex $v$ with $h(v) = m$.
 
 
 \section{Parsing Dependencies}
+\label{sec:pardeps}
 
 Now let us flip this setup. In recent years there has been significant
 progress in developing efficient direct-to-dependency parsers. These
@@ -565,6 +528,39 @@ many ways this setup is preferable since the parser can be trained on
 the specific dependencies required for a downstream task.  However,
 there are many applications that require or prefer full c-parses as input,
 and so c-parsers are still widely-used.
+
+\begin{figure}
+  \centering
+
+  \vspace{-1cm}
+
+  \begin{dependency}[theme=simple]
+    \begin{deptext}[column sep=0.7cm]
+      I$_1$ \& saw$_2$ \& the$_3$ \& man$_4$ \\
+    \end{deptext}
+    \deproot{2}{ROOT}
+      \depedge{2}{1}{}
+      \depedge{4}{3}{}
+      \depedge{2}{4}{}
+  \end{dependency}
+
+  \scalebox{0.7}{
+    \Tree [ .X(2) [ .X(1) [ .N I$_1$ ] ]  [ .V saw$_2$ ] [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
+    \Tree [ .X(2)  [ .N I$_1$ ] [ .X(2)  [ .V saw$_2$ ] [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ] ]
+    \Tree [ .X(2) [ .X(2) [ .N I$_1$ ]   [ .V saw$_2$ ] ]  [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
+  }
+  \label{fig:inverse}
+  \caption{{\footnotesize 
+      % While a phrase-structure parse determines a
+      % unique dependency parse \nascomment{only given head rules!  misleading}, the inverse problem is
+      % non-deterministic.
+      [Adapted from \cite{collins1999statistical}] Several simple c-parses that  
+      are valid conversion from the original d-parse. The goal of this work is to
+      select the best parse from this set.
+    }
+    }
+\end{figure}
+
 
 With these applications in mind, we consider the problem of converting
 a d-parser to a c-parser by converting fixed d-parses into c-parses.
@@ -815,12 +811,12 @@ of the tree \cite{}, but we found that this increased the size of the grammar wi
 
 
 
-\lpkcomment{it's quite important to adding the pruning algorithm stuff... they are very interesting i think}
+% \lpkcomment{it's quite important to adding the pruning algorithm stuff... they are very interesting i think}
 
 
 
 \section{Structured Prediction}
-
+\label{sec:strpred}
 While the parser only requires a d-parse at prediction time, 
 it uses annotated c-parses to learn the transformation. 
 Define this scoring function $s$ as 
@@ -1036,6 +1032,7 @@ than 400 lines of code. Both are publicly available.\footnote{Withheld
 with 32GB of memory and  Core i7-3770 3.4GHz 8M cache CPU.
 
 \section{Experiments}
+\label{sec:exper}
 
 We ran experiments to assess the accuracy of the method, its run-time efficiency, the amount of phrase-structure data required, and the effect of dependency accuracy.\lpkcomment{if space allowed, probably add the label extension as a way to get higher acc in the first half of the experiment section.}
 
@@ -1134,14 +1131,14 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
 
 \begin{table}
   \centering
-  \begin{tabular}{|lll|cccc|}
+  \begin{tabular}{|ccc|cccc|}
     \hline 
-    Class & \\
-    Dep & Span & Split & Total & Pre & Rec & F1 \\ 
+    \multicolumn{3}{|c|}{Class} & \multicolumn{4}{|c|}{Score} \\
+    Dep & Span & Spl & Total & Pre & Rec & F1 \\ 
     \hline
     + & + & +  &       &     &     &   \\ 
     + & + & -  &       &     &     &   \\ 
-    - & + & + &       &     &     &   \\ 
+    - & + & +  &       &     &     &   \\ 
     - & - & -  &       &     &     &   \\ 
     \hline
   \end{tabular}

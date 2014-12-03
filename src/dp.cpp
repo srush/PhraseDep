@@ -35,53 +35,15 @@ const int kLayers = 3;
 
 class Chart {
   public:
-    Chart (int n) {
-        int total_size = n * n * n * kLayers;
-        bps_.resize(total_size);
-        item_score_.resize(total_size);
-
-        span_nts.resize(n);
-        for (int i = 0; i < n; ++i) {
-            span_nts[i].resize(n);
-            for (int j = 0; j < n; ++j) {
-                span_nts[i][j].resize(n);
-                for (int h = 0; h < n; ++h) {
-                    span_nts[i][j][h].resize(kLayers);
-                }
-            }
-        }
-
-    }
-
-    void reset1(int n, int N, const vector<string> *words) {
-        int total_size = n * n * n * kLayers;
-        fill(bps_.begin(), bps_.begin() + total_size, map<int, BackPointer>());
-        fill(item_score_.begin(), item_score_.begin() + total_size, map<int, double>());
-    }
-
-    void reset2(int n, int N, const vector<string> *words) {
+    Chart (int n, int N, const vector<string> *words) {
         n_ = n;
         N_ = N;
         words_ = words;
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < n; ++j) {
-                 for (int h = 0; h < n; ++h) {
-                     for (int k = 0; k < kLayers; ++k) {
-                         span_nts[i][j][h][k].clear();
-                     }
-                }
-            }
-        }
     }
-
-    void reset(int n, int N, const vector<string> *words) {
-        reset1(n, N, words);
-        reset2(n, N, words);
-    }
-
 
     void span_init(const Item &item) {
-        span_nts[item.i][item.k][item.h][item.layer].push_back(item.nt);
+        // span_nts_[item.i][item.k][item.h][item.layer].push_back(item.nt);
+        span_nts_[index_item(item)].push_back(item.nt);
     }
 
     void init(const Item &item) {
@@ -162,7 +124,7 @@ class Chart {
         }
     }
 
-    inline bool has_item(const Item &item) const {
+    inline bool has_item(const Item &item)  {
         int index = index_item(item);
         return item_score_[index].find(item.nt) != item_score_[index].end();
     }
@@ -235,7 +197,13 @@ class Chart {
 
     }
 
-    vector<vector<vector<vector<vector<int> > > > > span_nts;
+    const vector<int> & span_nts(const Item &item) {
+        return span_nts_[index_item(item)];
+    }
+
+    // vector<vector<vector<vector<vector<int> > > > > span_nts;
+    map<int, vector<int> > span_nts_;
+
     // map<vector>
   private:
     int index_item(const Item &item) const {
@@ -246,8 +214,8 @@ class Chart {
 
     int n_;
     int N_;
-    vector<map<int, double> > item_score_;
-    vector<map<int, BackPointer> > bps_;
+    map<int, map<int, double> > item_score_;
+    map<int, map<int, BackPointer> > bps_;
     const vector<string> *words_;
 };
 
@@ -257,11 +225,12 @@ int add_right(int i, int j, int k, int h, int m,
               const Grammar &grammar, const Scorer &scorer,
               Chart *chart) {
     have_nt.reset();
-    for (int Z : chart->span_nts[j+1][k][m][2]) {
+
+    for (int Z : chart->span_nts(Item(j+1, k, m, 0, 2))) {
         have_nt[Z] = 1;
     }
     int total_scored = 0;
-    for (int Y : chart->span_nts[i][j][h][2]) {
+    for (int Y : chart->span_nts(Item(i, j, h, 0, 2))) {
         Item item(i, j, h, Y, 2);
         double item_score = chart->score(item);
 
@@ -293,10 +262,10 @@ int add_left(int i, int j, int k, int h, int m,
               Chart *chart) {
     int total_scored = 0;
     have_nt.reset();
-    for (int Y : chart->span_nts[i][j][m][2]) {
+    for (int Y : chart->span_nts(Item(i, j, m, 0, 2))) {
         have_nt[Y] = 1;
     }
-    for (int Z : chart->span_nts[j+1][k][h][2]) {
+    for (int Z : chart->span_nts(Item(j+1, k, h, 0, 2))) {
         Item item(j+1, k, h, Z, 2);
         double item_score = chart->score(item);
         for (const BinaryRule &b_rule : grammar.rules_by_second[Z]) {
@@ -330,7 +299,7 @@ bool complete(int i, int k, int h, const vector<int> &preterms,
               Chart *chart) {
     bool any = false;
     // Fill in the unary rules.
-    for (int Y : chart->span_nts[i][k][h][0]) {
+    for (int Y : chart->span_nts(Item(i, k, h, 0, 0))) {
         any = true;
         Item item(i, k, h, Y, 0);
         Item item_prom(i, k, h, Y, 2);
@@ -354,7 +323,7 @@ bool complete(int i, int k, int h, const vector<int> &preterms,
         }
     }
 
-    for (int Y : chart->span_nts[i][k][h][1]) {
+    for (int Y : chart->span_nts(Item(i, k, h, 0, 1))) {
         Item item(i, k, h, Y, 1);
         double item_score = chart->score(item);
 
@@ -371,7 +340,6 @@ bool complete(int i, int k, int h, const vector<int> &preterms,
     return any;
 }
 
-Chart chart(200);
 double cky(const vector<int> &preterms,
            const vector<string> &words,
            const vector<int> &deps,
@@ -395,7 +363,7 @@ double cky(const vector<int> &preterms,
         }
     }
 
-    chart.reset(n, grammar.n_nonterms, &words);
+    Chart chart(n, grammar.n_nonterms, &words);
 
     // Initialize the chart.
     for (int i = 0; i < n; ++i) {
@@ -418,11 +386,11 @@ double cky(const vector<int> &preterms,
                 if (h < m && right[m] == k) {
                     int j = left[m] - 1;
                     have_nt.reset();
-                    for (int Z : chart.span_nts[j+1][k][m][2]) {
+                    for (int Z : chart.span_nts(Item(j+1, k, m, 0, 2))) {
                         have_nt[Z] = 1;
                     }
 
-                    for (int Y : chart.span_nts[i][j][h][2]) {
+                    for (int Y : chart.span_nts(Item(i, j, h, 0, 2))) {
                         Item item(i, j, h, Y, 2);
                         double item_score = chart.score(item);
 
@@ -452,10 +420,10 @@ double cky(const vector<int> &preterms,
                     int j = right[m];
 
                     have_nt.reset();
-                    for (int Y : chart.span_nts[i][j][m][2]) {
+                    for (int Y : chart.span_nts(Item(i, j, m, 0,2))) {
                         have_nt[Y] = 1;
                     }
-                    for (int Z : chart.span_nts[j+1][k][h][2]) {
+                    for (int Z : chart.span_nts(Item(j+1, k, h, 0, 2))) {
                         Item item(j+1, k, h, Z, 2);
                         double item_score = chart.score(item);
                         for (const BinaryRule &b_rule : grammar.rules_by_second[Z]) {
@@ -514,7 +482,7 @@ double cky2(const vector<int> &preterms,
             vector<AppliedRule> *best_rules,
             bool output,
             bool *success) {
-
+    clock_t start = clock();
 
     int n = preterms.size();
     int G = grammar.n_rules;
@@ -535,9 +503,9 @@ double cky2(const vector<int> &preterms,
 
 
 
-    chart.reset2(n, grammar.n_nonterms, &words);
-    chart.reset1(n, grammar.n_nonterms, &words);
-    clock_t start = clock();
+    Chart chart(n, grammar.n_nonterms, &words);
+    // chart.reset1(n, grammar.n_nonterms, &words);
+
 
 
     // Initialize the chart.
@@ -677,7 +645,7 @@ double cky_full(const vector<int> &preterms,
     int G = grammar.n_rules;
     int N = grammar.n_nonterms;
 
-    chart.reset(n, grammar.n_nonterms, &words);
+    Chart chart(n, grammar.n_nonterms, &words);
 
     // Initialize the chart.
     for (int i = 0; i < n; ++i) {
@@ -701,11 +669,11 @@ double cky_full(const vector<int> &preterms,
                     if (h < m) {
                         for (int j = h; j < m; ++j) {
                             have_nt.reset();
-                            for (int Z : chart.span_nts[j+1][k][m][2]) {
+                            for (int Z : chart.span_nts(Item(j+1, k, m, 0, 2))) {
                                 have_nt[Z] = 1;
                             }
 
-                            for (int Y : chart.span_nts[i][j][h][2]) {
+                            for (int Y : chart.span_nts(Item(i, j, h, 0, 2))) {
                                 Item item(i, j, h, Y, 2);
                                 double item_score = chart.score(item);
 
@@ -736,10 +704,10 @@ double cky_full(const vector<int> &preterms,
                         for (int j = m; j < h; ++j) {
 
                             have_nt.reset();
-                            for (int Y : chart.span_nts[i][j][m][2]) {
+                            for (int Y : chart.span_nts(Item(i, j, m, 0, 2))) {
                                 have_nt[Y] = 1;
                             }
-                            for (int Z : chart.span_nts[j+1][k][h][2]) {
+                            for (int Z : chart.span_nts(Item(j+1, k, h, 0, 2))) {
                                 Item item(j+1, k, h, Z, 2);
                                 double item_score = chart.score(item);
                                 for (const BinaryRule &b_rule : grammar.rules_by_second[Z]) {

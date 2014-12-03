@@ -16,6 +16,7 @@ parser.add_argument('--hm', type=int, metavar='', help='')
 parser.add_argument('--vm', type=int, metavar='', help='')
 parser.add_argument('--unary_collapse', action='store_true', help='')
 parser.add_argument('--language', type=str, metavar='', help='')
+parser.add_argument('--backoff_rule',action='store_true',help='')
 
 parser.add_argument('--dep_from_conll', action='store_true', help='')
 parser.add_argument('--conll_dep_file', type=str, metavar='', help='')
@@ -25,6 +26,7 @@ parser.add_argument('--conll_dep_file', type=str, metavar='', help='')
 
 A = parser.parse_args()
 
+use_back_off_rule = A.backoff_rule
 unary_collapse = A.unary_collapse
 language_setting = A.language
 dep_from_conll = A.dep_from_conll
@@ -65,34 +67,39 @@ def generate_rule(treebank_file):
 
     f.close()
     #core_pos_set = [pos for pos in pos_set if pos[0] <= 'Z' and pos[0] >= 'A']
-    core_pos_set = pos_set
+    
     # print core_pos_set
     # Generate the back-off rules
     backoff_rule_set = set([])
     for r in full_rule_set:
         args = r.split(" ")
-        #print "___".join(args)
+    #   #print "___".join(args)
+        
         for i in xrange(1, len(args)-1):
-            #sys.stdout.write("*" + args[i] + "*")
-            if args[i] in core_pos_set:
-                # change the pos to others
-                #print "for rule " + " ".join(args)
+    #        #sys.stdout.write("*" + args[i] + "*")
+            if args[i] in pos_set:
+    #            # change the pos to others
+    #            #print "for rule " + " ".join(args)
+    #            for pos in core_pos_set:
                 args_copy = deepcopy(args)
-                for pos in core_pos_set:
-                    args_copy[i] = pos
-                    if (" ".join(args_copy)) not in full_rule_set:
-                        backoff_rule_set.add(" ".join(args_copy))
-                    #print "\tadding: " + " ".join(args_copy)
-        #sys.stdout.write("\n")
+                args_copy[i] = "BPOS|"
+    #                if (" ".join(args_copy)) not in full_rule_set:
+                backoff_rule_set.add(" ".join(args_copy))
+    #                #print "\tadding: " + " ".join(args_copy)
+    #    #sys.stdout.write("\n")
 
 
     ind = 0
     for r in full_rule_set:
         print str(ind) + " " + r
         ind += 1
-    for r in backoff_rule_set:
-        print str(ind) + " " + r
-        ind += 1
+    if use_back_off_rule:
+        for r in backoff_rule_set:
+            print str(ind) + " " + r
+            ind += 1
+        for pos in pos_set:
+            print str(ind) + " 1 BPOS| " + pos
+            ind += 1
 
 
 def generate_part(treebank_file, rule_file):

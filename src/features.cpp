@@ -210,7 +210,7 @@ double FeatureGenBackoff::generate(const Sentence &sentence,
     int m_tag = sentence.int_tags[rule.m];
     int h_tag = sentence.int_tags[rule.h];
     bool is_unary = grammar_->is_unary[rule.rule];
-    long m_deplabel = 1; //sentence.int_deplabels[rule.m];
+    long m_deplabel = sentence.int_deplabels[rule.m];
 
     // 8 backed off position rules.
     vector<int> rules = {rule.i, rule.k, rule.j, rule.j + 1,

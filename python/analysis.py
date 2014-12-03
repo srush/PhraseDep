@@ -1,15 +1,20 @@
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 import argparse
 import pandas as pd
+import math
+import numpy as np
+
 class Item(namedtuple("Item", ("i", "j", "k", "h", "m", "r"))):
     pass
 
-def find_spans(h, deps, left, right):
+def find_spans(h, deps, left, right, children):
     left[h] = h
     right[h] = h
+    children[h] = []
     for i in range(0, len(deps)):
         if deps[i] == h:
-            find_spans(i, deps, left, right)
+            children[h].append(i)
+            find_spans(i, deps, left, right, children)
             if i < h:
                 left[h] = min(left[h], (left)[i]);
             else:
@@ -26,13 +31,15 @@ def read_file(handle):
         if not l: break
         n, n_items = map(int, l.split())
         words = handle.readline().split()
-        tags = handle.readline()
+        tags = handle.readline().split()
+
         deps = map(int, handle.readline().split())
         left = [-1] * len(words)
         right = [-1] * len(words)
+        children = [None] * len(words)
         for i in range(len(deps)):
             if deps[i] == -1:
-                find_spans(i, deps, left, right)
+                find_spans(i, deps, left, right, children)
 
         labels = handle.readline()
         for i in range(n_items):
@@ -42,7 +49,9 @@ def read_file(handle):
         sent_num += 1
         sents.append( {"items" : items,
                        "spans" : zip(left, right),
-                       "deps" : deps
+                       "deps" : deps,
+                       "tags" : tags,
+                       "children": children
                    })
     return sents
 
@@ -108,6 +117,88 @@ def score(gold_file, predicted_file, rules):
             d["top_nt"].append(rules[item.r])
     return pd.DataFrame(d)
 
+def nCr(n,r):
+    f = math.factorial
+    return f(n) / f(r) / f(n-r)
+
+def prune():
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('--gold_items', type=str, metavar='', help='')
+    args = parser.parse_args()
+    s1 = read_file(open(args.gold_items))
+    d = defaultdict(lambda: [set(), 0])
+    pairs = defaultdict(lambda: [0, 0])
+    for sent in s1:
+        # print sent["deps"], sent["spans"]
+        for h in range(len(sent["deps"])):
+            left = [c for c in sent["children"][h] if c < h]
+            left.reverse()
+            right = [c for c in sent["children"][h] if c > h]
+            l = 0
+            r = 0
+            if left and right:
+                # print len(left), len(right)
+                b_string = ""
+                for _, item in sent["items"]:
+                    m = item.m
+                    h_tag = sent["tags"][h]
+                    l_tag = "*END*" if l >= len(left) else (sent["tags"][left[l]] + str(l == 0))
+                    r_tag = "*END*" if r >= len(right) else (sent["tags"][right[r]] + str(r == 0))
+
+                    key = h_tag, l_tag, r_tag
+                    if item.h == h and item.m != h:
+                        if item.m > h:
+                            b_string += "1"
+
+                            pairs[key][1] += 1
+                            assert(right[r] == m)
+                            r += 1
+                        else:
+                            b_string += "0"
+                            pairs[key][0] += 1
+                            assert(left[l] == m)
+                            l += 1
+                        # print "\t", h, item.j, item.m, item.k -item.i, item.m > h
+
+                d[len(left), len(right), sent["tags"][h]][0].add(b_string)
+                d[len(left), len(right), sent["tags"][h]][1] += 1
+
+            #d[left, right, sent["tags"][i]] = 1
+
+    to_write = []
+    for key in pairs:
+        total = sum(pairs[key])
+        if "*END*" not in key:
+            to_write.append((key, max(pairs[key][0], pairs[key][1]) / float(total), total))
+    to_write.sort(key=lambda a: a[2])
+
+    for l in to_write:
+        print l
+
+
+    # all_prune = []
+    # for a in d:
+    #     total = nCr(a[0] + a[1], a[1])
+    #     if d[a][1] > 10 and (a[0] > 2 and a[1] > 2):
+    #         valid = np.zeros((a[0]+1, a[1]+1))
+    #         for bstring in d[a][0]:
+    #             l = 0
+    #             r = 0
+    #             for b in bstring:
+    #                 if b == "0":
+    #                     l += 1
+    #                 else:
+    #                     r += 1
+    #                 valid[l, r] = 1
+
+    #         all_prune.append((a, d[a][1], len(d[a][0]), valid))
+    # all_prune.sort(key=lambda a: a[1])
+
+    # for j in all_prune:
+    #     print j[0], j[1], j[2]
+    #     print j[3]
+
+
 def main():
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('--gold_items', type=str, metavar='', help='')
@@ -122,3 +213,4 @@ def main():
 
     #print recall, precision
 # main()
+prune()

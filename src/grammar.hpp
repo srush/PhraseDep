@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <vector>
 #include <map>
+#include <iostream>
 using namespace std;
 
 struct UnaryRule {
@@ -69,6 +70,7 @@ struct AppliedRule {
     int m;
     int rule;
 };
+
 
 
 class Scorer {
@@ -203,7 +205,44 @@ struct NonTerminal {
     bool removable;
 };
 
+struct DirPrune {
+    DirPrune(int head_, int left_, int right_, int left_first_, int right_first_)
+            : head(head_), left(left_), right(right_),
+              left_first(left_first_), right_first(right_first_) {}
 
+    int head;
+    int left;
+    int right;
+    int left_first;
+    int right_first;
+};
+
+inline bool operator==(const DirPrune& left, const DirPrune& right) {
+    return (left.head == right.head) &&
+            (left.right == right.right) &&
+            (left.left == right.left) &&
+            (left.left_first == right.left_first) &&
+            (left.right_first == right.right_first);
+}
+
+inline bool operator<(const DirPrune& left, const DirPrune& right) {
+    if (left.head < right.head) { return true; }
+    if (left.head > right.head) { return false; }
+
+    if (left.right < right.right) { return true; }
+    if (left.right > right.right) {return false; }
+
+    if (left.left < right.left) { return true; }
+    if (left.left > right.left) { return false; }
+
+    if (left.left_first < right.left_first) { return true; }
+    if (left.left_first > right.left_first) { return false; }
+
+    if (left.right_first < right.right_first) { return true; }
+    if (left.right_first > right.right_first) { return false; }
+
+    return false;
+}
 
 
 class Grammar {
@@ -215,6 +254,7 @@ class Grammar {
 
         pruning = false;
         label_pruning = false;
+        dir_pruning = false;
     }
 
     int to_word(string word);
@@ -231,6 +271,9 @@ class Grammar {
     void add_unary_rule(UnaryRule rule);
 
     void finish(const vector<int> &roots_);
+
+    double dir_pick(const DirPrune &prune,
+                    bool *try_left, bool *try_right) const;
 
     Index tag_index;
 
@@ -264,7 +307,9 @@ class Grammar {
     vector<vector<bool> > label_rule_allowed;
     bool pruning;
     bool label_pruning;
+    bool dir_pruning;
 
+    map<DirPrune, pair<int, int> > dir_pruner;
 
     vector<int> sparse_rule_index;
     Index sparse_rules;

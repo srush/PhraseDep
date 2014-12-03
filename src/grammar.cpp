@@ -66,6 +66,39 @@ void Grammar::add_rule(BinaryRule rule) {
 }
 
 
+double Grammar::dir_pick(const DirPrune &prune,
+                  bool *try_left, bool *try_right) const {
+    (*try_left) = true;
+    (*try_right) = true;
+    // cerr << dir_pruner.size();
+    // cerr << prune.head << " " << prune.left << " " << prune.right << " " << prune.left_first << " " << prune.right_first <<  endl;
+
+    map<DirPrune, pair<int, int>>::const_iterator test = dir_pruner.find(prune);
+    if (test == dir_pruner.end()) {
+        // (*try_left) = false;
+        return 0.001;
+    }
+    pair<int, int> pair = test->second;
+    int total = pair.first + pair.second;
+
+    if (total == 0) {
+        return 0.0;
+    }
+
+    // cerr << "counts: " << (pair.first / (float) total) << endl;
+    if ((pair.first / (float) total) > 0.95) {
+        *try_right = false;
+        return pair.first / (float) total;
+    }
+
+    if ((pair.second / (float) total) > 0.95) {
+        *try_left = false;
+        return pair.second / (float) total;
+    }
+    return max(pair.first, pair.second) / (float) total;
+}
+
+
 void Grammar::add_unary_rule(UnaryRule rule) {
     assert(rule.nt_X < n_nonterms);
     assert(rule.nt_Y < n_nonterms);

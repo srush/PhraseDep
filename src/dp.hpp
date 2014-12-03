@@ -36,10 +36,19 @@ double cky(const vector<int> &preterms,
            bool output,
            bool *success);
 
+double cky2(const vector<int> &preterms,
+            const vector<string> &words,
+            const vector<int> &deps,
+            const Grammar &grammar,
+            const Scorer &scorer,
+            vector<AppliedRule> *best_rules,
+            bool output,
+            bool *success);
+
 double cky_full(const vector<int> &preterms,
-           const vector<string> &words,
-           const Grammar &grammar,
-           const Scorer &scorer,
-           vector<AppliedRule> *best_rules,
-           bool output,
-           bool *success);
+                const vector<string> &words,
+                const Grammar &grammar,
+                const Scorer &scorer,
+                vector<AppliedRule> *best_rules,
+                bool output,
+                bool *success);

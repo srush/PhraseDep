@@ -36,7 +36,7 @@ struct Arg: public option::Arg
 enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, LAMBDA,
                     MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE,
                     LABEL_PRUNING, POSITIVE_FEATURES, NO_HASH, FEATURE_FILE, ITEMS,
-                    NO_DEP, LIMIT, LOWER_LIMIT, SIMPLE_FEATURES};
+                    NO_DEP, LIMIT, LOWER_LIMIT, SIMPLE_FEATURES, DIR_PRUNING};
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , "", option::Arg::None, "USAGE: example [options]\n\n"
@@ -62,6 +62,7 @@ const option::Descriptor usage[] =
     {LIMIT,    0,"", "limit", Arg::Numeric, "  --limit  \n ." },
     {LOWER_LIMIT,    0,"", "lower_limit", Arg::Numeric, "  --lower_limit  \n ." },
     {SIMPLE_FEATURES,    0,"", "simple_features", option::Arg::None, "  --simple_features  \n ." },
+    {DIR_PRUNING,    0,"", "dir_pruning", option::Arg::None, "  --dir_pruning  \n ." },
     {UNKNOWN, 0,"" ,  ""   , option::Arg::None, "\nExamples:\n"
                                                   "  example --unknown -- --this_is_no_option\n"
      "  example -unk --plus -ppp file1 file2\n" },
@@ -136,6 +137,69 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    if (options[DIR_PRUNING]) {
+        cerr << "DIR PRUNING" << endl;
+        grammar->dir_pruning = true;
+
+        for (auto sentence : *sentences) {
+            int n = sentence.words.size();
+            vector<vector<int>> right_deps(n), left_deps(n);
+            vector<int> seen_left(n, 0);
+            vector<int> seen_right(n, 0);
+            for (int i = 0; i < n; ++i) {
+                int d = sentence.deps[i];
+                if (d == -1) continue;
+                if (i < d)
+                    left_deps[d].insert(left_deps[d].begin(), i);
+                else
+                    right_deps[d].push_back(i);
+            }
+
+            for (auto rule : sentence.gold_rules) {
+                int head = sentence.preterms[rule.h];
+                // Skip unary.
+                if (rule.h == rule.m) continue;
+
+                int mod = sentence.preterms[rule.m];
+
+                int left_prev=0, right_prev=0;
+                if (seen_left[rule.h] == 0) {
+                    left_prev = 1;
+                } else if (sentence.preterms[left_deps[rule.h][seen_left[rule.h]-1]] ==
+                           grammar->to_nonterm(",")) {
+                    left_prev = 2;
+                }
+
+                if (seen_right[rule.h] == 0) {
+                    right_prev = 1;
+                } else if (sentence.preterms[right_deps[rule.h][seen_right[rule.h]-1]] ==
+                           grammar->to_nonterm(",")) {
+                    right_prev = 2;
+                }
+
+                if (rule.m < rule.h) {
+                    if (seen_right[rule.h] == right_deps[rule.h].size())
+                        continue;
+                    int right_mod = sentence.preterms[right_deps[rule.h][seen_right[rule.h]]];
+                    DirPrune prune(head, mod, right_mod,
+                                   (seen_left[rule.h] == 0),
+                                   (seen_right[rule.h] == 0));
+                    grammar->dir_pruner[prune].first += 1;
+                    seen_left[rule.h] += 1;
+                } else {
+                    if (seen_left[rule.h] == left_deps[rule.h].size())
+                        continue;
+                    int left_mod = sentence.preterms[left_deps[rule.h][seen_left[rule.h]]];
+                    DirPrune prune(head, left_mod, mod,
+                                   (seen_left[rule.h] == 0),
+                                   (seen_right[rule.h] == 0));
+                    grammar->dir_pruner[prune].second += 1;
+                    seen_right[rule.h] += 1;
+                }
+            }
+        }
+    }
+
     if (options[NO_HASH] && options[FEATURE_FILE])  {
         scorer.read(options[FEATURE_FILE].arg);
     }
@@ -188,8 +252,8 @@ int main(int argc, char* argv[]) {
                          *grammar, scorer, &best_rules, false,
                          &success);
             } else {
-                cky(sentence->preterms, sentence->words, sentence->deps,
-                    *grammar, scorer, &best_rules, !options[ITEMS], &success);
+                cky2(sentence->preterms, sentence->words, sentence->deps,
+                     *grammar, scorer, &best_rules, !options[ITEMS], &success);
             }
 
             if (!options[ITEMS]) {
@@ -227,7 +291,7 @@ int main(int argc, char* argv[]) {
                          &success);
 
             } else {
-                cky(sentence->preterms, sentence->words, sentence->deps,
+                cky2(sentence->preterms, sentence->words, sentence->deps,
                     *grammar, oracle, &best_rules, options[ORACLE_TREE],
                     &success);
             }

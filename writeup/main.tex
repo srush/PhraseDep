@@ -83,7 +83,7 @@
 
 \setlength\titlebox{6.5cm}    % Expanding the titlebox
 
-\title{Parsing Dependencies}
+\title{Transforming Dependencies into Phrase Structures}
 
 \author{}
 % \author{Author 1\\
@@ -109,7 +109,7 @@
 We present a new algorithm for transforming dependency parse trees into
 phrase-structure parse trees.  We cast the problem as  structured
 prediction and learn a statistical model.  Our algorithm is faster than traditional
-phrase-structure parsing and achieves accuracy near to the state of
+phrase-structure parsing and achieves PARSEVAL accuracy near to the state of
 the art on English and Chinese benchmarks.
 
   % Motivated by the increase in accuracy of statistical dependency
@@ -129,12 +129,11 @@ the art on English and Chinese benchmarks.
 \section{Introduction}
 
 
-Natural language parsers typically produce phrase-structure (or
-constituent) trees or dependency trees.  These representations capture
+Natural language parsers typically produce phrase-structure (constituent) trees or dependency trees.  These representations capture
 some of the same syntactic phenomena, and the two can be produced
 jointly \cite{carreras2008tag,rush2010dual}.  Yet it
 appears to be completely unpredictable which will be preferred by a
-particular application.  Both continue to receive the attention of
+particular subcommunity or used in a particular application.  Both continue to receive the attention of
 parsing researchers.
 
 
@@ -152,23 +151,24 @@ dependencies \cite{kong2014empirical}.
 
 What if dependency annotations had come first?  Because d-parsers are
 generally much faster than c-parsers, we consider an alternate
-pipeline in Section~\ref{sec:pardeps}: d-parse first, then transform the dependency representation
+pipeline (Section~\ref{sec:pardeps}): d-parse first, then transform the dependency representation
 into a phrase-structure tree constrained to be consistent with the
 dependency parse.  This idea was explored by  \newcite{xia2001converting} and
 \newcite{xia2009towards} using hand-written rules.  Instead, we present a data-driven
-algorithm in Section~\ref{sec:strpred} using the structured prediction framework.  The approach can be
-understood as a pipeline, or as a specially-trained coarse-to-fine
+algorithm using the structured prediction framework (Section~\ref{sec:strpred}).  The approach can be
+understood as a specially-trained coarse-to-fine
 decoding algorithm where a d-parser provides ``coarse'' structure and
-the second stage refines it \cite{petrov2007improved}.
+the second stage refines it \cite{petrov2007improved}. \nascomment{I
+  think Charniak did coarse-to-fine before that, should cite that one too}
 
 Our lexicalized phrase-structure parser is asymptotically faster than
 parsing with a lexicalized context-free grammar: $O(n^2)$ plus
 d-parsing, vs.~$O(n^5)$ worst case runtime in sentence length $n$,
-with the same grammar constant.  Experiments in Section~\ref{sec:exper} show
+with the same grammar constant.  Experiments show
 that with simple pruning, our approach achieves linear observable
 runtime, and that accuracy similar to
 state-of-the-art phrase-structure parsers without reranking or
-semisupervised training.
+semisupervised training (Section~\ref{sec:exper}).
 
 
 
@@ -265,8 +265,8 @@ semisupervised training.
 \section{Background}
 \label{sec:background}
 We begin with the conventional development by first introducing c-parsing and 
-then defining d-parses through a mechanical conversion using head-rules. 
-In the next section, we flip this development and consider the reverse transformation. 
+then defining d-parses through a mechanical conversion using head rules. 
+In the next section, we consider the reverse transformation. 
 
 % consisting of a parent nonterminal $A \in \nonterms$, a sequence of children $\beta_i \in \nonterms \cup \terms$ for $i \in \{1, 2\}$, and a distinguished head child annotated with $*$. The head child comes from the head rules associated with the grammar.
 
@@ -275,13 +275,13 @@ In the next section, we flip this development and consider the reverse transform
 The phrase-structure trees annotated in the Penn Treebank are derivation trees from a context-free grammar. 
 Define a binarized\footnote{For notational simplicity we ignore unary rules for this section.} context-free grammar (CFG) as a 4-tuple $(\nonterms, \rules, \terms, \Root)$ where:
 \begin{itemize}
-\item $\nonterms$; a set of nonterminal symbols, e.g. \Tag{NP},
-  \Tag{VP}, 
-\item $\terms$; a set of terminal symbols, consisting of the
-  words in the language, 
-\item $\rules$; a set of binarized rule productions
-  of the form $\Rule{A}{\beta_1}{\beta_2}$ 
-\item $\Root \in \nonterms$; a distinguished root symbol.
+\item $\nonterms$, a set of nonterminal symbols (e.g. \Tag{NP},
+  \Tag{VP});
+\item $\terms$, a set of terminal symbols, consisting of the
+  words in the language;
+\item $\rules$, a set of binarized rule productions
+  of the form $\Rule{A}{\beta_1}{\beta_2}$;
+\item $\Root \in \nonterms$, a distinguished root symbol.
 \end{itemize}
 
 % \end{itemize}
@@ -335,8 +335,8 @@ sequence $\{x_i, \ldots, x_j\}$ of the sentence covered by this vertex.
 
 
   % \Tree [ .A [ .B  C ] ]
-  \caption{ Illustration of c-parse to d-parse conversion with head rules $\{ \Tag{VP} \rightarrow \Tag{NP}\ \Tag{VBD}^*,  \Tag{NP} \rightarrow \Tag{DT}\ \Tag{NP}^*, \ldots \} $. The c-parse is an ordered tree with fringe $x_1, \ldots, x_n$. Each vertex is annotated with a non-terminal tag and a derived head index. The blue and red vertices have the words \texttt{automaker$_2$} and \texttt{sold$_3$} as heads respectively. The vertex $\Tag{VP}_3$  implies that \texttt{automaker$_2$} is a dependent of \texttt{sold$_3$}, and that $d_2 = 3$ in the d-parse.     }
-  \label{fig:spine}
+  \caption{ Illustration of c-parse to d-parse conversion with head rules $\{ \Tag{VP} \rightarrow \Tag{NP}\ \Tag{VBD}^*,  \Tag{NP} \rightarrow \Tag{DT}\ \Tag{NP}^*, \ldots \} $. The c-parse is an ordered tree with fringe $x_1, \ldots, x_n$. Each vertex is annotated with a non-terminal tag and a derived head index. The blue and red vertices have the words \texttt{automaker$_2$} and \texttt{sold$_3$} as heads respectively. The vertex $\Tag{VP}_3$  implies that \texttt{automaker$_2$} is a dependent of \texttt{sold$_3$}, and that $d_2 = 3$ in the d-parse.     
+  \label{fig:spine}}
 \end{figure}
 
 \subsection{Dependency Parsing}
@@ -352,7 +352,7 @@ as head rules.
 For a binary CFG, define a collection of head rules as a function $\mathcal{H} : \rules \mapsto \{L, R\}$ 
 mapping each CFG rule to its head preference for its left- or right-child. We use the notation 
 $\RuleA{A}{\beta_1}{\beta_2}$ and $\RuleB{A}{\beta_1}{\beta_2}$ to indicate a left-
-or right-headed rule respectively. 
+or right-headed rule, respectively. 
 
 For each vertex $v$ of a c-parse let the head of the vertex $h(v)$ be defined recursively,
  
@@ -361,13 +361,13 @@ For each vertex $v$ of a c-parse let the head of the vertex $h(v)$ be defined re
   \item Otherwise,  $h(v)$ matches the head child where $\RuleA{A}{\beta_1}{\beta_2}$ or $\RuleB{A}{\beta_1}{\beta_2}$  is the rule production at this vertex.
   \end{enumerate}
 
-The head rules can be used to map a c-parse to a dependency tree.
+The head rules can be used to map a c-parse to a dependency tree (d-parse).
 Define a sentence's dependencies as a sequence $d_1, \ldots d_n$ 
-where word $m$ is a dependent of word $d_m \{0, \ldots n\}$ and $0$ is 
+where word $m$ is a dependent of word $d_m \in \{0, \ldots n\}$ and $0$ is 
 a special pseudo-root symbol. Let vertex $v$ be the first 
-parent vertex of $x_m$ not headed by $m$, i.e. $h(v) \neq m$. 
+parent vertex of $x_m$ not headed by $m$, i.e., $h(v) \neq m$. 
 If this vertex exists, then $d_m = h(v)$, otherwise $d_m = 0$.  
-Figure~\ref{} illustrates the conversion.
+Figure~\ref{fig:spine} illustrates the conversion.
 
   % Next, for each word $x_i$ let the \textit{spine} of the word be the
   % longest chain of connected vertices with $x_i$ as head, i.e. $v_1, \ldots, v_p$ where $h(v_j) =
@@ -518,16 +518,18 @@ of the top vertex $v$ with $h(v) = m$.
 \section{Parsing Dependencies}
 \label{sec:pardeps}
 
-Now let us flip this setup. In recent years there has been significant
+Now we consider a flipped setup. There has been significant
 progress in developing efficient direct-to-dependency parsers. These
-parsers can be trained only on dependency annotations and do not
+d-parsers can be trained only on dependency annotations and do not
 require full phrase-structure trees.\footnote{For English these
   parsers are still often trained on trees converted from c-parses;
-  however for other languages d-parse-only treebanks are common.}  In
-many ways this setup is preferable since the parser can be trained on
-the specific dependencies required for a downstream task.  However,
-there are many applications that require or prefer full c-parses as input,
-and so c-parsers are still widely-used.
+  however for other languages dependency-only treebanks of
+  directly-annotated d-parses are common.}  
+Some prefer this setup, since it allows easy selection of the specific
+dependencies of interest in a downstream task (e.g., information
+extraction), and perhaps even training specifically for those
+dependencies.  Some applications make use of phrase structures, so
+c-parsers enjoy wide use as well.
 
 \begin{figure}
   \centering
@@ -544,31 +546,34 @@ and so c-parsers are still widely-used.
       \depedge{2}{4}{}
   \end{dependency}
 
-  \scalebox{0.7}{
-    \Tree [ .X(2) [ .X(1) [ .N I$_1$ ] ]  [ .V saw$_2$ ] [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
-    \Tree [ .X(2)  [ .N I$_1$ ] [ .X(2)  [ .V saw$_2$ ] [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ] ]
-    \Tree [ .X(2) [ .X(2) [ .N I$_1$ ]   [ .V saw$_2$ ] ]  [ .X(4) [ .D the$_3$ ]  [ .N man$_4$ ] ] ]
-  }
+\scalebox{0.7}{\Tree [ .X(2) [ .X(1) [ .N I$_1$ ] ]  [ .V saw$_2$ ] [ .X(4) [ .D
+    the$_3$ ]  [ .N man$_4$ ] ] ]
+ \Tree [ .X(2)  [ .N I$_1$ ] [ .X(2)  [ .V saw$_2$ ] [ .X(4) [ .D
+    the$_3$ ]  [ .N man$_4$ ] ] ] ] } \\
+
+\scalebox{0.7}{    \Tree [ .X(2) [ .X(2) [ .N I$_1$ ]   [ .V saw$_2$ ] ]  [ .X(4) [
+    .D the$_3$ ]  [ .N man$_4$ ] ] ] }
+  
   \label{fig:inverse}
   \caption{{\footnotesize 
       % While a phrase-structure parse determines a
       % unique dependency parse \nascomment{only given head rules!  misleading}, the inverse problem is
       % non-deterministic.
-      [Adapted from \cite{collins1999statistical}] Several simple c-parses that  
-      are valid conversion from the original d-parse. The goal of this work is to
-      select the best parse from this set.
+      [Adapted from \cite{collins1999statistical}.] A d-parse (above)
+      and several c-parses consistent with it (below).  Our goal is to select
+      the best parse from this set.
     }
     }
 \end{figure}
 
 
-With these applications in mind, we consider the problem of converting
-a d-parser to a c-parser by converting fixed d-parses into c-parses.
+With these latter applications in mind, we consider the problem of converting
+a d-parser to a c-parser by converting a fixed d-parse into a c-parse.
 Since this problem is more challenging than its inverse, we use a
-structured prediction setup: learn a function to score possible
-c-parse conversions, and then generate the highest-scoring c-parse possible.
+structured prediction setup: we learn a function to score possible
+c-parse conversions, and then generate the highest-scoring c-parse
+given a d-parse.
 
-We start by considering the search problem with a given scoring function. 
 
 
 % Since the inverse problem is ill-posed, our goal will
@@ -593,7 +598,7 @@ We start by considering the search problem with a given scoring function.
    \[\infer{(\Span{i, j},  h, A)}{(\Span{i, k}, m, \beta_1)  &  (\Span{k+1, j}, h, \beta_2) }  \]
 
 \noindent \textbf{Goal:}
-\[ (\Span{1, n}, m, \Root) \mathrm{\ for\ any }\ m\]
+\[ (\Span{1, n}, m, \Root) \mbox{\ for\ any } m\]
 
 \label{fig:cky}
 
@@ -609,24 +614,32 @@ We start by considering the search problem with a given scoring function.
   \[ \infer{( \Span{ \Left{m}, j }, h, A)}{(\tri, m, \beta_1)  &  (\Span{\Right{m}+ 1, j}, h, \beta_2) } \]
 
 \noindent \textbf{Goal:}
-\[(\Span{1, n}, m, \Root) \mathrm{\ for\ any }\ m \mathrm{\ s.t. \ } d_m = 0 \]
+\[(\Span{1, n}, m, \Root) \mbox{\ for\ any } m \mbox{\ s.t.\ } d_m = 0 \]
 
 \end{multicols}
-\label{fig:cky_new}
-\caption{The two algorithms written as deductive parsers. Starting from the \textit{premise}, any valid application of \textit{rules} that leads to a \textit{goal} is a valid parse.  (a) Lexicalized CKY algorithm for CFG parsing with head rules. For this algorithm there are $O(n^5|\rules|)$ rules where $n$ is the length of the sentence. (b) The constrained CKY parsing algorithm for $\mathcal{Y}(x, d)$. The algorithm is nearly identical except that many of the free indices are now fixed to the dependency parse. Finding the optimal parse is now $O(n^2|\rules|)$.}
+\caption{The two algorithms written as deductive parsers. Starting
+  from the \textit{premise}, any valid application of \textit{rules}
+  that leads to a \textit{goal} is a valid parse.  Left: lexicalized CKY
+  algorithm for CFG parsing with head rules. For this algorithm there
+  are $O(n^5|\rules|)$ rules where $n$ is the length of the
+  sentence. Right: the constrained CKY parsing algorithm for
+  $\mathcal{Y}(x, d)$. The algorithm is nearly identical except that
+  many of the free indices are now fixed given  the dependency
+  parse. Finding the optimal parse is now $O(n^2|\rules|)$. \label{fig:cky_new}
+}
 \end{figure*}
 
 \subsection{Parsing Algorithm}
-
+We start by considering the search problem with a given scoring function.
 First consider the standard problem of predicting the best c-parse under a CFG with head rules. 
 Assume that we are given a binary CFG defining a set of valid c-parses $\mathcal{Y}(x)$.
 The parsing problem is to find the highest-scoring parse in this set, i.e.  \[ \hat{y} \gets \argmax_{y \in {\cal Y}(x)} s(y;x) \] where
 $s$ is a scoring function that factors over rule productions.
 
 This problem is known as lexicalized context-free parsing. It can be
-solved using the standard lexicalized CKY parsing algorithm.
+solved using the  CKY algorithm with lexicalized nonterminals.
 This algorithm is defined by the productions
-in Figure~\ref{fig:cky_new}. The productions are of the form
+in Figure~\ref{fig:cky_new} (left). The productions are of the form
 
 \[ \infer{(\Span{i, j}, h, A)}{(\Span{i, k}, m, \beta_1) & (\Span{k+1,
     j}, h, \beta_2)} \] for all rules $\RuleB{A}{\beta_1}{\beta_2}\in
@@ -638,24 +651,36 @@ by index $m$.
 
 The highest-scoring parse can found by bottom-up dynamic programming
 over these productions. The standard lexicalized CKY algorithm requires $O(n^5
-|\rules|)$ time. While simple to implement, this algorithm is intractable to run without heavy pruning or
-further assumptions on the scoring function.
+|\rules|)$ time. While simple to implement, this algorithm is not practical to run without heavy pruning or
+further assumptions on the scoring function.  \nascomment{should cite
+  Eisner and Satta '99 who show improved asymptotics under some
+  assumptions; reviewers will complain if we don't}
 
-Now, consider the same setup, but constrained to parses
-that will be converted to a given d-parse, $d_1, \ldots, d_n$.
-Define this set as  $\mathcal{Y}(x,d)$.
+Now, consider the same setup, but constrained to c-parses
+that are consistent with a given d-parse, $d_1, \ldots, d_n$ (i.e.,
+that could be converted, through the head rules, to this d-parse).
+Define this set as  $\mathcal{Y}(x,d)$.  The problem is now:
 
 % Fortunately, the parsing problem becomes much simpler if 
 % we are constrained to a given d-parse
 
-\[ \argmax_{y \in \mathcal{Y}(x, d)} s(y; x, d)\]
+\[ \hat{y} \leftarrow \argmax_{y \in \mathcal{Y}(x, d)} s(y; x, d)\]
 
-This new problem has a nice property. For any word $x_m$ the span $\Span{i,j}$ of the highest $v$ with $h(v) = n$  is the same as span $\Span{\Left{m},\Right{m}}$ in the dependency parse. Since we have the dependency parse these spans can be efficiently pre-computed..
+This new problem has a nice property. For any word $x_m$, the span $\Span{i,j}$ of the highest $v$ with $h(v) = n$  is the same as span $\Span{\Left{m},\Right{m}}$ in the dependency parse. Since we have the dependency parse, these spans can be efficiently pre-computed.
 
-This property greatly limits the search space of the parsing problem.
-Instead of searching over all possible spans $\Span{i, j}$ of each modifier, we simple precompute the span $\langle \Left{m},\Right{m}\rangle$. Figure~\ref{fig:cky_new} shows the new algorithm.
+This property greatly reduces the search space of the parsing problem.
+Instead of searching over all possible spans $\Span{i, j}$ of each modifier, we simple precompute the spans $\langle \Left{m},\Right{m}\rangle$. Figure~\ref{fig:cky_new} shows the new algorithm.
 While the productions are the same as the original algorithm, there are many fewer of them. 
-There is one production for each index and each possible modifier, leading to an algorithm with $O(n^2|\rules|)$ running time.
+There is one production for each index and each possible modifier,
+leading to an algorithm with $O(n^2|\rules|)$ running
+time. \nascomment{hmm, doesn't that mean runtime is asymptotically linear, since each
+  word has only one head? what am I missing?  or is this sentence just
+incorrect?  after reading ahead a bit, I think we might want to add a
+little more detail and say that runtime is $O(m |\rules|)$, where $m$
+is $\max_h \mathit{leftkids}(h) \times \mathit{rightkids}(h)$.  my
+notation here is crappy and I might be a little off, but explaining
+this a bit more clearly will make the potential advantage of pruning
+below more obvious}
 
 
 \subsection{Pruning}
@@ -663,38 +688,40 @@ There is one production for each index and each possible modifier, leading to an
 
 In addition to constraining the number of c-parses possible, 
 the d-parse also provides valuable information about the labeling 
-and structure of the c-parse. We can use this information to provide 
-further pruning of the search space. We experimented with two 
-heuristic pruning methods based on this information
+and structure of the c-parse. We can use this information to 
+further prune the search space. We experimented with two 
+heuristic pruning methods based on this information.
 
-\begin{itemize}
-\item We observe that in training the part-of-speech of the head word $x_h$
-greatly limits the possible rules $\Rule{A}{\beta_1}{\beta_2}$ available.  To
+First, we observe that in training the part-of-speech of the head word $x_h$
+greatly restricts the possible rules $\Rule{A}{\beta_1}{\beta_2}$ available.  To
 exploit this property we build tables $\rules_t$ for each
 part-of-speech tag $t$ and limit the search to rules seen for the
-current head tag. This reduces the effect of $|\rules|$ at runtime.
+head tag. This reduces the effect of $|\rules|$ at runtime.
 
-\item A word $x_h$ with $L$ dependents to its left and $R$ dependents to 
+Second, a word $x_h$ with $L$ dependents to its left and $R$ dependents to 
 its right may at any point  combine with a left or right dependent. There 
-are therefore  $L\times R$ ($O(n^2)$) possible orderings of these dependents.
-
-However, we can often predict with very high accuracy which side will come next. 
-To make this prediction, we estimate a distribution \[p(\textrm{side} | \TagFN{x_h}, \TagFN{x_l}, \TagFN{x_r})\]
-where $x_l$ is the next left dependent, $x_r$ is the next right dependent, and $\TagFN{}$ is the part-of-speech tag of the word. This reduces the  effect of the $n^2$ at runtime.
+are therefore  $L\times R = O(n^2)$ possible orderings of these dependents.
+We can often predict with very high accuracy which side will come next. 
+To make this prediction, we estimate a distribution \[p(\textrm{side} \mid \TagFN{x_h}, \TagFN{x_l}, \TagFN{x_r})\]
+where $x_l$ is the next left dependent, $x_r$ is the next right
+dependent, and $\TagFN{}$ is the part-of-speech tag of the
+word. \nascomment{unclear how this gets used to prune.  need to explain. } This
+reduces the  effect of the $n^2$ at runtime. 
 %  to select dependents in the 
 % algorithm, since
  
 
-\end{itemize}
-
+We empirically measured how these pruning methods affect observed
+runtime and oracle parsing performance (i.e., how well a perfect
+scoring function could do with a pruned $\mathcal{Y}(x, d)$).
 Table~\ref{tab:alg-oracle} shows a comparison of these pruning
-methods.  In addition to speed, an important question whether it is
-even possible to recover c-parses under these constraints.  These
-experiments show that there is a small drop from pruning, but that
-there is a sizable drop in oracle accuracy with the d-parse
-constraints. Still this upper-bound on accuracy is high enough
-to make it possible to still recover high-accuracy parses. We return 
-to this discussion in Section~\ref{}.
+methods on development data.   These
+experiments show that the d-parse constraints contribute a large drop
+in oracle accuracy, while pruning contributes a relatively small one.
+Still, this upper-bound on accuracy is high enough
+to make it possible to still recover c-parses at least as accurate as
+state-of-the-art c-parsers. We will return 
+to this discussion in Section~\ref{}. \nascomment{missing ref}
 
 % We observe that in training the part-of-speech of the head word $x_h$
 % greatly limits the possible rules $\Rule{A}{\beta_1}{\beta_2}$ available.  To
@@ -728,21 +755,27 @@ to this discussion in Section~\ref{}.
   \hspace*{-0.3cm}
   \begin{tabular}{|l|crr|}
     \hline
-    Model & Comp. & Speed & Oracle  \\
+    Model & Asympt. & Sent./s. & Oracle $F_1$  \\
     \hline
     \hline
     Full[$< 20$]   & $O(n^5|\rules|)$ &     0.25 & 100.0  \\
-    Dep    & $O(n^2|\rules|)$ &  76.2 & 92.9    \\
-    Dep+Prune1    &  $O(n^2|\rules|)$ &  375.9 & 92.8    \\
-    Dep+Prune  &   $O(n^2|\rules|)$ &   487.3 & 92.6 \\
+    Dep.    & $O(n^2|\rules|)$ &  76.2 & 92.9    \\
+    Pruned (1)    &  $O(n^2|\rules|)$ &  375.9 & 92.8    \\
+    Pruned (2)  &   $O(n^2|\rules|)$ &   487.3 & 92.6 \\
     \hline
   \end{tabular}
   \label{tab:alg-oracle}
-  \caption{Comparison of three parsing setups:
-    Full[$<20$] is the standard full lexicalized grammar limited to sentence of length
-    less than 20 words, LCFG(dep) is
-    limited to the dependency skeleton, and LCFG(prune) is the pruning described in
-    Section~\ref{sec:prune}. \textit{Oracle} is the oracle f-score on the development data (described in Section~\ref{sec:analysis}). \textit{Speed} is the efficiency  on development data in sentences per second.}
+  \caption{Comparison of three parsing setups: 
+\nascomment{horrible naming in this table, and caption doesn't match.
+I tried to fix but might have misunderstood, questions remain}
+    ``Full[$<20$]'' is the standard full lexicalized grammar limited to sentence of length
+    less than 20 words \nascomment{is that really fair?  right now
+      it's not clear whether the others are also so restricted},
+    ``Dep'' restricts c-parses to be consistent with the
+    \nascomment{gold standard?} dependency skeleton, and ``pruned'' is the pruning described in
+    Section~\ref{sec:prune}. \nascomment{explain the two different
+      ones} The oracle is the best labeled \nascomment{yes?} $F_1$ achievable on the
+    development data (see Section~\ref{sec:analysis}).}
 \end{table}
 
 \subsection{Binarization}
@@ -772,18 +805,15 @@ In order to apply the algorithm, we need to binarize the grammar and
 
 We replace this rule with binary rules that consume each side
 independently as a simple chain.
-The transformation introduces new rules\footnote{These rules are slightly modified when $k=1$}
+The transformation introduces new rules:\footnote{These rules are slightly modified when $k=1$.}
 
 \begin{itemize}
 \item
+$\Rule{A}{\beta_1}{\bar{A}^{*}}$ 
+\item
 $\Rule{\bar{A}} {\beta_i}{\bar{A}^{*}} $ for $i \in \{2, \ldots, k\}$
-
 \item
 $\Rule{\bar{A}}{\bar{A}^{*}}{\beta_i}$ for $i \in \{k, \ldots, m\}$
-
-\item
-$\Rule{A}{\beta_1}{\bar{A}^{*}}$ 
-
 \end{itemize}
 
 % As an example consider the rule
@@ -804,10 +834,16 @@ $\Rule{A}{\beta_1}{\bar{A}^{*}}$
 % \lpkcomment{I change the rule based on current system. I think I want to add the lesson we learnt about binarization here. That is, the NT should remember as less as possible. This is saying the the fully lexiconlized model has the ability to figure out what rule to use as well as the topological structure. The more information only
 % adds to the runtime and make estimation more sparse. }
 
-Note that each rule contains at most two nonterminals from the original grammar, so the size of the new binarized rule set is bounded by $O(|\nonterms|^2)$. The small size of the grammar further helps the speed of the algorithm.
+Note that each rule contains at most two nonterminals from the
+original grammar, so the size of the new binarized rule set is bounded
+by $O(|\nonterms|^2)$.  \nascomment{I think you mean $O(2|\nonterms|)$
+  since you only add a single bar version of each original nonterm
+  ... yes?}  \nascomment{this comment is strange without saying what
+  the implied alternative is whose speed is slower: }The small size of the grammar further helps the speed of the algorithm.
 
-We experimented with binarization that use horizontal and vertical markovization to include additional context 
-of the tree as in unlexicalized approaches \cite{klein2003accurate}, but we found that this increased the size of the grammar without leading to improvements in accuracy.
+We explored binarization using horizontal and vertical markovization to include additional context 
+of the tree,  as found useful in unlexicalized approaches
+\cite{klein2003accurate}.  Preliminary experiments showed that this increased the size of the grammar without leading to improvements in accuracy.
 
 
 

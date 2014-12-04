@@ -733,8 +733,9 @@ to this discussion in Section~\ref{}.
     \hline
     \hline
     LCFG($< 20$)  & $\mathcal{Y}(x)$ & $O(n^5|\rules|)$ &     0.25 & 100.0  \\
-    LCFG(dep)    & $\mathcal{Y}(x,d)$ & $O(n^2|\rules|)$ &  63.2 & 92.8    \\
-    LCFG(prune)  &  - & $O(n^2|\rules|)$ &   173.5 & 92.7 \\
+    LCFG(dep)    & $\mathcal{Y}(x,d)$ & $O(n^2|\rules|)$ &  76.2 & 92.9    \\
+    LCFG(prune1)    & - & $O(n^2|\rules|)$ &  375.9 & 92.8    \\
+    LCFG(pruneboth)  &  - & $O(n^2|\rules|)$ &   487.3 & 92.6 \\
     \hline
   \end{tabular}
   \label{tab:alg-oracle}
@@ -1106,16 +1107,17 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
   \centering
   \small
 
-  \begin{tabular}{|l|rrr|}
+  \begin{tabular}{|l|cccc|}
     \hline
-    Model & Oracle & FScore & Speed  \\
+    Model & UAS  & F1 & Speed  & Oracle  \\
     \hline
 
     \hline
-    \textsc{TurboParser} & 92.90 & 91.04 & \\
-    \textsc{MaltParser}  & & & 20 \\
-    \textsc{ZPar}        & & & \\
-    \textsc{MIT}         & & & \\
+    \textsc{TP-Full} & 93.5 & 90.8 & & 92.90  \\
+    \textsc{TP-Standard} & 93.3 & 90.9 & &\\
+    \textsc{TP-Basic} & 92.8 & 88.9 &  & \\
+    \textsc{MaltParser}  & 89.7 & 85.5 & 20 & \\
+    \textsc{ZPar}        & & & & \\
     \hline
   \end{tabular}
 

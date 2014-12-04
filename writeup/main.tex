@@ -42,6 +42,7 @@
 \usepackage[font=footnotesize]{caption}
 \usepackage{amsfonts}
 \usepackage{amsmath}
+\usepackage{xspace}
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
 
@@ -75,7 +76,7 @@
 \newcommand{\TagFN}[1]{\mathrm{tag}({#1})}
 \newcommand{\WordFN}[1]{x_{#1}}
 \newcommand{\Reals}{\mathbb{R}}
-\newcommand{\ParseName}{\textsc{ParPar}}
+\newcommand{\ParseName}{\textsc{ParPar}\xspace}
 
 \newcommand{\smrcomment}[1]{\textcolor{green}{\bf \small [#1 --smr]}}
 \newcommand{\lpkcomment}[1]{\textcolor{red}{\bf \small [#1 --lpk]}}
@@ -625,7 +626,8 @@ given a d-parse.
   sentence. Right: the constrained CKY parsing algorithm for
   $\mathcal{Y}(x, d)$. The algorithm is nearly identical except that
   many of the free indices are now fixed given  the dependency
-  parse. Finding the optimal parse is now $O(n^2|\rules|)$. \label{fig:cky_new}
+  parse. Finding the optimal c-parse with the new algorithm is  $O\left((\sum_{h} L(h) \times R(h)) |\rules|\right)$ where $L$ and $R$ are the 
+  number of left and right dependents of word $h$. \label{fig:cky_new}
 }
 \end{figure*}
 
@@ -667,18 +669,39 @@ Define this set as  $\mathcal{Y}(x,d)$.  The problem is now:
 This new problem has a nice property. For any word $x_m$, the span $\Span{i,j}$ of the highest $v$ with $h(v) = n$  is the same as span $\Span{\Left{m},\Right{m}}$ in the dependency parse. Since we have the dependency parse, these spans can be efficiently pre-computed.
 
 This property greatly reduces the search space of the parsing problem.
-Instead of searching over all possible spans $\Span{i, j}$ of each modifier, we simple precompute the spans $\langle \Left{m},\Right{m}\rangle$. Figure~\ref{fig:cky_new} shows the new algorithm.
-While the productions are the same as the original algorithm, there are many fewer of them. 
-There is one production for each index and each possible modifier,
-leading to an algorithm with $O(n^2|\rules|)$ running
-time. \nascomment{hmm, doesn't that mean runtime is asymptotically linear, since each
-  word has only one head? what am I missing?  or is this sentence just
-incorrect?  after reading ahead a bit, I think we might want to add a
-little more detail and say that runtime is $O(m |\rules|)$, where $m$
-is $\max_h \mathit{leftkids}(h) \times \mathit{rightkids}(h)$.  my
-notation here is crappy and I might be a little off, but explaining
-this a bit more clearly will make the potential advantage of pruning
-below more obvious}
+Instead of searching over all possible spans $\Span{i, j}$ of each
+modifier, we simple precompute the spans $\langle
+\Left{m},\Right{m}\rangle$. Figure~\ref{fig:cky_new} shows the new
+algorithm.
+
+For each word $x_h$ in a d-parse, define $L(h)$ and $R(h)$ as the
+number of left and right dependents of $h$ respectively. At any point
+in the algorithm word $h$ may combine as head with its next left- or
+right-dependent.  There are therefore $L(h) \times R(h)$ possible
+orderings of these combinations for each head. Since any rule in
+$\rules$ can be used at each point, the running time of the algorithm
+is $O((\sum_{h} L(h) \times R(h)) |\rules|)$.  While the number of
+dependents $L$ and $H$ could in theory be $O(n)$, in practice the
+number is often a constant term as we will show in Figure~\ref{fig:speed}. 
+
+% Second, a word $x_h$ with $L$ dependents to its left and $R$ dependents to 
+% its right may at any point  combine with a left or right dependent. There 
+% are therefore  $L\times R = O(n^2)$ possible orderings of these dependents.
+% We can often predict with very high accuracy which side will come next. 
+% To make this prediction, we estimate a distribution 
+
+
+% While the productions are the same as the original algorithm, there are many fewer of them. 
+% There is one production for each index and each possible modifier,
+% leading to an algorithm with $O(n^2|\rules|)$ running
+% time. \nascomment{hmm, doesn't that mean runtime is asymptotically linear, since each
+%   word has only one head? what am I missing?  or is this sentence just
+% incorrect?  after reading ahead a bit, I think we might want to add a
+% little more detail and say that runtime is $O(m |\rules|)$, where $m$
+% is $\max_h \mathit{leftkids}(h) \times \mathit{rightkids}(h)$.  my
+% notation here is crappy and I might be a little off, but explaining
+% this a bit more clearly will make the potential advantage of pruning
+% below more obvious}
 
 
 \subsection{Pruning}
@@ -688,28 +711,33 @@ In addition to constraining the number of c-parses possible,
 the d-parse also provides valuable information about the labeling 
 and structure of the c-parse. We can use this information to 
 further prune the search space. We experimented with two 
-heuristic pruning methods based on this information.
+heuristic pruning methods.
 
 First, we observe that in training the part-of-speech of the head word $x_h$
 greatly restricts the possible rules $\Rule{A}{\beta_1}{\beta_2}$ available.  To
-exploit this property we build tables $\rules_t$ for each
-part-of-speech tag $t$ and limit the search to rules seen for the
-head tag. This reduces the effect of $|\rules|$ at runtime.
+exploit this property we build tables $\rules_{\TagFN{h}}$ for each
+part-of-speech tag and limit the search to rules seen for the
+head tag. This further reduces the run-time of the 
+algorithm to $O(\sum_{h} (L(h) \times R(h) \times |\rules_{\TagFN{h}}|))$.
 
-Second, a word $x_h$ with $L$ dependents to its left and $R$ dependents to 
-its right may at any point  combine with a left or right dependent. There 
-are therefore  $L\times R = O(n^2)$ possible orderings of these dependents.
-We can often predict with very high accuracy which side will come next. 
+
+Second, as noted above, at any point a word $x_h$ with may combine with its
+next left or right dependent, leading to $L(h)\times R(h)$ possible orderings.
+However, in practice we can often predict which side will come next. 
 To make this prediction, we estimate a distribution 
 
-\[p(\textrm{side} \mid \TagFN{x_h}, \TagFN{x_l}, \TagFN{x_r})\]
+\[\eta(\textrm{side}) = p(\textrm{side} \mid \TagFN{x_h}, \TagFN{x_l}, \TagFN{x_r})\]
 
 where $x_l$ is the next left dependent, $x_r$ is the next right
-dependent, and $\TagFN{}$ is the part-of-speech tag of the
-word. If the conditional probability of $L$ or $R$ is greater
-than a parameter $\gamma$ then we only take modifiers to that 
-side. 
-This reduces the effect of the $n^2$ at runtime. 
+dependent, and $\TagFN{}$ is the part-of-speech tag of the word. If
+the conditional probability of $\eta{\mathrm{left}}$ or
+$\eta{\mathrm{right}}$ is greater than a threshold parameter $\gamma$,
+we make a hard decision to combine with that side next. This pruning
+further reduces the impact of outlier words $h$ with large $L(h)
+\times R(h)$.
+
+
+% This reduces the effect of the  at runtime. 
 %  to select dependents in the 
 % algorithm, since
  
@@ -761,23 +789,19 @@ to this discussion in Section~\ref{sec:exper}.
     Model & Asympt. & Sent./s. & Oracle $F_1$  \\
     \hline
     \hline
-    Full[$< 20$] & $O(n^5|\rules|)$ &  0.25  & 100.0  \\
-    Dep.         & $O(n^2|\rules|)$ &  76.2  & 92.9    \\
-    Pruned (1)   & $O(n^2|\rules|)$ &  375.9 & 92.8    \\
-    Pruned (2)   & $O(n^2|\rules|)$ &  487.3 & 92.6 \\
+    \textsc{Full[$< 20$]} & $O(n^5|\rules|)$ &  0.25  & 100.0  \\
+    \textsc{Dep}          & $O(n^2|\rules|)$ &  76.2  & 92.9    \\
+    \textsc{Pruned (1)}   & $O(n^2|\rules|)$ &  375.9 & 92.8    \\
+    \textsc{Pruned (1\&2)}   & $O(n^2|\rules|)$ &  487.3 & 92.6 \\
     \hline
   \end{tabular}
   \label{tab:alg-oracle}
   \caption{Comparison of three parsing setups: 
-\nascomment{horrible naming in this table, and caption doesn't match.
-I tried to fix but might have misunderstood, questions remain}
-    ``Full[$<20$]'' is the standard full lexicalized grammar limited to sentence of length
-    less than 20 words \nascomment{is that really fair?  right now
-      it's not clear whether the others are also so restricted},
-    ``Dep'' restricts c-parses to be consistent with the
-    \nascomment{gold standard?} dependency skeleton, and ``pruned'' is the pruning described in
-    Section~\ref{sec:prune}. \nascomment{explain the two different
-      ones} The oracle is the best labeled \nascomment{yes?} $F_1$ achievable on the
+    \textsc{Full[$<20$]} is the standard lexicalized grammar,
+    limited for efficiency to sentence of length less than 20 words,
+    \textsc{Dep} restricts c-parses to be consistent with a
+    predicted dependency skeleton, and \textsc{Pruned(1)} and \textsc{Pruned(2)}  is the pruning described in
+    Section~\ref{sec:prune} \smrcomment{regen this table}. The oracle is the best labeled $F_1$ achievable on the
     development data (see Section~\ref{sec:analysis}).}
 \end{table}
 
@@ -837,16 +861,19 @@ $\Rule{\bar{A}}{\bar{A}^{*}}{\beta_i}$ for $i \in \{k, \ldots, m\}$
 % \lpkcomment{I change the rule based on current system. I think I want to add the lesson we learnt about binarization here. That is, the NT should remember as less as possible. This is saying the the fully lexiconlized model has the ability to figure out what rule to use as well as the topological structure. The more information only
 % adds to the runtime and make estimation more sparse. }
 
-Note that each rule contains at most two nonterminals from the
-original grammar, so the size of the new binarized rule set is bounded
-by $O(|\nonterms|^2)$.  \nascomment{I think you mean $O(2|\nonterms|)$
-  since you only add a single bar version of each original nonterm
-  ... yes?}  \nascomment{this comment is strange without saying what
-  the implied alternative is whose speed is slower: }The small size of the grammar further helps the speed of the algorithm.
+% Note that each rule contains at most two nonterminals from the
+% original grammar, so the size of the new binarized rule set is bounded
+% by $O(|\nonterms|^2)$.  \nascomment{I think you mean $O(2|\nonterms|)$
+%   since you only add a single bar version of each original nonterm
+%   ... yes?}  \nascomment{this comment is strange without saying what
+%   the implied alternative is whose speed is slower: }The small size of the grammar further helps the speed of the algorithm.
 
-We explored binarization using horizontal and vertical markovization to include additional context 
-of the tree,  as found useful in unlexicalized approaches
-\cite{klein2003accurate}.  Preliminary experiments showed that this increased the size of the grammar without leading to improvements in accuracy.
+We also explored binarization using horizontal and vertical
+markovization to include additional context of the tree, as found
+useful in unlexicalized approaches \cite{klein2003accurate}.
+Preliminary experiments showed that this increased the size of the
+grammar, and the run-time of the algorithm, without leading to
+improvements in accuracy.
 
 
 
@@ -984,12 +1011,9 @@ parameters to minimize the regularized empirical risk
 
 \[\ell(x, d, y, \theta) = - s(y) + \max_{y' \in \mathcal{Y}(x, d)}\left(s(y')  + \Delta(y, y') \right) \]
 \noindent and where $\Delta$ is a problem specific cost-function.
-In experiments, we use a Hamming loss  $\Delta(y, y') = || y -y'||$ where $y$ is an indicator
-
-of rule productions \nascomment{coupled with $i,j,k$ positions?  would
-  be strange and difficult to do what you said!}. \lpkcomment{yes, coupled with i,j,k}
-of rule productions coupled with $i, j, k$ positions.
-
+In experiments, we use a Hamming loss  $\Delta(y, y') = || y -y'||$
+where $y$ is an indicator for production rules firing over pairs of
+adjacent spans (i.e., $i, j, k$).
 
 The objective is optimized using Adagrad \cite{duchi2011adaptive}.  The gradient
 calculation requires computing a loss-augmented max-scoring c-parse for each
@@ -1087,8 +1111,13 @@ articles 001--270 and 440--1151 for training,
 301--325 for development, and 
 271--300 for test.
 
-Part-of-speech tagging is performed for all models  using TurboTagger
-\cite{martins2013turning}. 
+Part-of-speech tagging is performed for all models using TurboTagger
+\cite{martins2013turning}.  Prior to training the d-parser, the
+training sections are automatically processed using 10-fold
+jackknifing \cite{collins2000} for both dependency and phrase
+structure trees. \newcite{zhu2013fast} found this simple technique
+gives an improvement to dependency accuracy of 0.4\% on English and
+2.0\% on Chinese.
 
 Unless otherwise noted, the input d-parsing is done using the RedShift
 implementation\footnote{\url{https://github.com/syllog1sm/redshift}}
@@ -1105,9 +1134,6 @@ discard the labels before conversion.
 \lpkcomment{we did not use classical label though... but it's annoying to explain..}
 
 
-Prior to training the d-parser, the training sections are
-automatically processed  using 10-fold jackknifing \cite{collins2000} for both dependency and phrase structure trees. \newcite{zhu2013fast} found this
-simple technology gives an improvement of 0.4\% on English and 2.0\% on Chinese.
 
 For our model the ``gold'' d-parses $d^1, \ldots, d^D$   
 used at training come from the gold c-parse converted with 
@@ -1141,7 +1167,8 @@ with 32GB of memory and  Core i7-3770 3.4GHz 8M cache CPU.
 
 We ran experiments to assess the accuracy of the method, its runtime
 efficiency, the effect of dependency parsing accuracy,
-and the effect of the amount of annotated phrase-structure
+and \nascomment{last one seems to be missing}
+ the effect of the amount of annotated phrase-structure
 data.
 
 
@@ -1270,8 +1297,8 @@ dependencies $\hat{d}$, define the oracle parse $y'$ as
 \[ y' = \argmin_{y' \in \mathcal{Y}(x, \hat{d})} \Delta(y, y') \]}
 Figure~\ref{fig:corr}  shows that there is a direct correlation
 between the UAS of the inputs and labeled $F_1$.
-\nascomment{there was a claim about small changes in d accuracy having
-  big effects, but the plot looks linear to me}
+% \nascomment{there was a claim about small changes in d accuracy having
+%   big effects, but the plot looks linear to me}
 %  , and that small 
 % changes in dependency accuracy can have rather large effects.
 % For instance MaltParser scores $89.7$ in UAS but the conversion
@@ -1355,7 +1382,7 @@ and three versions of TurboParser trained with projective constraints
 
 
 
-\nascomment{NOT DONE YET, LEFT OFF HERE}
+
 
 \begin{table}
   \centering
@@ -1363,30 +1390,37 @@ and three versions of TurboParser trained with projective constraints
   \begin{tabular}{|ccc|cc|}
     \hline 
     \multicolumn{3}{|c|}{Class} & \multicolumn{2}{|c|}{Results} \\
-    Dep & Span & Split & Total & Acc  \\ 
+    Dep. & Span & Split & Total & Acc.  \\ 
     $(h, m)$ & $\Span{i,j}$ & $k$ & \% & $A$ \\ 
     \hline
     + & + & +  &  86.1  & 97.9   \\ 
-    - & + & +  &  1.0   & 69.3   \\ 
-    + & + & -  &  2.1   & 83.3   \\ 
-    - & + & -  &  1.3   & 85.9   \\ 
-    + & - & -  &  4.5   & 0.0    \\ 
-    - & - & -  &  4.7   & 0.0    \\ 
+    -- & + & +  &  1.0   & 69.3   \\ 
+    + & + & --  &  2.1   & 83.3   \\ 
+    -- & + & --  &  1.3   & 85.9   \\ 
+    + & -- & --  &  4.5   & 0.0    \\ 
+    -- & -- & --  &  4.7   & 0.0    \\ 
     \hline
   \end{tabular}
   \label{tab:analysis}
   \caption{Error analysis of binary CFG rules. Rules used are split into classes based on 
     correct (+) identification of dependency $(h,m)$, span $\Span{i,j}$, and split $k$. 
-    \textit{Total} is the relative size of the class. \textit{Acc} is accuracy of span nonterminal identification.
+    ``Total'' is the relative size of the class \nascomment{a
+      count might be more interpretable}. ``Acc.'' is the accuracy of span nonterminal identification.
   }
 \end{table}
 
-\paragraph{Conversion}
+% \paragraph{Conversion}
 
-Previous work on this problem has looked at converting dependency trees to phrase-structure trees using linguistic rules \cite{xia2001converting,xia2009towards}. This work is targeted towards the development of treebanks, particularly converting dependency treebanks to phrase-structure treebanks.
-For this application, it is useful to convert gold trees as opposed to predicted trees.
+% Previous work on this problem has looked at converting dependency trees to phrase-structure trees using linguistic rules \cite{xia2001converting,xia2009towards}. This work is targeted towards the development of treebanks, particularly converting dependency treebanks to phrase-structure treebanks.
+% For this application, it is useful to convert gold trees as opposed to predicted trees.
 
-To compare to this work, we train our parser with gold tags and run on gold dependency trees in development. Table~\ref{tab:convert} give the results for this task.
+
+
+
+% To compare to this work, we train our parser with gold tags and run on gold dependency trees in development. Table~\ref{tab:convert} give the results for this task.
+
+\nascomment{no need to reiterate the results presented earlier, I
+  commented them out}
 
 \paragraph{Less Annotation in Phrase-structures, More Annotation in Dependencies?}
 
@@ -1423,16 +1457,16 @@ We note that the accuracy of the PCFG model also goes higher with more dependenc
 
 \paragraph{Analysis}
 \label{sec:analysis}
-
 Finally we consider an internal error analysis of
 the parser. For this analysis, we group each binary rule production
 selected by the parser by three properties:
-is its dependency $(h, m)$ correct?, is its span $\Span{i,j}$ correct? 
-is its split $k$ correct? The first is fully determined by the 
-input d-parse, the second are partially determined by the parser. 
+Is its dependency $(h, m)$ correct? Is its span $\Span{i,j}$ correct? 
+Is its split $k$ correct? The first is fully determined by the 
+input d-parse, the second are partially determined by \ParseName.
 
 Table~\ref{tab:analysis} gives the breakdown. As expected the conversion 
-is almost always correct when it has this information. Many of 
+is almost always correct when it has this information \nascomment{what
+  is ``this information''?}. Many of 
 the errors come from cases where the dependency was fully 
 incorrect, or there was a span issue either from the dependency 
 parser or from the conversion itself.
@@ -1454,15 +1488,20 @@ parser or from the conversion itself.
 \label{fig:dataamo}
 \end{figure}
 
+\nascomment{missing:  the part about varying the amount of labeled
+  constituent data}
+
 
 
 \section{Conclusion}
 
-With recent advances in statistical dependency parsing, state-of-the-art parsers
-have reached the comparable  dependency accuracy as the best phrase structure parsers. However,
-these parser cannot be directly used in applications that require phrase-structure prediction. In this work
-we have described a simple parsing algorithm and structured prediction system for this comparison, and show that it
-can produce phrase-structure parses at comparable accuracy to state-of-the-art system.
+With recent advances in statistical dependency parsing, we find that
+fast, high-quality phrase-structure parsing is achievable using dependency
+parsing first, followed by a statistical conversion algorithm to
+fill in phrase-structure trees. 
+Our implementation is available as open-source software at (URL
+withheld for review).
+
 
 % One question for future work is whether these results are language
 % dependent, or whether these transformation can be projected across

@@ -1023,7 +1023,7 @@ For our model the ``gold'' d-parses $d^1, \ldots, d^D$
 used at training come from the gold c-parse converted with 
 the Collins head rules\footnote{ We experimented with using
   jackknifed dependency parses $d'$ at training time with oracle tree
-  structures, i.e. $\argmin_{y' \in \mathcal{Y}(x, d')} \Delta(y, y)$,
+  structures, i.e. $\argmin_{y' \in \mathcal{Y}(x, d')} \Delta(y, y')$,
   but found that this did not improve performance.}. Since the trained
 model is independent of the d-parser,  
 for all experiments with other d-parsers we used the same model.
@@ -1045,7 +1045,8 @@ with 32GB of memory and  Core i7-3770 3.4GHz 8M cache CPU.
 \label{sec:exper}
 
 We ran experiments to assess the accuracy of the method, its run-time efficiency, the amount of phrase-structure data required, and the effect of dependency accuracy.
-\subsection{Parsing Accuracy}
+
+\paragraph{Accuracy}
 
 \begin{table}
   \centering
@@ -1107,30 +1108,69 @@ We ran experiments to assess the accuracy of the method, its run-time efficiency
   \caption{ Accuracy results on the Penn Treebank and Chinese Treebank datasets. Comparisons are to state-of-the-art non-reranking phrase-structure parsers including:  Charniak[00] \cite{charniak2000maximum}, Stanford PCFG[03] \cite{klein2003accurate}, Petrov[07] \cite{petrov2007improved}, Carraras[08] \cite{carreras2008tag}, Zhu[13] \cite{zhu2013fast}, as well as semi-supervised parsers including : Stanford Recursive neural network[13] \cite{socher2013parsing} and CJ Reranking \cite{charniak2005coarse}. }
 \end{table}
 
-Our first experiments, shown in Table~\ref{tab:acc}, examine the accuracy of the phrase-structure trees produced by the parser. For these experiments,
-we use TurboParser \cite{martins2013turning} to predict downstream dependencies.
+Our first experiments, shown in Table~\ref{tab:acc}, give the accuracy
+of the phrase-structure trees produced by the parser.  For these
+experiments we treat our system and the Zhang-Nivre parser as an
+independently trained, but complete end-to-end c-parser.  This setup
+is limited in the that the parser cannot change the dependencies given
+to it. Despite this limitation, the results show that the parser is
+comparable in accuracy to many widely-used systems, and is
+significantly faster. The only parser competitive in both speed and
+accuracy is the Zhu[13], a fast shift-reduce phrase-structure parser.
+
+
+ % For these experiments,
+% we use TurboParser \cite{martins2013turning} to predict downstream dependencies.
 
 $\ldots$
 
 
-\subsection{Efficiency}
+\paragraph{Dependencies}
 
-Our next set of experiments consider the efficiency of the model. For these experiments we consider both the full and pruned version of the parser using the pruning described in section~\ref{sec:prune}. Table~\ref{tab:speed} shows that in practice the parser is quite fast,  averaging around \% tokens per second at high accuracy.
+Our next set of experiments look at the effect of different 
+input dependency trees. We ran the same trained converter 
+on seven different dependency inputs of varying quality measured 
+by unlabeled accuracy score(UAS) and speed.
 
-We also consider the end-to-end speed of the parser when combined with different downstream dependencies. We look at
+The experiments are shown in Table~\ref{tab:oracle}.
+The corresponding figure shows that there is a direct correlation
+between the UAS of the parser and the final F1, but that small 
+changes in dependency accuracy can have rather large effects.
+For instance MaltParser scores $89.7$ in UAS but the conversion
+produces only a $85.5$ F1 score. 
 
-Finally we consider the empirical run-time of the parser on sentences of different length. Figure~\ref{fig:speed} shows the graph.
+To upper bound of the accuracy of this system we consider an
+oracle version of the parser. For a gold parse $y$ and predicted
+dependencies $\hat{d}$, define the oracle parse $y'$ as
 
-
-\subsection{Analysis}
-\label{sec:analysis}
-
-To gauge the upper bound of the accuracy of this system we consider an oracle version of the parser. For a gold parse $y$ and predicted dependencies $\hat{d}$,  define the oracle parse $y'$ as
 \[ y' = \argmin_{y' \in \mathcal{Y}(x, \hat{d})} \Delta(y, y') \]
-\noindent Table~\ref{tab:oracle} shows the oracle accuracy of TurboParser and several other commonly used dependency parsers.
+Table~\ref{tab:oracle} shows that the change in oracle score tracks the 
+F1 scores seen for each parser.
 
-We also consider the mistakes that are made by the parser compared to the
-mistakes made. For each of the bracketing errors made by the parser, we can classify it as a bracketing mistake, a dependency mistake or neither.
+
+\paragraph{Speed}
+
+In Section~\ref{sec:pardeps} we considered the theoretical 
+complexity of the parsing model, and gave the main 
+speed results in Table~\ref{tab:alg-oracle}.
+Despite having a quadratic theoretical complexity
+the practical run-time was quite fast.
+
+We therefore considered the empirical complexity of the 
+model by measuring the time spent of individual sentences. 
+Figure~\ref{fig:speed} shows a graph of the speed of
+sentences of varying length for both the full algorithm
+and for the algorithm with pruning. In both 
+cases the run-time is clearly linear in practice.
+
+
+
+
+% Our next set of experiments consider the efficiency of the model. For these experiments we consider both the full and pruned version of the parser using the pruning described in section~\ref{sec:prune}. Table~\ref{tab:speed} shows that in practice the parser is quite fast,  averaging around \% tokens per second at high accuracy.
+
+% We also consider the end-to-end speed of the parser when combined with different downstream dependencies. We look at
+
+% Finally we consider the empirical run-time of the parser on sentences of different length. Figure~\ref{fig:speed} shows the graph.
 
 \begin{table}
   \centering
@@ -1163,6 +1203,7 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
 
 
 
+
 \begin{table}
   \centering
   \footnotesize
@@ -1180,13 +1221,14 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
     - & - & -  &  4.7   & 0.0    \\ 
     \hline
   \end{tabular}
+  \label{tab:analysis}
   \caption{Error analysis of binary CFG rules. Rules used are split into classes based on 
     correct (+) identification of dependency $(h,m)$, span $\Span{i,j}$, and split $k$. 
     \textit{Total} is the relative size of the class. \textit{Acc} is accuracy of span nonterminal identification.
   }
 \end{table}
 
-\subsection{Conversion}
+\paragraph{Conversion}
 
 Previous work on this problem has looked at converting dependency trees to phrase-structure trees using linguistic rules \cite{xia2001converting,xia2009towards}. This work is targeted towards the development of treebanks, particularly converting dependency treebanks to phrase-structure treebanks.
 For this application, it is useful to convert gold trees as opposed to predicted trees.
@@ -1238,6 +1280,30 @@ To compare to this work, we train our parser with gold tags and run on gold depe
 %   \caption{Experiments of parsing speed. (a) The speed of the parser on its own and with pruning. (b) The end-to-end speed of the parser when combined with different dependency parsers. }
 % \end{figure}
 
+\paragraph{Analysis}
+\label{sec:analysis}
+
+Finally we consider an internal error analysis of
+the parser. For this analysis, we group each binary rule production
+selected by the parser by three properties:
+is its dependency $(h, m)$ correct?, is its span $\Span{i,j}$ correct? 
+is its split $k$ correct? The first is fully determined by the 
+input d-parse, the second are partially determined by the parser. 
+
+Table~\ref{tab:analysis} gives the breakdown. As expected the conversion 
+is almost always correct when it has this information. Many of 
+the errors come from cases where the dependency was fully 
+incorrect, or there was a span issue either from the dependency 
+parser or from the conversion itself.
+
+% \begin{itemize}
+% \item Dep
+% \item Span
+% \item Split
+% \end{itemize}
+
+% We also consider the mistakes that are made by the parser compared to the
+% mistakes made. For each of the bracketing errors made by the parser, we can classify it as a bracketing mistake, a dependency mistake or neither.
 
 
 \begin{figure}

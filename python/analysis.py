@@ -92,6 +92,8 @@ def score(gold_file, predicted_file, rules):
 
     total_gold = 0
     total_predicted = 0
+    total_deps = 0
+    correct = 0 
     for a, b in zip(s2, s1):
         gold = set(b["items"])
         total_gold += len(b["items"])
@@ -106,6 +108,7 @@ def score(gold_file, predicted_file, rules):
         gold_spans_top = set(spans)
 
         for sent, item in a["items"]:
+            if item.h == item.m: continue
             d["sent"].append(sent)
             d["head_match"].append(a["spans"][item.h] == b["spans"][item.h])
             d["mod_match"].append(a["spans"][item.m] == b["spans"][item.m])
@@ -115,6 +118,11 @@ def score(gold_file, predicted_file, rules):
             d["spine"].append((item.i, item.k) == a["spans"][item.h])
             d["dep_correct"].append(item.h == b["deps"][item.m])
             d["top_nt"].append(rules[item.r])
+        for q1, q2 in zip(a["deps"], b["deps"]):
+            total_deps += 1
+            if q1 == q2: correct += 1
+
+    print correct /total
     return pd.DataFrame(d)
 
 def nCr(n,r):

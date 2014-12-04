@@ -732,10 +732,10 @@ to this discussion in Section~\ref{}.
     Model & Sym & Comp. & Speed & Oracle  \\
     \hline
     \hline
-    LCFG($< 20$)  & $\mathcal{Y}(x)$ & $O(n^5|\rules|)$ &     0.25 & 100.0  \\
-    LCFG(dep)    & $\mathcal{Y}(x,d)$ & $O(n^2|\rules|)$ &  76.2 & 92.9    \\
-    LCFG(prune1)    & - & $O(n^2|\rules|)$ &  375.9 & 92.8    \\
-    LCFG(pruneboth)  &  - & $O(n^2|\rules|)$ &   487.3 & 92.6 \\
+    CKY($< 20$)  & $\mathcal{Y}(x)$ & $O(n^5|\rules|)$ &     0.25 & 100.0  \\
+    CKY(dep)    & $\mathcal{Y}(x,d)$ & $O(n^2|\rules|)$ &  76.2 & 92.9    \\
+    CKY(prune1)    & - & $O(n^2|\rules|)$ &  375.9 & 92.8    \\
+    CKY(both)  &  - & $O(n^2|\rules|)$ &   487.3 & 92.6 \\
     \hline
   \end{tabular}
   \label{tab:alg-oracle}
@@ -1121,6 +1121,7 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
     \hline
   \end{tabular}
 
+  \includegraphics[scale=0.4]{../notebooks/parsers}
   \vspace{0.5cm}
 
   \label{tab:oracle}

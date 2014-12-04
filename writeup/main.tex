@@ -547,12 +547,11 @@ c-parsers enjoy wide use as well.
       \depedge{2}{4}{}
   \end{dependency}
 
-\scalebox{0.7}{\Tree [ .X(2) [ .X(1) [ .N I$_1$ ] ]  [ .V saw$_2$ ] [ .X(4) [ .D
-    the$_3$ ]  [ .N man$_4$ ] ] ]
+\scalebox{0.6}{\Tree [ .X(2) [ .X(1) [ .N I$_1$ ] ]  [ .V saw$_2$ ] [ .X(4) [ .D
+    the$_3$ ]  [ .N man$_4$ ] ] ] \hspace*{0.6cm}
  \Tree [ .X(2)  [ .N I$_1$ ] [ .X(2)  [ .V saw$_2$ ] [ .X(4) [ .D
-    the$_3$ ]  [ .N man$_4$ ] ] ] ] } \\
-
-\scalebox{0.7}{    \Tree [ .X(2) [ .X(2) [ .N I$_1$ ]   [ .V saw$_2$ ] ]  [ .X(4) [
+    the$_3$ ]  [ .N man$_4$ ] ] ] ] \hspace*{0.6cm}
+    \Tree [ .X(2) [ .X(2) [ .N I$_1$ ]   [ .V saw$_2$ ] ]  [ .X(4) [
     .D the$_3$ ]  [ .N man$_4$ ] ] ] }
   
   \label{fig:inverse}
@@ -713,12 +712,14 @@ and structure of the c-parse. We can use this information to
 further prune the search space. We experimented with two 
 heuristic pruning methods.
 
-First, we observe that in training the part-of-speech of the head word $x_h$
-greatly restricts the possible rules $\Rule{A}{\beta_1}{\beta_2}$ available.  To
-exploit this property we build tables $\rules_{\TagFN{h}}$ for each
-part-of-speech tag and limit the search to rules seen for the
-head tag. This further reduces the run-time of the 
-algorithm to $O(\sum_{h} (L(h) \times R(h) \times |\rules_{\TagFN{h}}|))$.
+First, we observe that in training the part-of-speech of the head word
+$x_h$ greatly restricts the possible rules
+$\Rule{A}{\beta_1}{\beta_2}$ available.  To exploit this property we
+build tables $\rules_{\TagFN{x_h}}$ where $\TagFN{}$ is the
+part-of-speech tag of word $x_h$ and further limit the search to
+rules seen in training for each head tag. This further reduces the run-time of the
+algorithm to $O(\sum_{h} (L(h) \times R(h) \times
+|\rules_{\TagFN{x_h}}|))$.
 
 
 Second, as noted above, at any point a word $x_h$ with may combine with its
@@ -728,8 +729,8 @@ To make this prediction, we estimate a distribution
 
 \[\eta(\textrm{side}) = p(\textrm{side} \mid \TagFN{x_h}, \TagFN{x_l}, \TagFN{x_r})\]
 
-where $x_l$ is the next left dependent, $x_r$ is the next right
-dependent, and $\TagFN{}$ is the part-of-speech tag of the word. If
+where $x_l$ is the next left dependent and $x_r$ is the next right
+dependent. If
 the conditional probability of $\eta{\mathrm{left}}$ or
 $\eta{\mathrm{right}}$ is greater than a threshold parameter $\gamma$,
 we make a hard decision to combine with that side next. This pruning
@@ -782,26 +783,28 @@ to this discussion in Section~\ref{sec:exper}.
 
 \begin{table}
   \centering
-  \small
+  \footnotesize
   \hspace*{-0.3cm}
   \begin{tabular}{|l|crr|}
     \hline
-    Model & Asympt. & Sent./s. & Oracle $F_1$  \\
+    Model & Complexity & Sent./s. & Ora. $F_1$  \\
     \hline
     \hline
-    \textsc{Full[$< 20$]} & $O(n^5|\rules|)$ &  0.25  & 100.0  \\
-    \textsc{Dep}          & $O(n^2|\rules|)$ &  76.2  & 92.9    \\
-    \textsc{Pruned (1)}   & $O(n^2|\rules|)$ &  375.9 & 92.8    \\
-    \textsc{Pruned (1\&2)}   & $O(n^2|\rules|)$ &  487.3 & 92.6 \\
+    \textsc{Full$^*$} & $n^5|\rules|$ &  0.25  & 100.0  \\
+    \textsc{Dep}      & $\sum_h L(h) R(h) |\rules|$ &  71.2  & 92.6    \\
+    \textsc{Prune1}   & $\sum_h L(h) R(h) |\rules|_{t(h)}$ &  336.0 & 92.5    \\
+    \textsc{Prune2}   & -- &  96.6  & 92.5 \\
+    \textsc{Prune1+2} & -- &  425.1 & 92.5 \\
     \hline
   \end{tabular}
   \label{tab:alg-oracle}
   \caption{Comparison of three parsing setups: 
-    \textsc{Full[$<20$]} is the standard lexicalized grammar,
-    limited for efficiency to sentence of length less than 20 words,
+    \textsc{Full$^*$} is the standard lexicalized grammar,
+    but limited to only sentences less than 20 words,
     \textsc{Dep} restricts c-parses to be consistent with a
-    predicted dependency skeleton, and \textsc{Pruned(1)} and \textsc{Pruned(2)}  is the pruning described in
-    Section~\ref{sec:prune} \smrcomment{regen this table}. The oracle is the best labeled $F_1$ achievable on the
+    predicted dependency skeleton, and \textsc{Pruned1}, \textsc{Pruned2}, and \textsc{Pruned1+2}
+    are the pruning methods described in
+    Section~\ref{sec:prune}. The oracle is the best labeled $F_1$ achievable on the
     development data (see Section~\ref{sec:analysis}).}
 \end{table}
 
@@ -1416,8 +1419,6 @@ and three versions of TurboParser trained with projective constraints
 
 % To compare to this work, we train our parser with gold tags and run on gold dependency trees in development. Table~\ref{tab:convert} give the results for this task.
 
-\nascomment{no need to reiterate the results presented earlier, I
-  commented them out}
 
 % \begin{figure}
 %   \centering

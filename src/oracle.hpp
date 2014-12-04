@@ -24,12 +24,12 @@ class OracleScorer : public Scorer {
             }
         }
 
-        for (int i = 0; i < best_rules_->size(); ++i) {
-            if ((*best_rules_)[i].same_top(rule) &&
-                grammar_->head_symbol[rule.rule] == grammar_->head_symbol[(*best_rules_)[i].rule]) {
-                return 0.5;
-            }
-        }
+        // for (int i = 0; i < best_rules_->size(); ++i) {
+        //     if ((*best_rules_)[i].same_top(rule) &&
+        //         grammar_->head_symbol[rule.rule] == grammar_->head_symbol[(*best_rules_)[i].rule]) {
+        //         return 0.5;
+        //     }
+        // }
         return -5;
     }
 

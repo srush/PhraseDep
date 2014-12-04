@@ -681,7 +681,7 @@ are therefore  $L\times R$ ($O(n^2)$) possible orderings of these dependents.
 
 However, we can often predict with very high accuracy which side will come next. 
 To make this prediction, we estimate a distribution \[p(\textrm{side} | \TagFN{x_h}, \TagFN{x_l}, \TagFN{x_r})\]
-where $x_l$ is the next left dependent, $x_r$ is the next right dependent, and $\TagFN$ is the part-of-speech tag of the word. This reduces the  effect of the $n^2$ at runtime.
+where $x_l$ is the next left dependent, $x_r$ is the next right dependent, and $\TagFN{}$ is the part-of-speech tag of the word. This reduces the  effect of the $n^2$ at runtime.
 %  to select dependents in the 
 % algorithm, since
  
@@ -733,8 +733,9 @@ to this discussion in Section~\ref{}.
     \hline
     \hline
     LCFG($< 20$)  & $\mathcal{Y}(x)$ & $O(n^5|\rules|)$ &     0.25 & 100.0  \\
-    LCFG(dep)    & $\mathcal{Y}(x,d)$ & $O(n^2|\rules|)$ &  63.2 & 92.8    \\
-    LCFG(prune)  &  - & $O(n^2|\rules|)$ &   173.5 & 92.7 \\
+    LCFG(dep)    & $\mathcal{Y}(x,d)$ & $O(n^2|\rules|)$ &  76.2 & 92.9    \\
+    LCFG(prune1)    & - & $O(n^2|\rules|)$ &  375.9 & 92.8    \\
+    LCFG(pruneboth)  &  - & $O(n^2|\rules|)$ &   487.3 & 92.6 \\
     \hline
   \end{tabular}
   \label{tab:alg-oracle}
@@ -1106,16 +1107,17 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
   \centering
   \small
 
-  \begin{tabular}{|l|rrr|}
+  \begin{tabular}{|l|cccc|}
     \hline
-    Model & Oracle & FScore & Speed  \\
+    Model & UAS  & F1 & Speed  & Oracle  \\
     \hline
 
     \hline
-    \textsc{TurboParser} & 92.90 & 91.04 & \\
-    \textsc{MaltParser}  & & & 20 \\
-    \textsc{ZPar}        & & & \\
-    \textsc{MIT}         & & & \\
+    \textsc{TP-Full} & 93.5 & 90.8 & & 92.90  \\
+    \textsc{TP-Standard} & 93.3 & 90.9 & &\\
+    \textsc{TP-Basic} & 92.8 & 88.9 &  & \\
+    \textsc{MaltParser}  & 89.7 & 85.5 & 20 & \\
+    \textsc{ZPar}        & & & & \\
     \hline
   \end{tabular}
 
@@ -1131,17 +1133,25 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
 
 \begin{table}
   \centering
-  \begin{tabular}{|ccc|cccc|}
+  \footnotesize
+  \begin{tabular}{|ccc|cc|}
     \hline 
-    \multicolumn{3}{|c|}{Class} & \multicolumn{4}{|c|}{Score} \\
-    Dep & Span & Spl & Total & Pre & Rec & F1 \\ 
+    \multicolumn{3}{|c|}{Class} & \multicolumn{2}{|c|}{Score} \\
+    Dep & Span & Split & Total & Acc  \\ 
+    $(h, m)$ & $\Span{i,j}$ & $k$ & \% & $A$ \\ 
     \hline
-    + & + & +  &       &     &     &   \\ 
-    + & + & -  &       &     &     &   \\ 
-    - & + & +  &       &     &     &   \\ 
-    - & - & -  &       &     &     &   \\ 
+    + & + & +  &  86.1  & 97.9   \\ 
+    - & + & +  &  1.0   & 69.3   \\ 
+    + & + & -  &  2.1   & 83.3   \\ 
+    - & + & -  &  1.3   & 85.9   \\ 
+    + & - & -  &  4.5   & 0.0    \\ 
+    - & - & -  &  4.7   & 0.0    \\ 
     \hline
   \end{tabular}
+  \caption{Error analysis of binary CFG rules. Rules used are split into classes based on 
+    correct (+) identification of dependency $(h,m)$, span $\Span{i,j}$, and split $k$. 
+    \textit{Total} is the relative size of the class. \textit{Acc} is accuracy of span nonterminal identification.
+  }
 \end{table}
 
 \subsection{Conversion}

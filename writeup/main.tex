@@ -1048,40 +1048,60 @@ We ran experiments to assess the accuracy of the method, its run-time efficiency
 
 \begin{table}
   \centering
-  \small
-  \begin{tabular}{|l|rrr|}
+  
+
+  \begin{tabular}{|l|rr|}
     \hline
-    & \multicolumn{3}{|c|}{PTB} \\
+    & \multicolumn{2}{|c|}{PTB} \\
     \hline
 
     \hline
-    Model & 22 FScore & 22 UAS & 23 FScore  \\
+    Model & F1 & Speed\\
     \hline
-    Charniak[00]          & & & 80.8\\
-    Petrov[07]        & & 92.7 & 90.1 \\
-    Zhu[13]           & &  & 90.4 \\
-    Stanford PCFG        & & 88.9 & 85.5\\
+    % Charniak[00]      &      & 80.8 &      &  -   \\
+    Stanford PCFG     &   85.5 & 5.3  \\
+    Petrov[07]        &   90.1 & 8.6  \\
+    Zhu[13]           &   90.3 & 39.0 \\
+    Carreras[08]      &   91.1 & -    \\
   % above have no extental resource
-    CJ Reranking     & & 93.9 & 91.5 \\
-    StanfordRNN       & & 92.2 & 90.0\\
-    Carreras[08]      & & - & 91.1 \\
-    \ParseName & 91.0 & 93.5 & \\
-    \hline
-    \hline
-    & \multicolumn{3}{|c|}{CTB} \\
-    model &  dev fscore & & test fscore  \\
-    \hline
-
-    \hline
-    Bikel         & & & 80.6 \\
-    Charniak[00] & & & 80.8 \\
-    Petrov[07]    & & & 83.3 \\
-%    Carreras[08]  & & & \\
-    Zhu[13]       & & & 83.2 \\
-    CJ Reranking  & & & 82.3 \\
-    \ParseName & & & 81.4\\
+    CJ Reranking      &   91.5 & 4.3  \\
+    StanfordRNN       &   90.0 & 2.8  \\
+    \ParseName        &  90.4 & 58.6 \\
     \hline
   \end{tabular}
+  % \begin{tabular}{|l|rrrr|}
+  %   \hline
+  %   & \multicolumn{3}{|c|}{PTB} \\
+  %   \hline
+
+  %   \hline
+  %   Model & F1 & UAS & F1 & Speed\\
+  %   \hline
+  %   % Charniak[00]      &      & 80.8 &      &  -   \\
+  %   Stanford PCFG     &      & 88.9 & 85.5 & 5.3  \\
+  %   Petrov[07]        &      & 92.7 & 90.1 & 8.6  \\
+  %   Zhu[13]           &      &      & 90.4 & 39.0 \\
+  %   Carreras[08]      &      & -    & 91.1 & -    \\
+  % % above have no extental resource
+  %   CJ Reranking      &      & 93.9 & 91.5 & 4.3  \\
+  %   StanfordRNN       &      & 92.2 & 90.0 & 2.8  \\
+  %   \ParseName        & 90.5 & 93.1 & 90.4 & 58.6 \\
+  %   \hline
+    % \hline
+    % & \multicolumn{3}{|c|}{CTB} \\
+    % model &  DF1 & & F1 &  \\
+    % \hline
+
+    % \hline
+    % Bikel         & & & 80.6 \\
+    % Charniak[00]  & & & 80.8 \\
+    % Petrov[07]    & & & 83.3 \\
+    % %    Carreras[08] & & & \\
+    % Zhu[13]       & & & 83.2 \\
+    % CJ Reranking  & & & 82.3 \\
+    % \ParseName    & & & 81.4 \\
+    % \hline
+  % \end{tabular}
   \label{tab:acc}
   \caption{ Accuracy results on the Penn Treebank and Chinese Treebank datasets. Comparisons are to state-of-the-art non-reranking phrase-structure parsers including:  Petrov[07] \cite{petrov2006learning}, Carraras[08] \cite{carreras2008tag}, Zhu[13] \cite{zhu2013fast}, Charniak[00] \cite{charniak2000maximum}, and Stanford[] \cite{klein2003accurate,socher2013parsing}.  }
 \end{table}
@@ -1121,11 +1141,13 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
     \hline
 
     \hline
-    \textsc{TP-Full} & 93.5 & 90.8 & & 92.90  \\
-    \textsc{TP-Standard} & 93.3 & 90.9 & &\\
-    \textsc{TP-Basic} & 92.8 & 88.9 &  & \\
-    \textsc{MaltParser}  & 89.7 & 85.5 & 20 & \\
-    \textsc{ZPar}        & & & & \\
+    \textsc{MaltParser}  & 89.7 & 85.5 & 240.7& 87.8 \\
+    \textsc{RS-K1}       & 90.1 & 86.6 & 233.9& 87.6 \\
+    \textsc{RS-K4}       & 92.5 & 90.1 & 151.3& 91.5 \\
+    \textsc{RS-K16}      & 93.1 & 90.6 & 58.6 & 92.4 \\
+    \textsc{TP-Basic}    & 92.8 & 88.9 & 132.8& 90.8 \\
+    \textsc{TP-Standard} & 93.3 & 90.9 & 27.2 & 92.6 \\
+    \textsc{TP-Full}     & 93.5 & 90.8 & 13.2 & 92.9 \\
     \hline
   \end{tabular}
 

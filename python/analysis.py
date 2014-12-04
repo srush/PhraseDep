@@ -87,6 +87,7 @@ def score(gold_file, predicted_file, rules):
          "top_match" : [],
          "spine" : [],
          "top_nt" : [],
+         "split_match" : [],
          "dep_correct" : []
     }
 
@@ -96,14 +97,21 @@ def score(gold_file, predicted_file, rules):
         gold = set(b["items"])
         total_gold += len(b["items"])
         total_predicted += len(a["items"])
+
         spans = []
         for sent, item in b["items"]:
             spans.append((item.i, item.k))
         gold_spans = set(spans)
 
+        spans = []
         for sent, item in b["items"]:
             spans.append((item.i, item.k, rules[item.r]))
         gold_spans_top = set(spans)
+
+        spans = []
+        for sent, item in b["items"]:
+            spans.append((item.i, item.j, item.k))
+        gold_spans_split = set(spans)
 
         for sent, item in a["items"]:
             d["sent"].append(sent)
@@ -111,6 +119,7 @@ def score(gold_file, predicted_file, rules):
             d["mod_match"].append(a["spans"][item.m] == b["spans"][item.m])
             d["exact_match"].append((sent, item) in gold)
             d["span_match"].append((item.i, item.k) in gold_spans)
+            d["split_match"].append((item.i, item.j, item.k) in gold_spans_split)
             d["top_match"].append((item.i, item.k, rules[item.r]) in gold_spans_top)
             d["spine"].append((item.i, item.k) == a["spans"][item.h])
             d["dep_correct"].append(item.h == b["deps"][item.m])
@@ -213,4 +222,4 @@ def main():
 
     #print recall, precision
 # main()
-prune()
+# prune()

@@ -253,7 +253,7 @@ int main(int argc, char* argv[]) {
                          &success);
             } else {
                 cky2(sentence->preterms, sentence->words, sentence->deps,
-                     *grammar, scorer, &best_rules, !options[ITEMS], &success);
+                     *grammar, scorer, &best_rules, !options[ITEMS], &success, false);
             }
 
             if (!options[ITEMS]) {
@@ -293,7 +293,7 @@ int main(int argc, char* argv[]) {
             } else {
                 cky2(sentence->preterms, sentence->words, sentence->deps,
                     *grammar, oracle, &best_rules, options[ORACLE_TREE],
-                    &success);
+                     &success, false);
             }
 
             if (options[ORACLE_TREE]) {

@@ -43,7 +43,8 @@ double cky2(const vector<int> &preterms,
             const Scorer &scorer,
             vector<AppliedRule> *best_rules,
             bool output,
-            bool *success);
+            bool *success,
+            bool no_prune);
 
 double cky_full(const vector<int> &preterms,
                 const vector<string> &words,

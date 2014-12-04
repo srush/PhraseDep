@@ -222,7 +222,7 @@ class Chart {
 bitset<50000> have_nt;
 int add_right(int i, int j, int k, int h, int m,
               const vector<int> &preterms,
-              const Grammar &grammar, const Scorer &scorer,
+              const Grammar &grammar, const Scorer &scorer, bool no_prune,
               Chart *chart) {
     have_nt.reset();
 
@@ -236,7 +236,7 @@ int add_right(int i, int j, int k, int h, int m,
 
         for (const BinaryRule &b_rule : grammar.rules_by_first[Y]) {
             int Z = b_rule.nt_Z;
-            if (grammar.pruning &&
+            if (!no_prune && grammar.pruning &&
                 !grammar.rule_head_tags[b_rule.rule_num][preterms[h]])
                 continue;
 
@@ -258,7 +258,7 @@ int add_right(int i, int j, int k, int h, int m,
 
 int add_left(int i, int j, int k, int h, int m,
               const vector<int> &preterms,
-              const Grammar &grammar, const Scorer &scorer,
+             const Grammar &grammar, const Scorer &scorer, bool no_prune,
               Chart *chart) {
     int total_scored = 0;
     have_nt.reset();
@@ -272,7 +272,7 @@ int add_left(int i, int j, int k, int h, int m,
 
             int Y = b_rule.nt_Y;
 
-            if (grammar.pruning &&
+            if (!no_prune && grammar.pruning &&
                 !grammar.rule_head_tags[b_rule.rule_num][preterms[h]])
                 continue;
 
@@ -295,7 +295,7 @@ int add_left(int i, int j, int k, int h, int m,
 }
 
 bool complete(int i, int k, int h, const vector<int> &preterms,
-              const Grammar &grammar, const Scorer &scorer,
+              const Grammar &grammar, const Scorer &scorer, bool no_prune,
               Chart *chart) {
     bool any = false;
     // Fill in the unary rules.
@@ -309,7 +309,7 @@ bool complete(int i, int k, int h, const vector<int> &preterms,
         double item_score = chart->score(item);
 
         for (const UnaryRule &u_rule : grammar.unary_rules_by_first[Y]) {
-            if (grammar.pruning &&
+            if (!no_prune && grammar.pruning &&
                 !grammar.rule_head_tags[u_rule.rule_num][preterms[h]])
                 continue;
 
@@ -328,7 +328,7 @@ bool complete(int i, int k, int h, const vector<int> &preterms,
         double item_score = chart->score(item);
 
         for (const UnaryRule &u_rule : grammar.unary_rules_by_first[Y]) {
-            if (grammar.pruning &&
+            if (!no_prune && grammar.pruning &&
                 !grammar.rule_head_tags[u_rule.rule_num][preterms[h]])
                 continue;
 
@@ -370,7 +370,7 @@ double cky(const vector<int> &preterms,
         int Y = preterms[i];
         Item item(i, i, i, Y, 0);
         chart.init(item);
-        complete(i, i, i, preterms, grammar, scorer, &chart);
+        complete(i, i, i, preterms, grammar, scorer, false, &chart);
     }
 
     // Main loop.
@@ -452,7 +452,7 @@ double cky(const vector<int> &preterms,
                 }
             }
             for (int h = i; h <= k; ++h) {
-                complete(i, k, h, preterms, grammar, scorer, &chart);
+                complete(i, k, h, preterms, grammar, scorer, false, &chart);
             }
         }
     }
@@ -481,7 +481,8 @@ double cky2(const vector<int> &preterms,
             const Scorer &scorer,
             vector<AppliedRule> *best_rules,
             bool output,
-            bool *success) {
+            bool *success,
+            bool no_prune) {
     clock_t start = clock();
 
     int n = preterms.size();
@@ -513,7 +514,7 @@ double cky2(const vector<int> &preterms,
         int Y = preterms[i];
         Item item(i, i, i, Y, 0);
         chart.init(item);
-        complete(i, i, i, preterms, grammar, scorer, &chart);
+        complete(i, i, i, preterms, grammar, scorer, no_prune, &chart);
     }
 
     // Main loop.
@@ -543,7 +544,7 @@ double cky2(const vector<int> &preterms,
                 int left_cur = (l != -1) ? left[left_children[l]] : h;
                 int right_cur = (r != -1) ? right[right_children[r]] : h;
                 bool any = complete(left_cur, right_cur,
-                                    h, preterms, grammar, scorer, &chart);
+                                    h, preterms, grammar, scorer, no_prune, &chart);
                 if (!any) continue;
 
                 int i, j, m, k;
@@ -552,7 +553,7 @@ double cky2(const vector<int> &preterms,
                 bool try_right = r < R - 1;
                 bool try_left = l < L - 1;
 
-                if (try_right && try_left && grammar.dir_pruning) {
+                if (try_right && try_left && !no_prune && grammar.dir_pruning) {
                     // Both possible, but one may be better.
                     int right_tag = preterms[right_children[r+1]];
                     int left_tag = preterms[left_children[l+1]];
@@ -570,7 +571,7 @@ double cky2(const vector<int> &preterms,
                     m = right_children[r+1];
                     j = left[m] - 1;
                     k = right[m];
-                    total_scored += add_right(i, j, k, h, m, preterms, grammar, scorer, &chart);
+                    total_scored += add_right(i, j, k, h, m, preterms, grammar, scorer, no_prune, &chart);
                     total_combines++;
                     total_taken++;
                 }
@@ -581,7 +582,7 @@ double cky2(const vector<int> &preterms,
                     m = left_children[l+1];
                     i = left[m];
                     j = right[m];
-                    total_scored += add_left(i, j, k, h, m, preterms, grammar, scorer, &chart);
+                    total_scored += add_left(i, j, k, h, m, preterms, grammar, scorer, no_prune, &chart);
                     total_combines++;
                     total_taken++;
                 }
@@ -625,7 +626,19 @@ double cky2(const vector<int> &preterms,
     *success = chart.to_tree(item, grammar, best_rules, output, out);
     if ((*success) && out) {
         cout << out.str();
+    } else if (!no_prune) {
+        cky2(preterms,
+             words,
+             deps,
+             grammar,
+             scorer,
+             best_rules,
+             output,
+             success,
+             true);
+
     }
+
     clock_t end = clock();
     // cerr << "STATS: " <<  n << " " << total_combines << " " << total_scored << " " << max_size << " " << (end - start) << " " << CLOCKS_PER_SEC << endl;
     return chart.score(item);
@@ -651,7 +664,7 @@ double cky_full(const vector<int> &preterms,
         int Y = preterms[i];
         Item item(i, i, i, Y, 0);
         chart.init(item);
-        complete(i, i, i, preterms, grammar, scorer, &chart);
+        complete(i, i, i, preterms, grammar, scorer, false, &chart);
     }
 
     // Main loop.
@@ -737,7 +750,7 @@ double cky_full(const vector<int> &preterms,
                 }
             }
             for (int h = i; h <= k; ++h) {
-                complete(i, k, h, preterms, grammar, scorer, &chart);
+                complete(i, k, h, preterms, grammar, scorer, false, &chart);
             }
         }
     }

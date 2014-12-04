@@ -895,7 +895,7 @@ include conjunctions of the rule with:
 \item first and last word of current span
 \item preceding and following word of current span
 \item adjacent words at split of current span
-\item length of the span
+\item binned length of the span
 \end{itemize}
 
 The full feature set is shown in Figure~\ref{fig:features}.  After
@@ -995,6 +995,7 @@ Figure~\ref{fig:cky_new} (right).
 
 
 \section{Related Work}
+\lpkcomment{why we put the related work section between training and method?}
 
 The problem of converting dependency to phrase-structured trees has
 been studied previously from the perspective of building
@@ -1027,7 +1028,6 @@ our system to that of \newcite{xia2009towards}.
     dependencies.  Xia et al.~
  report results consulting only \S 19 in development and
 note that additional data had little effect.  We show our system's
-<<<<<<< HEAD
 results using \S 19 and the full training set. \nascomment{check that
   ``\S 2--21'' is correct, pls} \lpkcomment{you mean our number or you mean the standard training splits?}
 results using \S 19 and the full training set. 
@@ -1076,7 +1076,7 @@ For English experiments we use the standard Penn Treebank (PTB)
 experimental setup \cite{marcus1993building}. Training is done on \S
 2--21, development on \S 22, and testing on \S 23. We use the development set 
 to tune 
-regularization parameter, $\lambda=1e-5$, and the pruning threshold, $\gamma=0.95$.
+regularization parameter, $\lambda=1e-8$, and the pruning threshold, $\gamma=0.95$.
 
 
 For Chinese experiments, we use version 5.1 of the Penn  Chinese Treebank 5.1 (CTB) \cite{xue2005penn}. We followed previous work and used
@@ -1099,6 +1099,7 @@ Additionally, while our parser does not use dependency labels,
 we found that labels have a significant impact on the performance of
 the RedShift parser. We therefore train a labeled parser, but 
 discard the labels before conversion.
+\lpkcomment{we did not use classical label though... but it's annoying to explain..}
 
 
 Prior to training the d-parser, the training sections are

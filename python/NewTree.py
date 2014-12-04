@@ -722,7 +722,7 @@ def chomsky_normal_form(tree, horzMarkov=None, vertMarkov=0, childChar="|", pare
 
             # The head postion is determined by the collins rule
             head_postion = findHead(node.label(),child_list)
-
+            head = child_list[head_postion]
             #print child_list[head_postion]
 
             # parent annotation
@@ -759,6 +759,9 @@ def chomsky_normal_form(tree, horzMarkov=None, vertMarkov=0, childChar="|", pare
                         #    newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "l-") + "-".join(childNodes[:min(len(childNodes),horzMarkov)]),parentString) # create new head
                         #else:
                         #    newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "r-") + "-".join(childNodes[max(0,len(childNodes)-horzMarkov):]),parentString) # create new head
+                        #if LANGUAGE == "chn":
+                        #    newHead = "%s%s-%s" % (originalNode, childChar, head)
+                        #else:
                         newHead = "%s%s" % (originalNode, childChar)
                         newNode = Tree(newHead, [])
                         curNode[0:] = [nodeCopy.pop(0), newNode]
@@ -770,6 +773,9 @@ def chomsky_normal_form(tree, horzMarkov=None, vertMarkov=0, childChar="|", pare
                         #    newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "l-") + "-".join(childNodes[:min(len(childNodes),horzMarkov)]),parentString) # create new head
                         #else:
                         #    newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "r-") + "-".join(childNodes[max(0,len(childNodes)-horzMarkov):]),parentString) # create new head
+                        #if LANGUAGE == "chn":
+                        #    newHead = "%s%s-%s" % (originalNode, childChar, head)
+                        #else:
                         newHead = "%s%s" % (originalNode, childChar)
                         newNode = Tree(newHead, [])
                         curNode[0:] = [newNode, nodeCopy.pop()]
@@ -831,7 +837,6 @@ def collapse_unary(tree, collapsePOS = False, collapseRoot = False, joinChar = "
     unary productions, and completely removing the unary productions
     would require loss of useful information.  The Tree is modified
     directly (since it is passed by reference) and no value is returned.
-
     :param tree: The Tree to be collapsed
     :type  tree: Tree
     :param collapsePOS: 'False' (default) will not collapse the parent of leaf nodes (ie.
@@ -1003,6 +1008,7 @@ def get_span_info(nt, rule_to_ind_dict):
     if rule in rule_to_ind_dict:
         return (span_left, span_split, span_right, h, m, rule_to_ind_dict[rule])
     else:
+        sys.stderr.write("None rule found!")
         return None
 
 

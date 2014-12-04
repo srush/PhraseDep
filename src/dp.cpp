@@ -587,37 +587,36 @@ double cky2(const vector<int> &preterms,
                 }
             }
         }
-        if (max_size < total_taken - L - R){
-            max_size = total_taken - L - R;
-            if (max_size > 10) {
-                cerr << grammar.rev_nonterm_map.at(preterms[h]) << " " <<
-                        L << " " << R << " " << total_taken << endl;
-                for (int i : left_children) {
-                    cerr << grammar.rev_nonterm_map.at(preterms[i]) << " " << endl;
-                }
-                cerr << "MID" << endl;
-                for (int i : right_children) {
-                    cerr << grammar.rev_nonterm_map.at(preterms[i]) << " " << endl;
-                }
-                int lfirst = true;
-                for (int i : left_children) {
-                    int rfirst = true;
-                    for (int j : right_children) {
-                        DirPrune prune(head_tag, preterms[i], preterms[j], lfirst, rfirst);
-                        bool a, b;
-                        double score = grammar.dir_pick(prune, &a, &b);
-                        cerr << grammar.rev_nonterm_map.at(preterms[i])
-                        << " " << grammar.rev_nonterm_map.at(preterms[j])
-                             << " " << lfirst << " " << rfirst << " " << score <<
-                                " " << a << " " << b << endl;
-                        rfirst = false;
-                    }
-                    lfirst = false;
-                }
+        // if (max_size < total_taken - L - R){
+        //     max_size = total_taken - L - R;
+        //     if (max_size > 10) {
+        //         cerr << grammar.rev_nonterm_map.at(preterms[h]) << " " <<
+        //                 L << " " << R << " " << total_taken << endl;
+        //         for (int i : left_children) {
+        //             cerr << grammar.rev_nonterm_map.at(preterms[i]) << " " << endl;
+        //         }
+        //         cerr << "MID" << endl;
+        //         for (int i : right_children) {
+        //             cerr << grammar.rev_nonterm_map.at(preterms[i]) << " " << endl;
+        //         }
+        //         int lfirst = true;
+        //         for (int i : left_children) {
+        //             int rfirst = true;
+        //             for (int j : right_children) {
+        //                 DirPrune prune(head_tag, preterms[i], preterms[j], lfirst, rfirst);
+        //                 bool a, b;
+        //                 double score = grammar.dir_pick(prune, &a, &b);
+        //                 cerr << grammar.rev_nonterm_map.at(preterms[i])
+        //                 << " " << grammar.rev_nonterm_map.at(preterms[j])
+        //                      << " " << lfirst << " " << rfirst << " " << score <<
+        //                         " " << a << " " << b << endl;
+        //                 rfirst = false;
+        //             }
+        //             lfirst = false;
+        //         }
 
-            }
-        }
     }
+
 
     int root = grammar.roots[0];
     Item item(0, n-1, root_word, root, 2);
@@ -628,7 +627,7 @@ double cky2(const vector<int> &preterms,
         cout << out.str();
     }
     clock_t end = clock();
-    cerr << "STATS: " <<  n << " " << total_combines << " " << total_scored << " " << max_size << " " << (end - start) << endl;
+    // cerr << "STATS: " <<  n << " " << total_combines << " " << total_scored << " " << max_size << " " << (end - start) << " " << CLOCKS_PER_SEC << endl;
     return chart.score(item);
 }
 

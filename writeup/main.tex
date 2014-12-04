@@ -895,7 +895,7 @@ include conjunctions of the rule with:
 \item first and last word of current span
 \item preceding and following word of current span
 \item adjacent words at split of current span
-\item length of the span
+\item binned length of the span
 \end{itemize}
 
 The full feature set is shown in Figure~\ref{fig:features}.  After
@@ -998,6 +998,7 @@ Figure~\ref{fig:cky_new} (right).
 
 
 \section{Related Work}
+\lpkcomment{why we put the related work section between training and method?}
 
 The problem of converting dependency to phrase-structured trees has
 been studied previously from the perspective of building
@@ -1101,6 +1102,7 @@ Additionally, while our parser does not use dependency labels,
 we found that labels have a significant impact on the performance of
 the RedShift parser. We therefore train a labeled parser, but 
 discard the labels before conversion.
+\lpkcomment{we did not use classical label though... but it's annoying to explain..}
 
 
 Prior to training the d-parser, the training sections are

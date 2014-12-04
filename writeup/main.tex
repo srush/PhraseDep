@@ -966,31 +966,33 @@ multi-representational treebanks.  \newcite{xia2001converting} and
 \newcite{xia2009towards} develop a rule-based system for the
 converting human-annotated dependency parses. Our work differs in that
 we learn a data-driven structured prediction model that is also able
-to handle automatically predicted input.\lpkcomment{mention the table in the exp section where the comparison number show our approach better here?}
+to handle automatically predicted input. Table \ref{tab:convert} shows a comparsion
+between the two systems. For a more fair comparsion, we also try only use \S 19 to train our system,
+and in that case, our F1 score is 6.5\% higher.
 
 There has been successful work combining dependency and phrase-structure parsing. \newcite{carreras2008tag} build a
 high-accuracy parser that uses a dependency parsing model both for
 pruning and within a richer lexicalized parser. Similarly
 \newcite{rush2010dual} use dual decomposition to combine a dependency
 parser with a simple phrase-structure model. This work differs
-in that we remove the dependency parsing model entirely.
-By starting with a complete dependency parse structure
-we can build a much faster and smaller model that  is still
+in that we treat the dependency parse as a hard constraint, hence largely reduce the
+running time of a fully lexicalized phrase structure parsing model while still
 able to generate highly phrase-structure parses. 
+% By starting with a complete dependency parse structure
+% we can build a much faster and smaller model that is 
+
+% able to generate highly phrase-structure parses. 
+% we remove the dependency parsing model entirely.
+
 
 % approach a step further by fixing the dependency structure
 % entirely before parsing. 
-
-\lpkcomment{only fixing the dependency structure
-entirely before parsing sounds more like a step backward than a step further... i am not sure if this is a good way to say that... i think there is a important difference here, which is, when combining the phrase-structure and dep parsing, when ppl do this, the binarization does not imply dep arcs, so even you can push info from dep to phrase structure parsing, you can't directly pruning so much like we do here...right?}
-
 
 Finally there have also been several papers that use ideas from
 dependency parsing to simplify and speed up phrase-structure prediction.
 \newcite{zhu2013fast} build a high-accuracy phrase-structure parser
 using a transition-based system. \newcite{hall2014less} use a stripped
 down parser based on a simple X-bar grammar and a small set of lexicalized features.
-
 
 
 \section{Methods}
@@ -1008,11 +1010,12 @@ For Chinese experiments, we use version 5.1 of the Penn  Chinese Treebank 5.1 (C
 301-325 as development, and articles
 271-300 as test.
 
-Part-of-speech tagging is done using TurboTagger. Unless otherwise noted, 
+Part-of-speech tagging is done using TurboTagger\footnote{\url{http://www.ark.cs.cmu.edu/TurboParser/}}. Unless otherwise noted, 
 the input d-parsing is done using TurboParser  
-\cite{martins2013turning}. 
+\cite{martins2013turning}. \lpkcomment{switch to redshift now...}
 Prior to training the d-parser, the train sections are
-automatically tagged using 10-fold jackknifing. The 
+automatically tagged using 10-fold jackknifing \cite{collins2000} for both dependency and phrase structure trees. \cite{zhu2013fast} found this
+simple technology gives an improvement of 0.4\% on English and 2.0\% on Chinese in their case. 
 d-parser is trained to produce Collins head rules 
 \cite{collins2003head}.
 
@@ -1042,7 +1045,7 @@ with 32GB of memory and  Core i7-3770 3.4GHz 8M cache CPU.
 \section{Experiments}
 \label{sec:exper}
 
-We ran experiments to assess the accuracy of the method, its run-time efficiency, the amount of phrase-structure data required, and the effect of dependency accuracy.\lpkcomment{if space allowed, probably add the label extension as a way to get higher acc in the first half of the experiment section.}
+We ran experiments to assess the accuracy of the method, its run-time efficiency, the amount of phrase-structure data required, and the effect of dependency accuracy.
 
 \subsection{Parsing Accuracy}
 

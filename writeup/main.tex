@@ -159,8 +159,7 @@ dependency parse.  This idea was explored by  \newcite{xia2001converting} and
 algorithm using the structured prediction framework (Section~\ref{sec:strpred}).  The approach can be
 understood as a specially-trained coarse-to-fine
 decoding algorithm where a d-parser provides ``coarse'' structure and
-the second stage refines it \cite{petrov2007improved}. \nascomment{I
-  think Charniak did coarse-to-fine before that, should cite that one too}
+the second stage refines it \cite{charniak2005coarse,petrov2007improved}.
 
 Our lexicalized phrase-structure parser is asymptotically faster than
 parsing with a lexicalized context-free grammar: $O(n^2)$ plus
@@ -169,7 +168,7 @@ with the same grammar constant.  Experiments show
 that with simple pruning, our approach achieves linear observable
 runtime, and that accuracy similar to
 state-of-the-art phrase-structure parsers without reranking or
-semisupervised training (Section~\ref{sec:exper}).
+semi-supervised training (Section~\ref{sec:exper}).
 
 
 
@@ -653,9 +652,7 @@ by index $m$.
 The highest-scoring parse can found by bottom-up dynamic programming
 over these productions. The standard lexicalized CKY algorithm requires $O(n^5
 |\rules|)$ time. While simple to implement, this algorithm is not practical to run without heavy pruning or
-further assumptions on the scoring function.  \nascomment{should cite
-  Eisner and Satta '99 who show improved asymptotics under some
-  assumptions; reviewers will complain if we don't}
+further assumptions on the scoring function\cite{eisner1999efficient}. 
 
 Now, consider the same setup, but constrained to c-parses
 that are consistent with a given d-parse, $d_1, \ldots, d_n$ (i.e.,
@@ -703,11 +700,16 @@ Second, a word $x_h$ with $L$ dependents to its left and $R$ dependents to
 its right may at any point  combine with a left or right dependent. There 
 are therefore  $L\times R = O(n^2)$ possible orderings of these dependents.
 We can often predict with very high accuracy which side will come next. 
-To make this prediction, we estimate a distribution \[p(\textrm{side} \mid \TagFN{x_h}, \TagFN{x_l}, \TagFN{x_r})\]
+To make this prediction, we estimate a distribution 
+
+\[p(\textrm{side} \mid \TagFN{x_h}, \TagFN{x_l}, \TagFN{x_r})\]
+
 where $x_l$ is the next left dependent, $x_r$ is the next right
 dependent, and $\TagFN{}$ is the part-of-speech tag of the
-word. \nascomment{unclear how this gets used to prune.  need to explain. } This
-reduces the  effect of the $n^2$ at runtime. 
+word. If the conditional probability of $L$ or $R$ is greater
+than a parameter $\gamma$ then we only take modifiers to that 
+side. 
+This reduces the effect of the $n^2$ at runtime. 
 %  to select dependents in the 
 % algorithm, since
  
@@ -722,7 +724,7 @@ in oracle accuracy, while pruning contributes a relatively small one.
 Still, this upper-bound on accuracy is high enough
 to make it possible to still recover c-parses at least as accurate as
 state-of-the-art c-parsers. We will return 
-to this discussion in Section~\ref{}. \nascomment{missing ref}
+to this discussion in Section~\ref{sec:exper}.
 
 % We observe that in training the part-of-speech of the head word $x_h$
 % greatly limits the possible rules $\Rule{A}{\beta_1}{\beta_2}$ available.  To
@@ -759,10 +761,10 @@ to this discussion in Section~\ref{}. \nascomment{missing ref}
     Model & Asympt. & Sent./s. & Oracle $F_1$  \\
     \hline
     \hline
-    Full[$< 20$]   & $O(n^5|\rules|)$ &     0.25 & 100.0  \\
-    Dep.    & $O(n^2|\rules|)$ &  76.2 & 92.9    \\
-    Pruned (1)    &  $O(n^2|\rules|)$ &  375.9 & 92.8    \\
-    Pruned (2)  &   $O(n^2|\rules|)$ &   487.3 & 92.6 \\
+    Full[$< 20$] & $O(n^5|\rules|)$ &  0.25  & 100.0  \\
+    Dep.         & $O(n^2|\rules|)$ &  76.2  & 92.9    \\
+    Pruned (1)   & $O(n^2|\rules|)$ &  375.9 & 92.8    \\
+    Pruned (2)   & $O(n^2|\rules|)$ &  487.3 & 92.6 \\
     \hline
   \end{tabular}
   \label{tab:alg-oracle}
@@ -873,7 +875,7 @@ features, then parameter estimation.
 \subsection{Features}
 
 In theory, the scoring function for this system could be directly
-adapted from existing \nascomment{lexicalized?} c-parsers. However, the existing structure of
+adapted from existing lexicalized c-parsers. However, the existing structure of
 the dependency parse limits the number of decisions that need to be
 made, and allows for a smaller set of features.
 
@@ -976,17 +978,19 @@ Given a set of gold-annotated parse examples, $(x^{1}, y^{1}), \ldots,
 from the head rules, we estimate the
 parameters to minimize the regularized empirical risk
 
-\[ \min_{\theta} \sum_{i = 1}^D \max\{0,  \ell( x^{i}, d^{i} , y^{i}, \theta) \} + \frac{\lambda}{2} ||\theta||_1 \]
-\nascomment{I am confused by the max with 0.  I don't think that's
-  standard for structured hinge}
+\[ \min_{\theta} \sum_{i = 1}^D  \ell( x^{i}, d^{i} , y^{i}, \theta)  + \lambda ||\theta||_1 \]
 
 \noindent where we define $\ell$ as
-\nascomment{added negation to first term!}
+
 \[\ell(x, d, y, \theta) = - s(y) + \max_{y' \in \mathcal{Y}(x, d)}\left(s(y')  + \Delta(y, y') \right) \]
 \noindent and where $\Delta$ is a problem specific cost-function.
 In experiments, we use a Hamming loss  $\Delta(y, y') = || y -y'||$ where $y$ is an indicator
+<<<<<<< HEAD
 of rule productions \nascomment{coupled with $i,j,k$ positions?  would
   be strange and difficult to do what you said!}. \lpkcomment{yes, coupled with i,j,k}
+=======
+of rule productions coupled with $i, j, k$ positions.
+>>>>>>> d575f67cdc5473b10ab764b43c3429de9f7d057c
 
 The objective is optimized using Adagrad \cite{duchi2011adaptive}.  The gradient
 calculation requires computing a loss-augmented max-scoring c-parse for each
@@ -1027,8 +1031,12 @@ our system to that of \newcite{xia2009towards}.
     dependencies.  Xia et al.~
  report results consulting only \S 19 in development and
 note that additional data had little effect.  We show our system's
+<<<<<<< HEAD
 results using \S 19 and the full training set. \nascomment{check that
   ``\S 2--21'' is correct, pls} \lpkcomment{you mean our number or you mean the standard training splits?}
+=======
+results using \S 19 and the full training set. 
+>>>>>>> d575f67cdc5473b10ab764b43c3429de9f7d057c
   \label{tab:convert}}
 \end{table}
 
@@ -1071,8 +1079,11 @@ and applicability of the parser to several tasks. These experiments
 use the following setup.  
 
 For English experiments we use the standard Penn Treebank (PTB)
-experimental setup \cite{marcus1993building}. Training is done on
-\S 2--21, development on \S 22 \nascomment{clarify what gets tuned here}, and testing on \S 23.
+experimental setup \cite{marcus1993building}. Training is done on \S
+2--21, development on \S 22, and testing on \S 23. We use the development set 
+to tune 
+regularization parameter, $\lambda=1e-5$, and the pruning threshold, $\gamma=0.95$.
+
 
 For Chinese experiments, we use version 5.1 of the Penn  Chinese Treebank 5.1 (CTB) \cite{xue2005penn}. We followed previous work and used
 articles 001--270 and 440--1151 for training, 
@@ -1080,13 +1091,20 @@ articles 001--270 and 440--1151 for training,
 271--300 for test.
 
 Part-of-speech tagging is performed for all models  using TurboTagger
-\cite{martins2013turning}. Unless otherwise noted, the input d-parsing
-is done using the RedShift
-implementation\footnote{\url{https://github.com/syllog1sm/redshift}} of the
-Zhang-Nivre Parser \cite{zhang2011transition},
- trained to follow the conventions of Collins head rules 
-\cite{collins2003head}. \nascomment{need to explain beam size here,
-  since it comes up later!}
+\cite{martins2013turning}. 
+
+Unless otherwise noted, the input d-parsing is done using the RedShift
+implementation\footnote{\url{https://github.com/syllog1sm/redshift}}
+of the Zhang-Nivre Parser \cite{zhang2011transition}, trained to
+follow the conventions of Collins head rules
+\cite{collins2003head}. This parser is a transition-based beam search
+parser, and the size of the beam $k$ controls a speed/accuracy trade-off.
+By default we use a beam of $k=16$. 
+
+Additionally, while our parser does not use dependency labels, 
+we found that labels have a significant impact on the performance of
+the RedShift parser. We therefore train a labeled parser, but 
+discard the labels before conversion.
 
 
 Prior to training the d-parser, the training sections are
@@ -1104,7 +1122,7 @@ all experiments use the same model, regardless of the d-parser.
 
 Evaluation for phrase-structure parses is performed using the
 \texttt{evalb}\footnote{\url{http://nlp.cs.nyu.edu/evalb}} script with the
-standard setup. We report labeled \nascomment{yes?} $F_1$ scores as well as recall and
+standard setup. We report labeled $F_1$ scores as well as recall and
 precision. For dependency parsing, we report unlabeled accuracy score
 (UAS).
 
@@ -1116,9 +1134,9 @@ than 400 lines of code. Both are publicly available.\footnote{URL withheld
 with 32GB of memory and  Core i7-3770 3.4GHz 8M cache CPU.
 
 
-\nascomment{important missing detail:  do we use labeled dependency
-  parses or just unlabeled?  I think this needs to be explained early and
-  reminded here}
+% \nascomment{important missing detail:  do we use labeled dependency
+%   parses or just unlabeled?  I think this needs to be explained early and
+%   reminded here}
 
 \section{Experiments}
 \label{sec:exper}
@@ -1221,8 +1239,8 @@ Our first experiments, shown in Table~\ref{tab:acc}, give the accuracy
 and speed
 of the phrase-structure trees produced by the parser.  For these
 experiments we treat our system and the Zhang-Nivre parser as an
-independently trained, but complete end-to-end c-parser
-\nascomment{say explicitly that runtime includes d-parsing!}.  This setup
+independently trained, but complete end-to-end c-parser. Run-time 
+for these experiments includes both the time for d-parsing and conversion. This setup
 is limited in that the parser cannot change the dependencies given
 to it. Despite this limitation, the results show that the parser is
 comparable in accuracy to many widely-used systems, and is

@@ -346,7 +346,7 @@ Dependency trees provide an alternative, and in some sense simpler,
 representation of sentence structure. These d-parses can be
 derived through mechanical transformation from context-free trees.
 There are several popular transformation in wide use; each 
-provides a different representations of a sentence's structure \cite{collins2003head,de2008stanford,yamada2003statistical}.
+provides a different representations of a sentence's structure \cite{collins2003head,de2008stanford,yamada2003statistical,johansson2007extended}.
 In this work we consider transformations that are defined through local transformations known 
 as head rules.
 
@@ -922,7 +922,7 @@ include conjunctions of the rule with:
 \item first and last word of current span
 \item preceding and following word of current span
 \item adjacent words at split of current span
-\item length of the span
+\item binned length of the span
 \end{itemize}
 
 The full feature set is shown in Figure~\ref{fig:features}.  After
@@ -1011,8 +1011,9 @@ parameters to minimize the regularized empirical risk
 
 \[\ell(x, d, y, \theta) = - s(y) + \max_{y' \in \mathcal{Y}(x, d)}\left(s(y')  + \Delta(y, y') \right) \]
 \noindent and where $\Delta$ is a problem specific cost-function.
-In experiments, we use a Hamming loss  $\Delta(y, y') = || y -y'||$ where $y$ is an indicator
-of rule productions coupled with $i, j, k$ positions.
+In experiments, we use a Hamming loss  $\Delta(y, y') = || y -y'||$
+where $y$ is an indicator for production rules firing over pairs of
+adjacent spans (i.e., $i, j, k$).
 
 The objective is optimized using Adagrad \cite{duchi2011adaptive}.  The gradient
 calculation requires computing a loss-augmented max-scoring c-parse for each
@@ -1021,6 +1022,7 @@ Figure~\ref{fig:cky_new} (right).
 
 
 \section{Related Work}
+\lpkcomment{why we put the related work section between training and method?}
 
 The problem of converting dependency to phrase-structured trees has
 been studied previously from the perspective of building
@@ -1053,6 +1055,8 @@ our system to that of \newcite{xia2009towards}.
     dependencies.  Xia et al.~
  report results consulting only \S 19 in development and
 note that additional data had little effect.  We show our system's
+results using \S 19 and the full training set. \nascomment{check that
+  ``\S 2--21'' is correct, pls} \lpkcomment{you mean our number or you mean the standard training splits?}
 results using \S 19 and the full training set. 
   \label{tab:convert}}
 \end{table}
@@ -1127,6 +1131,7 @@ Additionally, while our parser does not use dependency labels,
 we found that labels have a significant impact on the performance of
 the RedShift parser. We therefore train a labeled parser, but 
 discard the labels before conversion.
+\lpkcomment{we did not use classical label though... but it's annoying to explain..}
 
 
 
@@ -1162,7 +1167,8 @@ with 32GB of memory and  Core i7-3770 3.4GHz 8M cache CPU.
 
 We ran experiments to assess the accuracy of the method, its runtime
 efficiency, the effect of dependency parsing accuracy,
-and the effect of the amount of annotated phrase-structure
+and \nascomment{last one seems to be missing}
+ the effect of the amount of annotated phrase-structure
 data.
 
 
@@ -1193,6 +1199,25 @@ data.
     \ParseName        &   90.4 & 58.6 \\
     \hline
   \end{tabular}
+
+
+  \begin{tabular}{|l|r|}
+    \hline
+     & CTB \\
+    \hline
+
+    \hline
+    Model & $F_1$ \\
+    \hline
+    Charniak (2000)     &   80.8  \\
+    Bikel(2004)     &    80.6 \\
+    Petrov (2007)       &   83.3  \\
+    Zhu (2013)           &   83.2 \\
+    \hline
+    \ParseName        &   81.0  \\
+    \hline
+  \end{tabular}
+
   % \begin{tabular}{|l|rrrr|}
   %   \hline
   %   & \multicolumn{3}{|c|}{PTB} \\
@@ -1227,9 +1252,9 @@ data.
     % \hline
   % \end{tabular}
   \caption{ Accuracy and speed on PTB \S 23 \nascomment{check!  said
-      CTB as well}. Comparisons are to state-of-the-art non-reranking supervised
+      CTB as well}. and CTB 5.1 test split. Comparisons are to state-of-the-art non-reranking supervised
     phrase-structure parsers
-    \cite{charniak2000maximum,klein2003accurate,petrov2007improved,carreras2008tag,zhu2013fast},
+    \cite{charniak2000maximum,klein2003accurate,petrov2007improved,carreras2008tag,zhu2013fast,bikel2004parameter},
     and semi-supervised parsers \cite{charniak2005coarse,socher2013parsing}.
   \label{tab:acc}
 }
@@ -1248,6 +1273,11 @@ significantly faster. The only parser competitive in both speed and
 accuracy is the that of \newcite{zhu2013fast}, a fast shift-reduce phrase-structure parser.
 
 \nascomment{what about Chinese??}
+To apply our model on Chinese, we use the head rules complied by \newcite{ding2005machine} \footnote{\url{http://stp.lingfil.uu.se/~nivre/research/chn_headrules.txt}}. Since the RedShift implementation of the Zhang-Nivre Parser have not had a Chinese
+support yet, we simply train our d-parser using TurboParser second order model \footnote{\newcite{martins2013turning} shows that with third
+order features, the UAS of parsing Chinese actually goes down a little bit.} trained with projective constraints.
+
+The result in Table \ref{tab:acc} suggests that, even with out doing any language specific changes in the feature system (e.g. using the last character of a Chinese word as features), we still achieve competitive parsing accuracy. Due to the time constraints, we leave explorations like adopting better d-parse systems such as ZPar \cite{zhang2011syntactic} and feature engineering a future work.
 
  % For these experiments,
 % we use TurboParser \cite{martins2013turning} to predict downstream dependencies.
@@ -1328,7 +1358,7 @@ cases the observed runtime is  linear.
  MaltParser \cite{nivre2006maltparser}, 
     the RedShift implementation of the Zhang-Nivre parser
     \cite{zhang2011transition} with beam size $K \in \{1, 4, 16\}$,
-and three versions of TurboParser
+and three versions of TurboParser trained with projective constraints
     \cite{martins2013turning}.
 \label{tab:oracle} }
 \end{table}
@@ -1352,7 +1382,7 @@ and three versions of TurboParser
 
 
 
-\nascomment{NOT DONE YET, LEFT OFF HERE}
+
 
 \begin{table}
   \centering
@@ -1360,32 +1390,34 @@ and three versions of TurboParser
   \begin{tabular}{|ccc|cc|}
     \hline 
     \multicolumn{3}{|c|}{Class} & \multicolumn{2}{|c|}{Results} \\
-    Dep & Span & Split & Total & Acc  \\ 
+    Dep. & Span & Split & Total & Acc.  \\ 
     $(h, m)$ & $\Span{i,j}$ & $k$ & \% & $A$ \\ 
     \hline
     + & + & +  &  86.1  & 97.9   \\ 
-    - & + & +  &  1.0   & 69.3   \\ 
-    + & + & -  &  2.1   & 83.3   \\ 
-    - & + & -  &  1.3   & 85.9   \\ 
-    + & - & -  &  4.5   & 0.0    \\ 
-    - & - & -  &  4.7   & 0.0    \\ 
+    -- & + & +  &  1.0   & 69.3   \\ 
+    + & + & --  &  2.1   & 83.3   \\ 
+    -- & + & --  &  1.3   & 85.9   \\ 
+    + & -- & --  &  4.5   & 0.0    \\ 
+    -- & -- & --  &  4.7   & 0.0    \\ 
     \hline
   \end{tabular}
   \label{tab:analysis}
   \caption{Error analysis of binary CFG rules. Rules used are split into classes based on 
     correct (+) identification of dependency $(h,m)$, span $\Span{i,j}$, and split $k$. 
-    \textit{Total} is the relative size of the class. \textit{Acc} is accuracy of span nonterminal identification.
+    ``Total'' is the relative size of the class \nascomment{a
+      count might be more interpretable}. ``Acc.'' is the accuracy of span nonterminal identification.
   }
 \end{table}
 
-\paragraph{Conversion}
+% \paragraph{Conversion}
 
-Previous work on this problem has looked at converting dependency trees to phrase-structure trees using linguistic rules \cite{xia2001converting,xia2009towards}. This work is targeted towards the development of treebanks, particularly converting dependency treebanks to phrase-structure treebanks.
-For this application, it is useful to convert gold trees as opposed to predicted trees.
+% Previous work on this problem has looked at converting dependency trees to phrase-structure trees using linguistic rules \cite{xia2001converting,xia2009towards}. This work is targeted towards the development of treebanks, particularly converting dependency treebanks to phrase-structure treebanks.
+% For this application, it is useful to convert gold trees as opposed to predicted trees.
 
-To compare to this work, we train our parser with gold tags and run on gold dependency trees in development. Table~\ref{tab:convert} give the results for this task.
+% To compare to this work, we train our parser with gold tags and run on gold dependency trees in development. Table~\ref{tab:convert} give the results for this task.
 
-
+\nascomment{no need to reiterate the results presented earlier, I
+  commented them out}
 
 % \begin{figure}
 %   \centering
@@ -1406,16 +1438,16 @@ To compare to this work, we train our parser with gold tags and run on gold depe
 
 \paragraph{Analysis}
 \label{sec:analysis}
-
 Finally we consider an internal error analysis of
 the parser. For this analysis, we group each binary rule production
 selected by the parser by three properties:
-is its dependency $(h, m)$ correct?, is its span $\Span{i,j}$ correct? 
-is its split $k$ correct? The first is fully determined by the 
-input d-parse, the second are partially determined by the parser. 
+Is its dependency $(h, m)$ correct? Is its span $\Span{i,j}$ correct? 
+Is its split $k$ correct? The first is fully determined by the 
+input d-parse, the second are partially determined by \ParseName.
 
 Table~\ref{tab:analysis} gives the breakdown. As expected the conversion 
-is almost always correct when it has this information. Many of 
+is almost always correct when it has this information \nascomment{what
+  is ``this information''?}. Many of 
 the errors come from cases where the dependency was fully 
 incorrect, or there was a span issue either from the dependency 
 parser or from the conversion itself.
@@ -1437,15 +1469,20 @@ parser or from the conversion itself.
 \label{fig:dataamo}
 \end{figure}
 
+\nascomment{missing:  the part about varying the amount of labeled
+  constituent data}
+
 
 
 \section{Conclusion}
 
-With recent advances in statistical dependency parsing, state-of-the-art parsers
-have reached the comparable  dependency accuracy as the best phrase structure parsers. However,
-these parser cannot be directly used in applications that require phrase-structure prediction. In this work
-we have described a simple parsing algorithm and structured prediction system for this comparison, and show that it
-can produce phrase-structure parses at comparable accuracy to state-of-the-art system.
+With recent advances in statistical dependency parsing, we find that
+fast, high-quality phrase-structure parsing is achievable using dependency
+parsing first, followed by a statistical conversion algorithm to
+fill in phrase-structure trees. 
+Our implementation is available as open-source software at (URL
+withheld for review).
+
 
 % One question for future work is whether these results are language
 % dependent, or whether these transformation can be projected across

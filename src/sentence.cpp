@@ -15,10 +15,13 @@ void output_sentence(const Sentence &sentence) {
         cout << sentence.tags[i] << " ";
     }
     cout << endl;
+
     for (int i = 0; i < sentence.deps.size(); ++i) {
-        cout << sentence.deps[i] << " ";
+        int dep = sentence.deps[i];
+        cout << dep << " ";
     }
     cout << endl;
+
     for (int i = 0; i < sentence.deplabels.size(); ++i) {
         cout << sentence.deplabels[i] << " ";
     }
@@ -54,11 +57,25 @@ vector<Sentence> *read_sentence(string file) {
             sentence.tags.push_back(tag);
         }
 
+        int root_dep = -1;
         for (int i = 0; i < n_words; ++i) {
             int dep;
             in_file >> dep;
+            if (dep == -1) {
+                if (root_dep == -1) {
+                    root_dep = i;
+                } else {
+                    dep = root_dep;
+                }
+            }
             sentence.deps.push_back(dep);
         }
+
+        // for (int i = 0; i < n_words; ++i) {
+        //     int dep;
+        //     in_file >> dep;
+        //     sentence.deps.push_back(dep);
+        // }
 
         for (int i = 0; i < n_words; ++i) {
             string deplabel;

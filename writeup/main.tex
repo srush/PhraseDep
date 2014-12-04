@@ -985,12 +985,11 @@ parameters to minimize the regularized empirical risk
 \[\ell(x, d, y, \theta) = - s(y) + \max_{y' \in \mathcal{Y}(x, d)}\left(s(y')  + \Delta(y, y') \right) \]
 \noindent and where $\Delta$ is a problem specific cost-function.
 In experiments, we use a Hamming loss  $\Delta(y, y') = || y -y'||$ where $y$ is an indicator
-<<<<<<< HEAD
+
 of rule productions \nascomment{coupled with $i,j,k$ positions?  would
   be strange and difficult to do what you said!}. \lpkcomment{yes, coupled with i,j,k}
-=======
 of rule productions coupled with $i, j, k$ positions.
->>>>>>> d575f67cdc5473b10ab764b43c3429de9f7d057c
+
 
 The objective is optimized using Adagrad \cite{duchi2011adaptive}.  The gradient
 calculation requires computing a loss-augmented max-scoring c-parse for each

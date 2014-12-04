@@ -18,6 +18,7 @@
 \usepackage{fullpage}
 \usepackage{todonotes}
 \usepackage{multicol}
+\usepackage{url}
 
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{lemma}[theorem]{Lemma}
@@ -335,7 +336,7 @@ sequence $\{x_i, \ldots, x_j\}$ of the sentence covered by this vertex.
 
 
   % \Tree [ .A [ .B  C ] ]
-  \caption{ Illustration of c-parse to d-parse conversion with head rules $\{ \Tag{VP} \rightarrow \Tag{NP}\ \Tag{VBD}^*,  \Tag{NP} \rightarrow \Tag{DT}\ \Tag{NP}^*, \ldots \} $. The c-parse is an ordered tree with fringe $x_1, \ldots, x_n$. Each vertex is annotated with a non-terminal tag and a derived head index. The blue and red vertices have the words \texttt{automaker$_2$} and \texttt{sold$_3$} as heads respectively. The vertex $\Tag{VP}_3$  implies that \texttt{automaker$_2$} is a dependent of \texttt{sold$_3$}, and that $d_2 = 3$ in the d-parse.     
+  \caption{ Illustration of c-parse to d-parse conversion with head rules $\{ \Tag{VP} \rightarrow \Tag{NP}\ \Tag{VBD}^*,  \Tag{NP} \rightarrow \Tag{DT}\ \Tag{NP}^*, \ldots \} $. The c-parse is an ordered tree with fringe $x_1, \ldots, x_n$. Each vertex is annotated with a nonterminal tag and a derived head index. The blue and red vertices have the words \texttt{automaker$_2$} and \texttt{sold$_3$} as heads respectively. The vertex $\Tag{VP}_3$  implies that \texttt{automaker$_2$} is a dependent of \texttt{sold$_3$}, and that $d_2 = 3$ in the d-parse.     
   \label{fig:spine}}
 \end{figure}
 
@@ -854,7 +855,7 @@ of the tree,  as found useful in unlexicalized approaches
 \section{Structured Prediction}
 \label{sec:strpred}
 While the parser only requires a d-parse at prediction time, 
-it uses annotated c-parses to learn the transformation. 
+the transformation it implements is learned from a treebank of c-parses.
 Define this scoring function $s$ as 
 
 \[s(y;x, d, \theta) =  \theta^{\top} f(x, d, y) \]
@@ -863,36 +864,33 @@ Define this scoring function $s$ as
 where $\theta$ is a parameter vector and $f(x, d, y)$ is a feature
 function that maps parse productions to sparse feature vectors. 
 
-To learn the parameter for scoring possible c-parses we use a standard
-structured prediction setup. In this section, we describe the features
-of the model and then the learning algorithm.
+To learn the parameters for scoring possible c-parses we use a standard
+structured prediction setup with a linear model. We first describe
+features, then parameter estimation.
 
 % We first discuss the features used and then estimating the parameters of the model.
 
 \subsection{Features}
 
 In theory, the scoring function for this system could be directly
-adapted from existing c-parsers. However, the existing structure of
+adapted from existing \nascomment{lexicalized?} c-parsers. However, the existing structure of
 the dependency parse limits the number of decisions that need to be
 made, and allows for a smaller set of features.
 
 We model our features after two bare-bones parsing systems. 
 The first set is the basic arc-factored features 
 used by \newcite{mcdonald2006discriminative}. These features include combinations of:
-
 \begin{itemize}
-\item rule and top non-terminal
+\item rule and top nonterminal
 \item modifier word and part-of-speech
 \item head word and part-of-speech
 \end{itemize}
 
-
 The second set of features is modeled after the span features
-described in the X-Bar style parser of \newcite{hall2014less}. These
-include conjunction of the rule with:
-
+described in the X-bar-style parser of \newcite{hall2014less}. These
+include conjunctions of the rule with:
 \begin{itemize}
-\item first and last word of current span.
+\item first and last word of current span
 \item preceding and following word of current span
 \item adjacent words at split of current span
 \item length of the span
@@ -902,7 +900,6 @@ The full feature set is shown in Figure~\ref{fig:features}.  After
 training, there are a total of around 2 million non-zero features.
 For efficiency, we use lossy feature hashing. We found this had no
 impact on parsing accuracy but made the parsing significantly faster.
-
 
 \begin{figure}
   \footnotesize
@@ -965,32 +962,36 @@ impact on parsing accuracy but made the parsing significantly faster.
 
   \end{tabular}
   \end{multicols}
-  \label{fig:features}
+
   \caption{The feature templates used in the function $f(x, d, y)$. For the span features, the symbol $\RuleSym$ is expanded into both $\Rule{A}{B}{C}$ and $A$. The function $\TagFN{i}$ gives the part-of-speech tag of word $x_i$. The function $\BinFN{i}$ partitions a span length into one of 10 bins.
-  }
+   \label{fig:features} }
 \end{figure}
 
 \subsection{Training}
 
-The parameters $\theta$ are estimated using a structured SVM setup.
+The parameters $\theta$ are estimated using a structural support
+vector machine \cite{taskar-04}.
 Given a set of gold-annotated parse examples, $(x^{1}, y^{1}), \ldots,
-(x^{D}, y^{D})$, and paired dependency structures $d^{1} \ldots d^{D}$ induced
+(x^{D}, y^{D})$, and dependency structures $d^{1} \ldots d^{D}$ induced
 from the head rules, we estimate the
 parameters to minimize the regularized empirical risk
 
 \[ \min_{\theta} \sum_{i = 1}^D \max\{0,  \ell( x^{i}, d^{i} , y^{i}, \theta) \} + \frac{\lambda}{2} ||\theta||_1 \]
+\nascomment{I am confused by the max with 0.  I don't think that's
+  standard for structured hinge}
 
 \noindent where we define $\ell$ as
-
-\[\ell(x, d, y, \theta) = s(y) + \max_{y' \in \mathcal{Y}(x, d)}\left(s(y')  + \Delta(y, y') \right) \]
-
+\nascomment{added negation to first term!}
+\[\ell(x, d, y, \theta) = - s(y) + \max_{y' \in \mathcal{Y}(x, d)}\left(s(y')  + \Delta(y, y') \right) \]
 \noindent and where $\Delta$ is a problem specific cost-function.
-In experiments, we use a hamming loss  $\Delta(y, y') = || y -y'||$ where $y$ is an indicator
-of rule productions.
+In experiments, we use a Hamming loss  $\Delta(y, y') = || y -y'||$ where $y$ is an indicator
+of rule productions \nascomment{coupled with $i,j,k$ positions?  would
+  be strange and difficult to do what you said!}.
 
 The objective is optimized using Adagrad \cite{duchi2011adaptive}.  The gradient
-calculation requires computing a loss-augmented argmax for each
-training example which is done using the algorithm of Figure~\ref{fig:cky_new}.
+calculation requires computing a loss-augmented max-scoring c-parse for each
+training example which is done using the algorithm of
+Figure~\ref{fig:cky_new} (right).
 
 
 \section{Related Work}
@@ -999,20 +1000,53 @@ The problem of converting dependency to phrase-structured trees has
 been studied previously from the perspective of building
 multi-representational treebanks.  \newcite{xia2001converting} and
 \newcite{xia2009towards} develop a rule-based system for the
-converting human-annotated dependency parses. Our work differs in that
+conversion of human-annotated dependency parses. Our work differs in that
 we learn a data-driven structured prediction model that is also able
-to handle automatically predicted input. Table \ref{tab:convert} shows a comparsion
-between the two systems. For a more fair comparsion, we also try only use \S 19 to train our system,
-and in that case, our F1 score is 6.5\% higher.
+to handle automatically predicted dependency parses as input. Table~\ref{tab:convert} compares
+our system to that of \newcite{xia2009towards}.
 
-There has been successful work combining dependency and phrase-structure parsing. \newcite{carreras2008tag} build a
+
+\begin{table}
+  \centering
+  \begin{tabular}{|l|ccc|}
+
+    \hline
+    & \multicolumn{3}{|c|}{PTB \S 22} \\
+    Model & Prec. & Rec. & $F_1$  \\
+    \hline
+
+    \hline
+    Xia et al.~(2009)    & 88.1 & 90.7 & 89.4 \\
+    \ParseName{} (\S 19)  & 95.9 & 95.9 & 95.9    \\
+    \ParseName{}  (\S 2--21) & 97.5 & 97.8 & 97.7    \\
+    \hline
+
+  \end{tabular}
+  \caption{Comparison with the rule-based system of \newcite{xia2009towards}.
+    Results are shown using gold-standard tags and
+    dependencies.  Xia et al.~
+ report results consulting only \S 19 in development and
+note that additional data had little effect.  We show our system's
+results using \S 19 and the full training set. \nascomment{check that
+  ``\S 2--21'' is correct, pls}
+  \label{tab:convert}}
+\end{table}
+
+
+
+There has been successful work combining dependency and
+phrase-structure parsing. 
+\nascomment{should probably cite the factored parser of Klein and
+  Manning here}
+\newcite{carreras2008tag} build a
 high-accuracy parser that uses a dependency parsing model both for
 pruning and within a richer lexicalized parser. Similarly
 \newcite{rush2010dual} use dual decomposition to combine a dependency
 parser with a simple phrase-structure model. This work differs
 in that we treat the dependency parse as a hard constraint, hence largely reduce the
-running time of a fully lexicalized phrase structure parsing model while still
-able to generate highly phrase-structure parses. 
+running time of a fully lexicalized phrase structure parsing model
+while maintaining the ability, at least in principle,
+to generate highly phrase-structure parses. 
 % By starting with a complete dependency parse structure
 % we can build a much faster and smaller model that is 
 
@@ -1038,51 +1072,62 @@ use the following setup.
 
 For English experiments we use the standard Penn Treebank (PTB)
 experimental setup \cite{marcus1993building}. Training is done on
-section 2-21, development on section 22, and test of section 23.
+\S 2--21, development on \S 22 \nascomment{clarify what gets tuned here}, and testing on \S 23.
 
 For Chinese experiments, we use version 5.1 of the Penn  Chinese Treebank 5.1 (CTB) \cite{xue2005penn}. We followed previous work and used
-001-270 and 440-1151 for training, articles
-301-325 as development, and articles
-271-300 as test.
+articles 001--270 and 440--1151 for training, 
+301--325 for development, and 
+271--300 for test.
 
 Part-of-speech tagging is performed for all models  using TurboTagger
 \cite{martins2013turning}. Unless otherwise noted, the input d-parsing
-is done using RedShift
-implementation\footnote{https://github.com/syllog1sm/redshift} of the
-Zhang-Nivre Parser\cite{zhang2011transition}.
+is done using the RedShift
+implementation\footnote{\url{https://github.com/syllog1sm/redshift}} of the
+Zhang-Nivre Parser \cite{zhang2011transition},
+ trained to follow the conventions of Collins head rules 
+\cite{collins2003head}. \nascomment{need to explain beam size here,
+  since it comes up later!}
 
-Prior to training the d-parser, the train sections are
-automatically tagged using 10-fold jackknifing \cite{collins2000} for both dependency and phrase structure trees. \cite{zhu2013fast} found this
-simple technology gives an improvement of 0.4\% on English and 2.0\% on Chinese in their case. 
-d-parser is trained to produce Collins head rules 
-\cite{collins2003head}.
+
+Prior to training the d-parser, the training sections are
+automatically processed  using 10-fold jackknifing \cite{collins2000} for both dependency and phrase structure trees. \newcite{zhu2013fast} found this
+simple technology gives an improvement of 0.4\% on English and 2.0\% on Chinese.
 
 For our model the ``gold'' d-parses $d^1, \ldots, d^D$   
 used at training come from the gold c-parse converted with 
-the Collins head rules\footnote{ We experimented with using
+the Collins head rules.\footnote{We experimented with using
   jackknifed dependency parses $d'$ at training time with oracle tree
-  structures, i.e. $\argmin_{y' \in \mathcal{Y}(x, d')} \Delta(y, y')$,
-  but found that this did not improve performance.}. Since the trained
+  structures, i.e., $\argmin_{y' \in \mathcal{Y}(x, d')} \Delta(y, y')$,
+  but found that this did not improve performance.} Since the trained
 model is independent of the d-parser,  
-for all experiments with other d-parsers we used the same model.
+all experiments use the same model, regardless of the d-parser.
 
 Evaluation for phrase-structure parses is performed using the
-\texttt{evalb}\footnote{http://nlp.cs.nyu.edu/evalb/} script using the
-standard setup. We report F1-Score as well as recall and
-precision. For dependency parsing we use unlabeled accuracy score
+\texttt{evalb}\footnote{\url{http://nlp.cs.nyu.edu/evalb}} script with the
+standard setup. We report labeled \nascomment{yes?} $F_1$ scores as well as recall and
+precision. For dependency parsing, we report unlabeled accuracy score
 (UAS).
 
 We implemented the grammar binarization, head rules, and pruning
 tables in Python, and the parser, features, and training in C++. The
-core run-time decoding algorithm is self contained and requires less
-than 400 lines of code. Both are publicly available.\footnote{Withheld
-  for review} Experiments are performed on a Lenovo ThinkCentre desktop computer
+core run-time decoding algorithm is self-contained and requires less
+than 400 lines of code. Both are publicly available.\footnote{URL withheld
+  for review.} Experiments are performed on a Lenovo ThinkCentre desktop computer
 with 32GB of memory and  Core i7-3770 3.4GHz 8M cache CPU.
+
+
+\nascomment{important missing detail:  do we use labeled dependency
+  parses or just unlabeled?  I think this needs to be explained early and
+  reminded here}
 
 \section{Experiments}
 \label{sec:exper}
 
-We ran experiments to assess the accuracy of the method, its run-time efficiency, the amount of phrase-structure data required, and the effect of dependency accuracy.
+We ran experiments to assess the accuracy of the method, its runtime
+efficiency, the effect of dependency parsing accuracy,
+and the effect of the amount of annotated phrase-structure
+data.
+
 
 \subsection{Parsing Accuracy}
 
@@ -1096,16 +1141,18 @@ We ran experiments to assess the accuracy of the method, its run-time efficiency
     \hline
 
     \hline
-    Model & F1 & Speed\\
+    Model & $F_1$ & Sent./s.\\
     \hline
-    Charniak[00]      &   89.5 &  -  \\
-    Stanford PCFG[03]     &   85.5 & 5.3  \\
-    Petrov[07]        &   90.1 & 8.6  \\
-    Zhu[13]           &   90.3 & 39.0 \\
-    Carreras[08]      &   91.1 & -    \\
-    % above have no extental resource
-    CJ Reranking[05]      &   91.5 & 4.3  \\
-    Stanford RNN[13]       &   90.0 & 2.8  \\
+    Charniak (2000)     &   89.5 &  -  \\
+    Stanford PCFG (2003)     &   85.5 & 5.3  \\
+    Petrov (2007)       &   90.1 & 8.6  \\
+    Zhu (2013)           &   90.3 & 39.0 \\
+    Carreras (2008)      &   91.1 & -    \\
+    % above have no extental resource 
+\hline
+    CJ Reranking (2005)      &   91.5 & 4.3  \\
+    Stanford RNN (2013)       &   90.0 & 2.8  \\ 
+\hline
     \ParseName        &   90.4 & 58.6 \\
     \hline
   \end{tabular}
@@ -1142,20 +1189,28 @@ We ran experiments to assess the accuracy of the method, its run-time efficiency
     % \ParseName    & & & 81.4 \\
     % \hline
   % \end{tabular}
+  \caption{ Accuracy and speed on PTB \S 23 \nascomment{check!  said
+      CTB as well}. Comparisons are to state-of-the-art non-reranking supervised
+    phrase-structure parsers
+    \cite{charniak2000maximum,klein2003accurate,petrov2007improved,carreras2008tag,zhu2013fast},
+    and semi-supervised parsers \cite{charniak2005coarse,socher2013parsing}.
   \label{tab:acc}
-  \caption{ Accuracy results on the Penn Treebank and Chinese Treebank datasets. Comparisons are to state-of-the-art non-reranking phrase-structure parsers including:  Charniak[00] \cite{charniak2000maximum}, Stanford PCFG[03] \cite{klein2003accurate}, Petrov[07] \cite{petrov2007improved}, Carraras[08] \cite{carreras2008tag}, Zhu[13] \cite{zhu2013fast}, as well as semi-supervised parsers including : Stanford Recursive neural network[13] \cite{socher2013parsing} and CJ Reranking \cite{charniak2005coarse}. }
+}
 \end{table}
 
 Our first experiments, shown in Table~\ref{tab:acc}, give the accuracy
+and speed
 of the phrase-structure trees produced by the parser.  For these
 experiments we treat our system and the Zhang-Nivre parser as an
-independently trained, but complete end-to-end c-parser.  This setup
-is limited in the that the parser cannot change the dependencies given
+independently trained, but complete end-to-end c-parser
+\nascomment{say explicitly that runtime includes d-parsing!}.  This setup
+is limited in that the parser cannot change the dependencies given
 to it. Despite this limitation, the results show that the parser is
 comparable in accuracy to many widely-used systems, and is
 significantly faster. The only parser competitive in both speed and
-accuracy is the Zhu[13], a fast shift-reduce phrase-structure parser.
+accuracy is the that of \newcite{zhu2013fast}, a fast shift-reduce phrase-structure parser.
 
+\nascomment{what about Chinese??}
 
  % For these experiments,
 % we use TurboParser \cite{martins2013turning} to predict downstream dependencies.
@@ -1163,43 +1218,40 @@ accuracy is the Zhu[13], a fast shift-reduce phrase-structure parser.
 $\ldots$
 
 
-\paragraph{Dependencies}
+\paragraph{Effect of Dependencies}
 
 Our next set of experiments look at the effect of different 
 input dependency trees. We ran the same trained converter 
 on seven different dependency inputs of varying quality measured 
-by unlabeled accuracy score(UAS) and speed.
-
-The experiments are shown in Table~\ref{tab:oracle}.
-The corresponding figure shows that there is a direct correlation
-between the UAS of the parser and the final F1, but that small 
-changes in dependency accuracy can have rather large effects.
-For instance MaltParser scores $89.7$ in UAS but the conversion
-produces only a $85.5$ F1 score. 
-
-To upper bound of the accuracy of this system we consider an
-oracle version of the parser. For a gold parse $y$ and predicted
+by unlabeled accuracy score (UAS).
+Table~\ref{tab:oracle}  shows the results for each d-parser:  its UAS,
+labeled $F_1$ when it is used with \ParseName and with an oracle converter.\footnote{For a gold parse $y$ and predicted
 dependencies $\hat{d}$, define the oracle parse $y'$ as
+\[ y' = \argmin_{y' \in \mathcal{Y}(x, \hat{d})} \Delta(y, y') \]}
+Figure~\ref{fig:corr}  shows that there is a direct correlation
+between the UAS of the inputs and labeled $F_1$.
+\nascomment{there was a claim about small changes in d accuracy having
+  big effects, but the plot looks linear to me}
+%  , and that small 
+% changes in dependency accuracy can have rather large effects.
+% For instance MaltParser scores $89.7$ in UAS but the conversion
+% produces only a $85.5$ F1 score. 
 
-\[ y' = \argmin_{y' \in \mathcal{Y}(x, \hat{d})} \Delta(y, y') \]
-Table~\ref{tab:oracle} shows that the change in oracle score tracks the 
-F1 scores seen for each parser.
 
 
-\paragraph{Speed}
+\paragraph{Runtime}
 
 In Section~\ref{sec:pardeps} we considered the theoretical 
-complexity of the parsing model, and gave the main 
+complexity of the parsing model and present the main 
 speed results in Table~\ref{tab:alg-oracle}.
 Despite having a quadratic theoretical complexity
-the practical run-time was quite fast.
-
-We therefore considered the empirical complexity of the 
+the practical runtime was quite fast.
+Here we consider the empirical complexity of the 
 model by measuring the time spent of individual sentences. 
 Figure~\ref{fig:speed} shows a graph of the speed of
 sentences of varying length for both the full algorithm
 and for the algorithm with pruning. In both 
-cases the run-time is clearly linear in practice.
+cases the observed runtime is  linear.
 
 
 
@@ -1216,7 +1268,7 @@ cases the run-time is clearly linear in practice.
 
   \begin{tabular}{|l|cccc|}
     \hline
-    Model & UAS  & F1 & Speed  & Oracle  \\
+    Model & UAS  & $F_1$ & Sent./s.  & Oracle  \\
     \hline
 
     \hline
@@ -1230,17 +1282,40 @@ cases the run-time is clearly linear in practice.
     \hline
   \end{tabular}
 
-  \includegraphics[scale=0.4]{../notebooks/parsers}
 
-  \label{tab:oracle}
-  \caption{Comparison of the effect of downstream dependency prediction.
-    Experiments are run on the development section with different input dependencies. \textit{Oracle} is the oracle F1 on the development data. \textit{Speed} is the efficiency of the \textit{full-system} (c-parse+d-parse) in sentences per second.
-    Inputs include three versions of TurboParser \cite{martins2013turning} (Basic, Standard Full), MaltParser \cite{nivre2006maltparser}, 
-    and the RedShift implementation of the Zhang-Nivre parser \cite{zhang2011transition} with beam size $k \in \{1, 4, 16\}$. }
+  
+  \caption{Comparison of the effect of d-parsing accuracy (PTB \S 22)
+    on \ParseName{} and an oracle converter.  Runtime includes
+    d-parsing and c-parsing.  
+    Inputs include 
+ MaltParser \cite{nivre2006maltparser}, 
+    the RedShift implementation of the Zhang-Nivre parser
+    \cite{zhang2011transition} with beam size $K \in \{1, 4, 16\}$,
+and three versions of TurboParser
+    \cite{martins2013turning}.
+\label{tab:oracle} }
 \end{table}
 
+\begin{figure}
+  \includegraphics[scale=0.5]{../notebooks/parsers}
+\caption{\label{fig:corr} Relationship of d-parsing performance to
+  c-parsing performance using \ParseName to convert different
+  dependency parsers' output.}
+\end{figure}
 
 
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.5]{../notebooks/comp}
+  \caption{Empirical runtime of the parser on sentences of varying length, with and without pruning. 
+  Despite a worst-case quadratic complexity, observed runtime is
+  linear. Pruning significantly improves the slope.
+\label{fig:speed}}
+\end{figure}
+
+
+
+\nascomment{NOT DONE YET, LEFT OFF HERE}
 
 \begin{table}
   \centering
@@ -1273,32 +1348,6 @@ For this application, it is useful to convert gold trees as opposed to predicted
 
 To compare to this work, we train our parser with gold tags and run on gold dependency trees in development. Table~\ref{tab:convert} give the results for this task.
 
-
-\begin{table}
-  \centering
-  \begin{tabular}{|l|ccc|}
-
-    \hline
-    & \multicolumn{3}{|c|}{Dev} \\
-    Model & Prec & Rec & F1  \\
-    \hline
-
-    \hline
-    Xia[09]     & 88.1 & 90.7 & 89.4 \\
-    \ParseName(Sec19)  & 95.9 & 95.9 & 95.9    \\
-    \ParseName  & 97.5 & 97.8 & 97.7    \\
-    \hline
-
-  \end{tabular}
-  \caption{Comparison with the rule-based system of \newcite{xia2009towards}.
-    Results are from PTB development section 22 using gold tags and gold
-    dependencies.
-    Xia[09] report results from training on only on Section 19, but
-    include a note that further data had little effect.
-    For comparison we report result on complete training as well as just Sec. 19.
-  }
-  \label{tab:convert}
-\end{table}
 
 
 % \begin{figure}
@@ -1343,15 +1392,6 @@ parser or from the conversion itself.
 % We also consider the mistakes that are made by the parser compared to the
 % mistakes made. For each of the bracketing errors made by the parser, we can classify it as a bracketing mistake, a dependency mistake or neither.
 
-
-\begin{figure}
-  \centering
-  \includegraphics[scale=0.5]{../notebooks/comp}
-  \caption{Empirical complexity of the parser on sentences of varying length, with and without pruning. 
-  Despite a worst-case quadratic complexity, in practice the runtime is linear. Pruning significantly lowers
-  the slope of the run-time.}
-\label{fig:speed}
-\end{figure}
 
 
 \begin{figure}

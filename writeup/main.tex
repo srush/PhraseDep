@@ -863,9 +863,10 @@ include conjunction of the rule with:
 \item length of the span
 \end{itemize}
 
-The full feature set  is shown in Figure~\ref{fig:features}.
-% After training there are \# non-zero features.
-
+The full feature set is shown in Figure~\ref{fig:features}.  After
+training, there are a total of around 2 million non-zero features.
+For efficiency, we use lossy feature hashing. We found this had no
+impact on parsing accuracy but made the parsing significantly faster.
 
 
 \begin{figure}
@@ -1128,7 +1129,7 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
     \hline
   \end{tabular}
 
-  \includegraphics[scale=0.4]{../notebooks/parsers}
+  \includegraphics[scale=0.5]{../notebooks/parsers}
   \vspace{0.5cm}
 
   \label{tab:oracle}
@@ -1218,12 +1219,20 @@ To compare to this work, we train our parser with gold tags and run on gold depe
 
 \begin{figure}
   \centering
-  \includegraphics[scale=0.4]{../notebooks/comp}
+  \includegraphics[scale=0.5]{../notebooks/comp}
   \caption{Empirical complexity of the parser on sentences of varying length, with and without pruning. 
   Despite a worst-case quadratic complexity, in practice the runtime is linear. Pruning significantly lowers
   the slope of the run-time.}
 \label{fig:speed}
 \end{figure}
+
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.5]{../notebooks/data}
+\label{fig:dataamo}
+\end{figure}
+
 
 
 \section{Conclusion}

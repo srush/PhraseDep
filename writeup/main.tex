@@ -1056,14 +1056,15 @@ We ran experiments to assess the accuracy of the method, its run-time efficiency
     \hline
     Model & 22 FScore & 22 UAS & 23 FScore  \\
     \hline
-    Charniak          & & & 89.5\\
-    Petrov[07]        & & 92.66 & 90.1 \\
-    Carreras[08]      & &  & 91.1 \\
+    Charniak[00]          & & & 80.8\\
+    Petrov[07]        & & 92.7 & 90.1 \\
     Zhu[13]           & &  & 90.4 \\
-    CJ                & & 93.92 & \\
-    Stanford[]        & & 88.88 & \\
-    StanfordRNN       & & 92.23 & \\
-    \ParseName & 91.04 & 93.59 & \\
+    Stanford PCFG        & & 88.9 & 85.5\\
+  % above have no extental resource
+    CJ Reranking     & & 93.9 & 91.5 \\
+    StanfordRNN       & & 92.2 & 90.0\\
+    Carreras[08]      & & - & 91.1 \\
+    \ParseName & 91.0 & 93.5 & \\
     \hline
     \hline
     & \multicolumn{3}{|c|}{CTB} \\
@@ -1072,12 +1073,12 @@ We ran experiments to assess the accuracy of the method, its run-time efficiency
 
     \hline
     Bikel         & & & 80.6 \\
+    Charniak[00] & & & 80.8 \\
     Petrov[07]    & & & 83.3 \\
-    Carreras[08]  & & & \\
+%    Carreras[08]  & & & \\
     Zhu[13]       & & & 83.2 \\
-    Stanford[]    & & & \\
-    CJ  & & & 82.3 \\
-    \ParseName & & & \\
+    CJ Reranking  & & & 82.3 \\
+    \ParseName & & & 81.4\\
     \hline
   \end{tabular}
   \label{tab:acc}

@@ -159,7 +159,7 @@ dependency parse.  This idea was explored by  \newcite{xia2001converting} and
 algorithm in Section~\ref{sec:strpred} using the structured prediction framework.  The approach can be
 understood as a pipeline, or as a specially-trained coarse-to-fine
 decoding algorithm where a d-parser provides ``coarse'' structure and
-the second stage refines it \cite{??}.
+the second stage refines it \cite{petrov2006learning}.
 
 Our lexicalized phrase-structure parser is asymptotically faster than
 parsing with a lexicalized context-free grammar: $O(n^2)$ plus
@@ -345,7 +345,7 @@ Dependency trees provide an alternative, and in some sense simpler,
 representation of sentence structure. These d-parses can be
 derived through mechanical transformation from context-free trees.
 There are several popular transformation in wide use; each 
-provides a different representations of a sentences structure \cite{}.
+provides a different representations of a sentences structure \cite{collins2003head,de2008stanford,yamada2003statistical}.
 In this work we consider transformations that are defined through local transformations known 
 as head rules.
 
@@ -808,7 +808,7 @@ $\Rule{A}{\beta_1}{\bar{A}^{*}}$
 Note that each rule contains at most two nonterminals from the original grammar, so the size of the new binarized rule set is bounded by $O(\nonterms^2)$. The small size of the grammar further helps the speed of the algorithm.
 
 We experimented with binarization that use horizontal and vertical markovization to include additional context 
-of the tree \cite{}, but we found that this increased the size of the grammar without leading to improvements in accuracy.
+of the tree as in unlexicalized approaches \cite{klein2003accurate}, but we found that this increased the size of the grammar without leading to improvements in accuracy.
 
 
 
@@ -952,7 +952,7 @@ parameters to minimize the regularized empirical risk
 In experiments, we use a hamming loss  $\Delta(y, y') = || y -y'||$ where $y$ is an indicator
 of rule productions.
 
-The objective is optimized using Adagrad \cite{}.  The gradient
+The objective is optimized using Adagrad \cite{duchi2011adaptive}.  The gradient
 calculation requires computing a loss-augmented argmax for each
 training example which is done using the algorithm of Figure~\ref{fig:cky_new}.
 
@@ -971,9 +971,16 @@ There has been successful work combining dependency and phrase-structure parsing
 high-accuracy parser that uses a dependency parsing model both for
 pruning and within a richer lexicalized parser. Similarly
 \newcite{rush2010dual} use dual decomposition to combine a dependency
-parser with a simple phrase-structure model. We take this
-approach a step further by fixing the dependency structure
-entirely before parsing.\lpkcomment{only fixing the dependency structure
+parser with a simple phrase-structure model. This work differs
+in that we remove the dependency parsing model entirely.
+By starting with a complete dependency parse structure
+we can build a much faster and smaller model that  is still
+able to generate highly phrase-structure parses. 
+
+% approach a step further by fixing the dependency structure
+% entirely before parsing. 
+
+\lpkcomment{only fixing the dependency structure
 entirely before parsing sounds more like a step backward than a step further... i am not sure if this is a good way to say that... i think there is a important difference here, which is, when combining the phrase-structure and dep parsing, when ppl do this, the binarization does not imply dep arcs, so even you can push info from dep to phrase structure parsing, you can't directly pruning so much like we do here...right?}
 
 
@@ -1000,8 +1007,7 @@ For Chinese experiments, we use version 5.1 of the Penn  Chinese Treebank 5.1 (C
 301-325 as development, and articles
 271-300 as test.
 
-Part-of-speech tagging is done using TurboTagger
-\cite{martins2013turning}. Unless otherwise noted, 
+Part-of-speech tagging is done using TurboTagger. Unless otherwise noted, 
 the input d-parsing is done using TurboParser  
 \cite{martins2013turning}. 
 Prior to training the d-parser, the train sections are
@@ -1075,7 +1081,7 @@ We ran experiments to assess the accuracy of the method, its run-time efficiency
     \hline
   \end{tabular}
   \label{tab:acc}
-  \caption{ Accuracy results on the Penn Treebank and Chinese Treebank datasets. Comparisons are to state-of-the-art non-reranking phrase-structure parsers including:  Petrov[07] \cite{petrov2006learning}, Carraras[08] \cite{carreras2008tag}, Zhu[13] \cite{zhu2013fast}, Charniak[00] \cite{charniak2000maximum}, and Stanford[] \cite{}.    }
+  \caption{ Accuracy results on the Penn Treebank and Chinese Treebank datasets. Comparisons are to state-of-the-art non-reranking phrase-structure parsers including:  Petrov[07] \cite{petrov2006learning}, Carraras[08] \cite{carreras2008tag}, Zhu[13] \cite{zhu2013fast}, Charniak[00] \cite{charniak2000maximum}, and Stanford[] \cite{klein2003accurate,socher2013parsing}.  }
 \end{table}
 
 Our first experiments, shown in Table~\ref{tab:acc}, examine the accuracy of the phrase-structure trees produced by the parser. For these experiments,
@@ -1090,7 +1096,7 @@ Our next set of experiments consider the efficiency of the model. For these expe
 
 We also consider the end-to-end speed of the parser when combined with different downstream dependencies. We look at
 
-Finally we consider the practical run-time of the parser on sentences of different length. Figure~\ref{} shows the graph.
+Finally we consider the empirical run-time of the parser on sentences of different length. Figure~\ref{fig:speed} shows the graph.
 
 
 \subsection{Analysis}
@@ -1137,7 +1143,7 @@ mistakes made. For each of the bracketing errors made by the parser, we can clas
   \footnotesize
   \begin{tabular}{|ccc|cc|}
     \hline 
-    \multicolumn{3}{|c|}{Class} & \multicolumn{2}{|c|}{Score} \\
+    \multicolumn{3}{|c|}{Class} & \multicolumn{2}{|c|}{Results} \\
     Dep & Span & Split & Total & Acc  \\ 
     $(h, m)$ & $\Span{i,j}$ & $k$ & \% & $A$ \\ 
     \hline
@@ -1190,7 +1196,7 @@ To compare to this work, we train our parser with gold tags and run on gold depe
 \end{table}
 
 
-\begin{table}
+\begin{figure}
   \centering
   % \begin{tabular}{|l|ll|}
   %   \hline
@@ -1202,12 +1208,21 @@ To compare to this work, we train our parser with gold tags and run on gold depe
   %   \hline
   % \end{tabular}
 
-  \includegraphics[scale=0.4]{../notebooks/comp}
+
   \label{tab:speed}
   \caption{Experiments of parsing speed. (a) The speed of the parser on its own and with pruning. (b) The end-to-end speed of the parser when combined with different dependency parsers. }
-\end{table}
+\end{figure}
 
 
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.4]{../notebooks/comp}
+  \caption{Empirical complexity of the parser on sentences of varying length, with and without pruning. 
+  Despite a worst-case quadratic complexity, in practice the runtime is linear. Pruning significantly lowers
+  the slope of the run-time.}
+\label{fig:speed}
+\end{figure}
 
 
 \section{Conclusion}

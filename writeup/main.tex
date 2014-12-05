@@ -1,4 +1,4 @@
-%
+% 
 % File naaclhlt2015.tex
 %
 
@@ -133,7 +133,7 @@ the art on English and Chinese benchmarks.
 
 Natural language parsers typically produce phrase-structure (constituent) trees or dependency trees.  These representations capture
 some of the same syntactic phenomena, and the two can be produced
-jointly \cite{carreras2008tag,rush2010dual}.  Yet it
+jointly \cite{klein2002fast,carreras2008tag,rush2010dual}.  Yet it
 appears to be completely unpredictable which will be preferred by a
 particular subcommunity or used in a particular application.  Both continue to receive the attention of
 parsing researchers.
@@ -987,7 +987,6 @@ Figure~\ref{fig:cky_new} (right).
 
 
 \section{Related Work}
-\lpkcomment{why we put the related work section between training and method?}
 
 The problem of converting dependency to phrase-structured trees has
 been studied previously from the perspective of building
@@ -1028,18 +1027,18 @@ results using \S 19 and the full training set.
 
 
 There has been successful work combining dependency and
-phrase-structure parsing. 
-\nascomment{should probably cite the factored parser of Klein and
-  Manning here}
-\newcite{carreras2008tag} build a
-high-accuracy parser that uses a dependency parsing model both for
-pruning and within a richer lexicalized parser. Similarly
-\newcite{rush2010dual} use dual decomposition to combine a dependency
-parser with a simple phrase-structure model. This work differs
-in that we treat the dependency parse as a hard constraint, hence largely reduce the
+phrase-structure information to build accurate c-parsers.
+\newcite{klein2002fast} construct a factored generative model that
+score both context-free syntactic information and semantic
+dependencies.  \newcite{carreras2008tag} construct a state-of-the-art
+parser that uses a dependency parsing model both for pruning and
+within a richer lexicalized parser. Similarly \newcite{rush2010dual}
+use dual decomposition to combine a powerful dependency parser with a
+lexicalized phrase-structure model. This work differs in that we treat the
+dependency parse as a hard constraint, hence largely reduce the
 running time of a fully lexicalized phrase structure parsing model
-while maintaining the ability, at least in principle,
-to generate highly phrase-structure parses. 
+while maintaining the ability, at least in principle, to generate
+highly accurate phrase-structure parses.
 % By starting with a complete dependency parse structure
 % we can build a much faster and smaller model that is 
 
@@ -1094,7 +1093,7 @@ By default we use a beam of $k=16$.
 For Chinese, we use the head rules compiled by
 \newcite{ding2005machine}\footnote{\url{http://stp.lingfil.uu.se/~nivre/research/chn_headrules.txt}}. Since
 RedShift does not yet have Chinese support, we train our d-parser
-using TurboParser standard trained with projective constraints.
+using the TurboParser ``Standard'' model trained with projective constraints.
 
 
 Additionally, while our parser does not use dependency labels, 
@@ -1228,25 +1227,61 @@ data.
   \label{tab:acc}
 }
 \end{table}
+\begin{table}
+  \centering
+  \small
+
+  \begin{tabular}{|l|cccc|}
+    \hline
+    Model & UAS  & $F_1$ & Sent./s.  & Oracle  \\
+    \hline
+
+    \hline
+    \textsc{MaltParser}  & 89.7 & 85.5 & 240.7& 87.8 \\
+    \textsc{RS-K1}       & 90.1 & 86.6 & 233.9& 87.6 \\
+    \textsc{RS-K4}       & 92.5 & 90.1 & 151.3& 91.5 \\
+    \textsc{RS-K16}      & 93.1 & 90.6 & 58.6 & 92.4 \\
+    \textsc{TP-Basic}    & 92.8 & 88.9 & 132.8& 90.8 \\
+    \textsc{TP-Standard} & 93.3 & 90.9 & 27.2 & 92.6 \\
+    \textsc{TP-Full}     & 93.5 & 90.8 & 13.2 & 92.9 \\
+    \hline
+  \end{tabular}
+
+
+  
+  \caption{The effect of d-parsing accuracy (PTB \S 22)
+    on \ParseName{} and an oracle converter.  Runtime includes
+    d-parsing and c-parsing.  
+    Inputs include 
+ MaltParser \cite{nivre2006maltparser}, 
+    the RedShift implementation of the Zhang-Nivre parser
+    \cite{zhang2011transition} with beam size $K \in \{1, 4, 16\}$,
+and three versions of TurboParser trained with projective constraints
+    \cite{martins2013turning}.
+\label{tab:oracle} }
+\end{table}
+
 
 Table~\ref{tab:acc} compares the accuracy and speed of the
 phrase-structure trees produced by the parser.  For these experiments
 we treat our system and the Zhang-Nivre parser as an independently
 trained, but complete end-to-end c-parser. Run-time for these
 experiments includes both the time for d-parsing and conversion.
-Despite the fixed dependency constraints, the results show that the
-parser is comparable in accuracy to many widely-used systems, and is
-significantly faster. The only parser competitive in both speed and
-accuracy is the that of \newcite{zhu2013fast}, a fast shift-reduce
+Despite the fixed dependency constraints, the English results show
+that the parser is comparable in accuracy to many widely-used systems,
+and is significantly faster. The parser most competitive in both speed
+and accuracy is the that of \newcite{zhu2013fast}, a fast shift-reduce
 phrase-structure parser.
 
-\smrcomment{Finish this para}
-The result in Table \ref{tab:acc} suggests that, even with out doing
-any language specific changes in the feature system (e.g. using the
-last character of a Chinese word as features), we still achieve
-competitive parsing accuracy. Due to the time constraints, we leave
-explorations like adopting better d-parse systems such as ZPar
-\cite{zhang2011syntactic} and feature engineering a future work.
+Furthermore the Chinese results suggests that, even without making
+language-specific changes in the feature system we can still achieve
+competitive parsing accuracy.  In future work we hope to add
+additional Chinese specific features to the system.
+
+% explorations like adopting better d-parse systems such as ZPar
+% \cite{zhang2011syntactic} and feature engineering a future work.
+% (e.g. using the
+% last character of a Chinese word as features), Due to the time constraints, 
 
 
 \paragraph{Effect of Dependencies}
@@ -1303,39 +1338,6 @@ cases the observed runtime is  linear.
 
 % Finally we consider the empirical run-time of the parser on sentences of different length. Figure~\ref{fig:speed} shows the graph.
 
-\begin{table}
-  \centering
-  \small
-
-  \begin{tabular}{|l|cccc|}
-    \hline
-    Model & UAS  & $F_1$ & Sent./s.  & Oracle  \\
-    \hline
-
-    \hline
-    \textsc{MaltParser}  & 89.7 & 85.5 & 240.7& 87.8 \\
-    \textsc{RS-K1}       & 90.1 & 86.6 & 233.9& 87.6 \\
-    \textsc{RS-K4}       & 92.5 & 90.1 & 151.3& 91.5 \\
-    \textsc{RS-K16}      & 93.1 & 90.6 & 58.6 & 92.4 \\
-    \textsc{TP-Basic}    & 92.8 & 88.9 & 132.8& 90.8 \\
-    \textsc{TP-Standard} & 93.3 & 90.9 & 27.2 & 92.6 \\
-    \textsc{TP-Full}     & 93.5 & 90.8 & 13.2 & 92.9 \\
-    \hline
-  \end{tabular}
-
-
-  
-  \caption{Comparison of the effect of d-parsing accuracy (PTB \S 22)
-    on \ParseName{} and an oracle converter.  Runtime includes
-    d-parsing and c-parsing.  
-    Inputs include 
- MaltParser \cite{nivre2006maltparser}, 
-    the RedShift implementation of the Zhang-Nivre parser
-    \cite{zhang2011transition} with beam size $K \in \{1, 4, 16\}$,
-and three versions of TurboParser trained with projective constraints
-    \cite{martins2013turning}.
-\label{tab:oracle} }
-\end{table}
 
 \begin{figure}
   \centering
@@ -1351,7 +1353,7 @@ and three versions of TurboParser trained with projective constraints
   \includegraphics[scale=0.5]{../notebooks/comp}
   \caption{Empirical runtime of the parser on sentences of varying length, with and without pruning. 
   Despite a worst-case quadratic complexity, observed runtime is
-  linear. Pruning significantly improves the slope.
+  linear.
 \label{fig:speed}}
 \end{figure}
 
@@ -1435,15 +1437,15 @@ Finally we consider an internal error analysis of
 the parser. For this analysis, we group each binary rule production
 selected by the parser by three properties:
 Is its dependency $(h, m)$ correct? Is its span $\Span{i,j}$ correct? 
-Is its split $k$ correct? The first is fully determined by the 
-input d-parse, the second are partially determined by \ParseName.
+Is its split $k$ correct? The first property fully determined by the 
+input d-parse, the others are partially determined by \ParseName itself.
 
-Table~\ref{tab:analysis} gives the breakdown. As expected the conversion 
-is almost always correct when it has this information \nascomment{what
-  is ``this information''?}. Many of 
-the errors come from cases where the dependency was fully 
-incorrect, or there was a span issue either from the dependency 
-parser or from the conversion itself.
+Table~\ref{tab:analysis} shows the breakdown. The
+conversion is almost always accurate ($\sim$98\%) when the parser has correct span and
+dependency information. The difficult cases come when the dependency
+was fully incorrect, or there is a propagated span mistake. 
+ 
+
 
 % \begin{itemize}
 % \item Dep

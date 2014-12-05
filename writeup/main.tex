@@ -111,7 +111,7 @@
 We present a new algorithm for transforming dependency parse trees into
 phrase-structure parse trees.  We cast the problem as  structured
 prediction and learn a statistical model.  Our algorithm is faster than traditional
-phrase-structure parsing and achieves PARSEVAL accuracy near to the state of
+phrase-structure parsing and achieves 90.4\% and 81.3\% accuracy near to the state of
 the art on English and Chinese benchmarks.
 
   % Motivated by the increase in accuracy of statistical dependency
@@ -1069,7 +1069,6 @@ experimental setup \cite{marcus1993building}. Training is done on \S
 to tune 
 regularization parameter, $\lambda=1e-8$, and the pruning threshold, $\gamma=0.95$.
 
-
 For Chinese experiments, we use version 5.1 of the Penn  Chinese Treebank 5.1 (CTB) \cite{xue2005penn}. We followed previous work and used
 articles 001--270 and 440--1151 for training, 
 301--325 for development, and 
@@ -1098,7 +1097,7 @@ a labeled parser, but discard the labels.
 For Chinese, we use the head rules compiled by
 \newcite{ding2005machine}\footnote{\url{http://stp.lingfil.uu.se/~nivre/research/chn_headrules.txt}}.
 For this data-set we trained the d-parser using the TurboParser
-``Standard'' model with projective constraints. In experiments, we
+``Full'' model with projective constraints. In experiments, we
 found that Chinese labels were quite helpful, and added four
 additional features templates conjoining the label with the
 non-terminals of a rule.
@@ -1191,7 +1190,7 @@ data.
     Petrov (2007)       &   \multicolumn{2}{|c|}{83.3}  \\
     Zhu (2013)           &   \multicolumn{2}{|c|}{83.2} \\
     \hline
-    \ParseName        &   \multicolumn{2}{|c|}{81.0} \\
+    \ParseName        &   \multicolumn{2}{|c|}{81.3} \\
     \hline
   \end{tabular}
 

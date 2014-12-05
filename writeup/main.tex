@@ -322,17 +322,14 @@ sequence $\{x_i, \ldots, x_j\}$ of the sentence covered by this vertex.
   \scalebox{0.8} {
   \Tree [ .\node[color=red]{$\Tag{S}(3)$}; [ .\node[color=red]{$\Tag{VP}(3)$}; [ .\node[color=blue]{$\Tag{NP}(2)$}; [  .\node{$\Tag{DT}(1)$}; The$_1$ ]  
   [ .\node[color=blue]{$\Tag{NN}(2)$}; \textcolor{blue}{automaker$_2$} ] ] [ .\node[color=red]{$\Tag{VBD}$}; \textcolor{red}{sold$_3$}  ]  ] $\ldots$  ]
-}
-
-  
-  \begin{dependency}[theme=simple]
-    \begin{deptext}[column sep=0.7cm]
-      The$_1$ \& automaker$_2$ \& sold$_3$ \& $\ldots$ \\
-    \end{deptext}
-    \deproot{3}{}
-      \depedge{2}{1}{}
-      \depedge{3}{2}{}
-  \end{dependency}
+}   \begin{dependency}[theme=simple]
+  \begin{deptext}[column sep=0.7cm]
+    The$_1$ \& automaker$_2$ \& sold$_3$ \& $\ldots$ \\
+  \end{deptext}
+  \deproot{3}{}
+  \depedge{2}{1}{}
+  \depedge{3}{2}{}  
+\end{dependency}
 
 
   % \Tree [ .A [ .B  C ] ]
@@ -792,7 +789,7 @@ to this discussion in Section~\ref{sec:exper}.
     \hline
     \textsc{Full$^*$} & $n^5|\rules|$ &  0.25  & 100.0  \\
     \textsc{Dep}      & $\sum_h L(h) R(h) |\rules|$ &  71.2  & 92.6    \\
-    \textsc{Prune1}   & $\sum_h L(h) R(h) |\rules|_{t(h)}$ &  336.0 & 92.5    \\
+    \textsc{Prune1}   & $\sum_h L(h) R(h) |\rules_{\TagFN{x_h}}|$ &  336.0 & 92.5    \\
     \textsc{Prune2}   & -- &  96.6  & 92.5 \\
     \textsc{Prune1+2} & -- &  425.1 & 92.5 \\
     \hline
@@ -912,21 +909,12 @@ made, and allows for a smaller set of features.
 We model our features after two bare-bones parsing systems. 
 The first set is the basic arc-factored features 
 used by \newcite{mcdonald2006discriminative}. These features include combinations of:
-\begin{itemize}
-\item rule and top nonterminal
-\item modifier word and part-of-speech
-\item head word and part-of-speech
-\end{itemize}
+rule and top nonterminal, modifier word and part-of-speech, and  head word and part-of-speech.
 
 The second set of features is modeled after the span features
 described in the X-bar-style parser of \newcite{hall2014less}. These
-include conjunctions of the rule with:
-\begin{itemize}
-\item first and last word of current span
-\item preceding and following word of current span
-\item adjacent words at split of current span
-\item binned length of the span
-\end{itemize}
+include conjunctions of the rule with: first and last word of current span,
+ preceding and following word of current span, adjacent words at split of current span, and binned length of the span.
 
 The full feature set is shown in Figure~\ref{fig:features}.  After
 training, there are a total of around 2 million non-zero features.
@@ -959,12 +947,9 @@ impact on parsing accuracy but made the parsing significantly faster.
   \hline
 
   \hline
-  $(\RuleSym, \WordFN{i})$\\
-  $(\RuleSym, \WordFN{j})$\\
-  $(\RuleSym, \WordFN{i-1})$\\
-  $(\RuleSym, \WordFN{j+1})$\\
-  $(\RuleSym, \WordFN{k})$\\
-  $(\RuleSym, \WordFN{k+1})$\\
+  $(\RuleSym, \WordFN{i})$ $(\RuleSym, \WordFN{i-1})$\\
+  $(\RuleSym, \WordFN{j})$ $(\RuleSym, \WordFN{j+1})$\\
+  $(\RuleSym, \WordFN{k})$ $(\RuleSym, \WordFN{k+1})$\\
   $(\RuleSym, \BinFN{j-i})$\\
   \hline
 
@@ -1011,8 +996,7 @@ parameters to minimize the regularized empirical risk
 \[ \min_{\theta} \sum_{i = 1}^D  \ell( x^{i}, d^{i} , y^{i}, \theta)  + \lambda ||\theta||_1 \]
 
 \noindent where we define $\ell$ as
-
-\[\ell(x, d, y, \theta) = - s(y) + \max_{y' \in \mathcal{Y}(x, d)}\left(s(y')  + \Delta(y, y') \right) \]
+$\ell(x, d, y, \theta) = - s(y) + \max_{y' \in \mathcal{Y}(x, d)}\left(s(y')  + \Delta(y, y') \right) $
 \noindent and where $\Delta$ is a problem specific cost-function.
 In experiments, we use a Hamming loss  $\Delta(y, y') = || y -y'||$
 where $y$ is an indicator for production rules firing over pairs of
@@ -1039,6 +1023,7 @@ our system to that of \newcite{xia2009towards}.
 
 \begin{table}
   \centering
+  \small
   \begin{tabular}{|l|ccc|}
 
     \hline
@@ -1058,8 +1043,6 @@ our system to that of \newcite{xia2009towards}.
     dependencies.  Xia et al.~
  report results consulting only \S 19 in development and
 note that additional data had little effect.  We show our system's
-results using \S 19 and the full training set. \nascomment{check that
-  ``\S 2--21'' is correct, pls} \lpkcomment{you mean our number or you mean the standard training splits?}
 results using \S 19 and the full training set. 
   \label{tab:convert}}
 \end{table}
@@ -1137,13 +1120,14 @@ discard the labels before conversion.
 \lpkcomment{we did not use classical label though... but it's annoying to explain..}
 
 
+% \footnote{We experimented with using
+%   jackknifed dependency parses $d'$ at training time with oracle tree
+%   structures, i.e., $\argmin_{y' \in \mathcal{Y}(x, d')} \Delta(y, y')$,
+%   but found that this did not improve performance.}
 
 For our model the ``gold'' d-parses $d^1, \ldots, d^D$   
 used at training come from the gold c-parse converted with 
-the Collins head rules.\footnote{We experimented with using
-  jackknifed dependency parses $d'$ at training time with oracle tree
-  structures, i.e., $\argmin_{y' \in \mathcal{Y}(x, d')} \Delta(y, y')$,
-  but found that this did not improve performance.} Since the trained
+the Collins head rules. Since the trained
 model is independent of the d-parser,  
 all experiments use the same model, regardless of the d-parser.
 
@@ -1170,8 +1154,7 @@ with 32GB of memory and  Core i7-3770 3.4GHz 8M cache CPU.
 
 We ran experiments to assess the accuracy of the method, its runtime
 efficiency, the effect of dependency parsing accuracy,
-and \nascomment{last one seems to be missing}
- the effect of the amount of annotated phrase-structure
+and the effect of the amount of annotated phrase-structure
 data.
 
 
@@ -1275,10 +1258,9 @@ comparable in accuracy to many widely-used systems, and is
 significantly faster. The only parser competitive in both speed and
 accuracy is the that of \newcite{zhu2013fast}, a fast shift-reduce phrase-structure parser.
 
-\nascomment{what about Chinese??}
-To apply our model on Chinese, we use the head rules complied by \newcite{ding2005machine} \footnote{\url{http://stp.lingfil.uu.se/~nivre/research/chn_headrules.txt}}. Since the RedShift implementation of the Zhang-Nivre Parser have not had a Chinese
-support yet, we simply train our d-parser using TurboParser second order model \footnote{\newcite{martins2013turning} shows that with third
-order features, the UAS of parsing Chinese actually goes down a little bit.} trained with projective constraints.
+
+To apply our model on Chinese, we use the head rules complied by \newcite{ding2005machine} \footnote{\url{http://stp.lingfil.uu.se/~nivre/research/chn_headrules.txt}}. Since RedShift  does not yet have Chinese
+support, we train our d-parser using TurboParser second order model \footnote{\newcite{martins2013turning} show that with third-order features, the UAS of parsing Chinese actually decreases.} trained with projective constraints.
 
 The result in Table \ref{tab:acc} suggests that, even with out doing any language specific changes in the feature system (e.g. using the last character of a Chinese word as features), we still achieve competitive parsing accuracy. Due to the time constraints, we leave explorations like adopting better d-parse systems such as ZPar \cite{zhang2011syntactic} and feature engineering a future work.
 
@@ -1393,22 +1375,21 @@ and three versions of TurboParser trained with projective constraints
   \begin{tabular}{|ccc|cc|}
     \hline 
     \multicolumn{3}{|c|}{Class} & \multicolumn{2}{|c|}{Results} \\
-    Dep. & Span & Split & Total & Acc.  \\ 
-    $(h, m)$ & $\Span{i,j}$ & $k$ & \% & $A$ \\ 
+    Dep. & Span & Split & Count & Acc.  \\ 
+    $(h, m)$ & $\Span{i,j}$ & $k$ &  & $A$ \\ 
     \hline
-    + & + & +  &  86.1  & 97.9   \\ 
-    -- & + & +  &  1.0   & 69.3   \\ 
-    + & + & --  &  2.1   & 83.3   \\ 
-    -- & + & --  &  1.3   & 85.9   \\ 
-    + & -- & --  &  4.5   & 0.0    \\ 
-    -- & -- & --  &  4.7   & 0.0    \\ 
+    + & + & +  &  32853 &  97.9   \\ 
+    -- & + & +  &  381 & 69.3   \\ 
+    + & + & --  &  802   & 83.3   \\ 
+    -- & + & --  &  496 & 85.9   \\ 
+    + & -- & --  &  1717 & 0.0    \\ 
+    -- & -- & --  &  1794 & 0.0    \\ 
     \hline
   \end{tabular}
   \label{tab:analysis}
   \caption{Error analysis of binary CFG rules. Rules used are split into classes based on 
     correct (+) identification of dependency $(h,m)$, span $\Span{i,j}$, and split $k$. 
-    ``Total'' is the relative size of the class \nascomment{a
-      count might be more interpretable}. ``Acc.'' is the accuracy of span nonterminal identification.
+    ``Count'' is the size of each class. ``Acc.'' is the accuracy of span nonterminal identification.
   }
 \end{table}
 

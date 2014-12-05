@@ -1398,19 +1398,19 @@ and three versions of TurboParser trained with projective constraints
 
 \paragraph{Less Annotation in Phrase-structures, More Annotation in Dependencies?}
 
-\lpkcomment{quick highlights... need rewrite}
-Annotating unlabeled dependency has been proven to be cheaper and faster than annotating phrase structure. \cite{nathanandhisfriends}
-What if we need the phrase-structure trees? Our parser given a chance to annotate more dependencies, while get a good phrase-structure parser.
+% \lpkcomment{quick highlights... need rewrite}
+% Annotating unlabeled dependency has been proven to be cheaper and faster than annotating phrase structure. \cite{nathanandhisfriends}
+% What if we need the phrase-structure trees? Our parser given a chance to annotate more dependencies, while get a good phrase-structure parser.
 
-Show in Figure \ref{fig:dataamo}. We train a simple PCFG model with $vMarkov =2$ and $hMarkov = 2$ \cite{parentannotate}.
+% Show in Figure \ref{fig:dataamo}. We train a simple PCFG model with $vMarkov =2$ and $hMarkov = 2$ \cite{parentannotate}.
 
-The are two scenarios here, blue and red.
+% The are two scenarios here, blue and red.
 
-Blue means we label whole phrase-structure parse tree, given 5\%, 20\%, 50\%, 80\% and 100\% annotation of the PTB, the parser's performance goes up, but this way is expensive.
+% Blue means we label whole phrase-structure parse tree, given 5\%, 20\%, 50\%, 80\% and 100\% annotation of the PTB, the parser's performance goes up, but this way is expensive.
 
-Red means we only label 5\% phrase-structure parses, and then we train our parser on this 5\% phrase-structure model (with dependencies extracted using collins headrule), then, we use our parser's predicted phrase-structure tree (predicted on gold dependency parses, assuming people are annotating that), from 20\% to 100\%, to train the phrase-structure parser.
+% Red means we only label 5\% phrase-structure parses, and then we train our parser on this 5\% phrase-structure model (with dependencies extracted using collins headrule), then, we use our parser's predicted phrase-structure tree (predicted on gold dependency parses, assuming people are annotating that), from 20\% to 100\%, to train the phrase-structure parser.
 
-We note that the accuracy of the PCFG model also goes higher with more dependency annotations, which suggests a cheaper and fast (?) way to build a language resource in phrase-structure.
+% We note that the accuracy of the PCFG model also goes higher with more dependency annotations, which suggests a cheaper and fast (?) way to build a language resource in phrase-structure.
 
 % \begin{figure}
 %   \centering

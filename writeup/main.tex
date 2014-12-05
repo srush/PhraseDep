@@ -1083,18 +1083,25 @@ structure trees. \newcite{zhu2013fast} found this simple technique
 gives an improvement to dependency accuracy of 0.4\% on English and
 2.0\% on Chinese.
 
-Unless otherwise noted, in English the input d-parsing is done using the RedShift
+Unless otherwise noted, in English the input d-parsing is done using
+the RedShift
 implementation\footnote{\url{https://github.com/syllog1sm/redshift}}
 of the Zhang-Nivre Parser \cite{zhang2011transition}, trained to
 follow the conventions of Collins head rules
 \cite{collins2003head}. This parser is a transition-based beam search
-parser, and the size of the beam $k$ controls a speed/accuracy trade-off.
-By default we use a beam of $k=16$. 
+parser, and the size of the beam $k$ controls a speed/accuracy
+trade-off.  By default we use a beam of $k=16$.  We found that
+dependency labels have a significant impact on the performance of the
+RedShift parser, but not on English dependency conversion. We therefore train
+a labeled parser, but discard the labels.
 
 For Chinese, we use the head rules compiled by
-\newcite{ding2005machine}\footnote{\url{http://stp.lingfil.uu.se/~nivre/research/chn_headrules.txt}}. Since
-RedShift does not yet have Chinese support, we train our d-parser
-using the TurboParser ``Standard'' model trained with projective constraints.
+\newcite{ding2005machine}\footnote{\url{http://stp.lingfil.uu.se/~nivre/research/chn_headrules.txt}}.
+For this data-set we trained the d-parser using the TurboParser
+``Standard'' model with projective constraints. In experiments, we
+found that Chinese labels were quite helpful, and added four
+additional features templates conjoining the label with the
+non-terminals of a rule.
 
 
 Additionally, while our parser does not use dependency labels, 

@@ -1231,7 +1231,7 @@ data.
 \begin{table}
   \centering
   \small
-
+  \includegraphics[scale=0.5]{../notebooks/parsers}
   \begin{tabular}{|l|cccc|}
     \hline
     Model & UAS  & $F_1$ & Sent./s.  & Oracle  \\
@@ -1261,6 +1261,14 @@ and three versions of TurboParser trained with projective constraints
     \cite{martins2013turning}.
 \label{tab:oracle} }
 \end{table}
+
+% \begin{figure}
+%   \centering
+
+% \caption{\label{fig:corr} Relationship of d-parsing performance to
+%   c-parsing performance using \ParseName to convert different
+%   dependency parsers' output.}
+% \end{figure}
 
 
 Table~\ref{tab:acc} compares the accuracy and speed of the
@@ -1294,7 +1302,7 @@ speed. We measure for each parser: its UAS, speed, and labeled $F_1$
 when used with \ParseName and with an oracle converter.\footnote{For a
   gold parse $y$ and predicted dependencies $\hat{d}$, define the
   oracle parse as $y' = \argmin_{y' \in \mathcal{Y}(x, \hat{d})}
-  \Delta(y, y') $} Figure~\ref{fig:corr} shows that there is a direct
+  \Delta(y, y') $} The paired figure shows that there is a direct
 correlation between the UAS of the inputs and labeled $F_1$.
 
 % Our next set of experiments look at the effect of different 
@@ -1315,6 +1323,14 @@ correlation between the UAS of the inputs and labeled $F_1$.
 % produces only a $85.5$ F1 score. 
 
 
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.43]{../notebooks/comp}
+  \caption{Empirical runtime of the parser on sentences of varying length, with and without pruning. 
+  Despite a worst-case quadratic complexity, observed runtime is
+  linear.
+\label{fig:speed}}
+\end{figure}
 
 \paragraph{Runtime}
 
@@ -1325,14 +1341,16 @@ Despite having a quadratic theoretical complexity
 the practical runtime was quite fast.
 Here we consider the empirical complexity of the 
 model by measuring the time spent of individual sentences. 
-Figure~\ref{fig:speed} shows a graph of the speed of
+Figure~\ref{fig:speed} shows parser speed for
 sentences of varying length for both the full algorithm
-and for the algorithm with pruning. In both 
-cases the observed runtime is  linear.
+and  with pruning. In both 
+cases the observed run-time is  linear.
 
-\paragraph{Recovering phrase-structure treebanks}
-People tend to agree that annotating phrase-structure trees are more expensive and slower comparing to annotate unlabeled dependency trees \cite{schneider2013framework}. Assuming we are in a world without annotated phrase structure trees, which happens a lot in low resource languages, instead of spending all our budget on annotating phrase-structure tree, can we only label a small amount of them, and then hope the easy-to-get dependency annotations help us in this case? Assuming we can train a good dependency parser, how many phrase structure trees we need to annotate to get a reasonable phrase structure parser?
-To answer that question, we trained \ParseName on as little as 5\% of the training set and test that on automatically POS tagged PTB \S 22 where dependency parse trees are given by the Redshift Parser with beam = 16. This gave us $F1 = 89.09\%$, which is on par with \newcite{charniak2000maximum}, and Stanford PCFG \cite{klein2003accurate} trained on the whole PTB training split. One step further, if the gold PTB \S 22 dependencies are given, our converter achieves $F1 = 95.8\%$ on \S 22, demostaring a strong ablity to recover the phrase-structure trees from dependency annotations.
+\paragraph{Recovering Phrase-Structure Treebanks}
+Annotating phrase-structure trees is often more expensive and slower than annotating unlabeled dependency trees \cite{schneider2013framework}. For low-resource languages, an alternative approach to developing fully annotated phrase-structure treebanks might be to label a small amount of c-parses and a large amount of cheaper d-parses. Assuming this setup, we ask how many c-parses would be necessary to obtain reasonable performance?
+
+For this experiment, we train \ParseName on only 5\% of the PTB training set and apply it to predicted d-parses from a fully-trained model. Even with this small amount of 
+data, we obtain a parser with  $F_1 = 89.1\%$, which is comparable to \newcite{charniak2000maximum} and Stanford PCFG \cite{klein2003accurate} trained on the complete c-parse training set. Additionally, if the gold dependencies are available, \ParseName{} with 5\% training achieves $F1 = 95.8\%$ on development, demonstrating a strong ablity to recover the phrase-structure trees from dependency annotations.
 
 
 % Our next set of experiments consider the efficiency of the model. For these experiments we consider both the full and pruned version of the parser using the pruning described in section~\ref{sec:prune}. Table~\ref{tab:speed} shows that in practice the parser is quite fast,  averaging around \% tokens per second at high accuracy.
@@ -1341,24 +1359,6 @@ To answer that question, we trained \ParseName on as little as 5\% of the traini
 
 % Finally we consider the empirical run-time of the parser on sentences of different length. Figure~\ref{fig:speed} shows the graph.
 
-
-\begin{figure}
-  \centering
-  \includegraphics[scale=0.5]{../notebooks/parsers}
-\caption{\label{fig:corr} Relationship of d-parsing performance to
-  c-parsing performance using \ParseName to convert different
-  dependency parsers' output.}
-\end{figure}
-
-
-\begin{figure}
-  \centering
-  \includegraphics[scale=0.5]{../notebooks/comp}
-  \caption{Empirical runtime of the parser on sentences of varying length, with and without pruning. 
-  Despite a worst-case quadratic complexity, observed runtime is
-  linear.
-\label{fig:speed}}
-\end{figure}
 
 
 
@@ -1381,11 +1381,9 @@ To answer that question, we trained \ParseName on as little as 5\% of the traini
     -- & -- & --  &  1794 & 0.0    \\ 
     \hline
   \end{tabular}
-  \label{tab:analysis}
   \caption{Error analysis of binary CFG rules. Rules used are split into classes based on 
     correct (+) identification of dependency $(h,m)$, span $\Span{i,j}$, and split $k$. 
-    ``Count'' is the size of each class. ``Acc.'' is the accuracy of span nonterminal identification.
-  }
+    ``Count'' is the size of each class. ``Acc.'' is the accuracy of span nonterminal identification. \label{tab:analysis}}
 \end{table}
 
 % \paragraph{Conversion}
@@ -1438,7 +1436,7 @@ Finally we consider an internal error analysis of
 the parser. For this analysis, we group each binary rule production
 selected by the parser by three properties:
 Is its dependency $(h, m)$ correct? Is its span $\Span{i,j}$ correct? 
-Is its split $k$ correct? The first property fully determined by the 
+Is its split $k$ correct? The first property is fully determined by the 
 input d-parse, the others are partially determined by \ParseName itself.
 
 Table~\ref{tab:analysis} shows the breakdown. The

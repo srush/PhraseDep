@@ -327,7 +327,7 @@ sequence $\{x_i, \ldots, x_j\}$ of the sentence covered by this vertex.
 
 
   % \Tree [ .A [ .B  C ] ]
-  \caption{ Illustration of c-parse to d-parse conversion with head rules $\{ \Tag{VP} \rightarrow \Tag{NP}\ \Tag{VBD}^*,  \Tag{NP} \rightarrow \Tag{DT}\ \Tag{NP}^*, \ldots \} $. The c-parse is an ordered tree with fringe $x_1, \ldots, x_n$. Each vertex is annotated with a nonterminal tag and a derived head index. The blue and red vertices have the words \texttt{automaker$_2$} and \texttt{sold$_3$} as heads respectively. The vertex $\Tag{VP}_3$  implies that \texttt{automaker$_2$} is a dependent of \texttt{sold$_3$}, and that $d_2 = 3$ in the d-parse.     
+  \caption{ Illustration of c-parse to d-parse conversion with head rules $\{ \Tag{VP} \rightarrow \Tag{NP}\ \Tag{VBD}^*,  \Tag{NP} \rightarrow \Tag{DT}\ \Tag{NN}^*, \ldots \} $. The c-parse is an ordered tree with fringe $x_1, \ldots, x_n$. Each vertex is annotated with a nonterminal tag and a derived head index. The blue and red vertices have the words \texttt{automaker$_2$} and \texttt{sold$_3$} as heads respectively. The vertex $\Tag{VP}_3$  implies that \texttt{automaker$_2$} is a dependent of \texttt{sold$_3$}, and that $d_2 = 3$ in the d-parse.     
   \label{fig:spine}}
 \end{figure}
 
@@ -1066,7 +1066,7 @@ use the following setup.
 For English experiments we use the standard Penn Treebank (PTB)
 experimental setup \cite{marcus1993building}. Training is done on \S
 2--21, development on \S 22, and testing on \S 23. We use the development set 
-to tune 
+to tune the 
 regularization parameter, $\lambda=1e-8$, and the pruning threshold, $\gamma=0.95$.
 
 For Chinese experiments, we use version 5.1 of the Penn  Chinese Treebank 5.1 (CTB) \cite{xue2005penn}. We followed previous work and used
@@ -1103,10 +1103,10 @@ additional features templates conjoining the label with the
 non-terminals of a rule.
 
 
-Additionally, while our parser does not use dependency labels, 
-we found that labels have a significant impact on the performance of
-the RedShift parser. We therefore train a labeled parser, but 
-discard the labels before conversion.
+% Additionally, while our parser does not use dependency labels, 
+% we found that labels have a significant impact on the performance of
+% the RedShift parser. We therefore train a labeled parser, but 
+% discard the labels before conversion.
 % \lpkcomment{we did not use classical label though... but it's annoying to explain..}
 
 
@@ -1230,7 +1230,7 @@ data.
   \caption{ Accuracy and speed on PTB \S 23 and CTB 5.1 test split. Comparisons are to state-of-the-art non-reranking supervised
     phrase-structure parsers
     \cite{charniak2000maximum,klein2003accurate,petrov2007improved,carreras2008tag,zhu2013fast,bikel2004parameter},
-    and semi-supervised parsers \cite{charniak2005coarse,socher2013parsing}.
+    and semi-supervised and reranking parsers \cite{charniak2005coarse,socher2013parsing}.
   \label{tab:acc}
 }
 \end{table}
@@ -1290,8 +1290,9 @@ phrase-structure parser.
 
 Furthermore the Chinese results suggest that, even without making
 language-specific changes in the feature system we can still achieve
-competitive parsing accuracy.  In future work we hope to add
-additional Chinese specific features to the system.
+competitive parsing accuracy.  
+% In future work we hope to add
+% additional Chinese specific features to the system.
 
 % explorations like adopting better d-parse systems such as ZPar
 % \cite{zhang2011syntactic} and feature engineering a future work.
@@ -1356,7 +1357,7 @@ cases the observed run-time is  linear.
 Annotating phrase-structure trees is often more expensive and slower than annotating unlabeled dependency trees \cite{schneider2013framework}. For low-resource languages, an alternative approach to developing fully annotated phrase-structure treebanks might be to label a small amount of c-parses and a large amount of cheaper d-parses. Assuming this setup, we ask how many c-parses would be necessary to obtain reasonable performance?
 
 For this experiment, we train \ParseName on only 5\% of the PTB training set and apply it to predicted d-parses from a fully-trained model. Even with this small amount of 
-data, we obtain a parser with  $F_1 = 89.1\%$, which is comparable to \newcite{charniak2000maximum} and Stanford PCFG \cite{klein2003accurate} trained on the complete c-parse training set. Additionally, if the gold dependencies are available, \ParseName{} with 5\% training achieves $F1 = 95.8\%$ on development, demonstrating a strong ablity to recover the phrase-structure trees from dependency annotations.
+data, we obtain a parser with development score of  $F_1 = 89.1\%$, which is comparable to \newcite{charniak2000maximum} and Stanford PCFG \cite{klein2003accurate} trained on the complete c-parse training set. Additionally, if the gold dependencies are available, \ParseName{} with 5\% training achieves $F1 = 95.8\%$ on development, demonstrating a strong ablity to recover the phrase-structure trees from dependency annotations.
 
 
 % Our next set of experiments consider the efficiency of the model. For these experiments we consider both the full and pruned version of the parser using the pruning described in section~\ref{sec:prune}. Table~\ref{tab:speed} shows that in practice the parser is quite fast,  averaging around \% tokens per second at high accuracy.
@@ -1447,8 +1448,9 @@ input d-parse, the others are partially determined by \ParseName itself.
 
 Table~\ref{tab:analysis} shows the breakdown. The
 conversion is almost always accurate ($\sim$98\%) when the parser has correct span and
-dependency information. The difficult cases come when the dependency
-was fully incorrect, or there is a propagated span mistake. 
+dependency information. As expected, the difficult cases come when the dependency
+was fully incorrect, or there is a propagated span mistake. As dependency parsers
+improve on these metrics, the performance of \ParseName{} should improve as well.
  
 
 

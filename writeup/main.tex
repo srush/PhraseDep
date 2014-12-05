@@ -1358,7 +1358,7 @@ cases the observed run-time is  linear.
 Annotating phrase-structure trees is often more expensive and slower than annotating unlabeled dependency trees \cite{schneider2013framework}. For low-resource languages, an alternative approach to developing fully annotated phrase-structure treebanks might be to label a small amount of c-parses and a large amount of cheaper d-parses. Assuming this setup, we ask how many c-parses would be necessary to obtain reasonable performance?
 
 For this experiment, we train \ParseName on only 5\% of the PTB training set and apply it to predicted d-parses from a fully-trained model. Even with this small amount of 
-data, we obtain a parser with  $F_1 = 89.1\%$, which is comparable to \newcite{charniak2000maximum} and Stanford PCFG \cite{klein2003accurate} trained on the complete c-parse training set. Additionally, if the gold dependencies are available, \ParseName{} with 5\% training achieves $F1 = 95.8\%$ on development, demonstrating a strong ablity to recover the phrase-structure trees from dependency annotations.
+data, we obtain a parser with development score of  $F_1 = 89.1\%$, which is comparable to \newcite{charniak2000maximum} and Stanford PCFG \cite{klein2003accurate} trained on the complete c-parse training set. Additionally, if the gold dependencies are available, \ParseName{} with 5\% training achieves $F1 = 95.8\%$ on development, demonstrating a strong ablity to recover the phrase-structure trees from dependency annotations.
 
 
 % Our next set of experiments consider the efficiency of the model. For these experiments we consider both the full and pruned version of the parser using the pruning described in section~\ref{sec:prune}. Table~\ref{tab:speed} shows that in practice the parser is quite fast,  averaging around \% tokens per second at high accuracy.
@@ -1449,8 +1449,9 @@ input d-parse, the others are partially determined by \ParseName itself.
 
 Table~\ref{tab:analysis} shows the breakdown. The
 conversion is almost always accurate ($\sim$98\%) when the parser has correct span and
-dependency information. The difficult cases come when the dependency
-was fully incorrect, or there is a propagated span mistake. 
+dependency information. As expected, the difficult cases come when the dependency
+was fully incorrect, or there is a propagated span mistake. As dependency parsers
+improve on these metrics, the performance of \ParseName{} should improve as well.
  
 
 

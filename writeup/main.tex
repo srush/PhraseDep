@@ -1066,7 +1066,7 @@ use the following setup.
 For English experiments we use the standard Penn Treebank (PTB)
 experimental setup \cite{marcus1993building}. Training is done on \S
 2--21, development on \S 22, and testing on \S 23. We use the development set 
-to tune 
+to tune the 
 regularization parameter, $\lambda=1e-8$, and the pruning threshold, $\gamma=0.95$.
 
 
@@ -1104,10 +1104,10 @@ additional features templates conjoining the label with the
 non-terminals of a rule.
 
 
-Additionally, while our parser does not use dependency labels, 
-we found that labels have a significant impact on the performance of
-the RedShift parser. We therefore train a labeled parser, but 
-discard the labels before conversion.
+% Additionally, while our parser does not use dependency labels, 
+% we found that labels have a significant impact on the performance of
+% the RedShift parser. We therefore train a labeled parser, but 
+% discard the labels before conversion.
 % \lpkcomment{we did not use classical label though... but it's annoying to explain..}
 
 
@@ -1231,7 +1231,7 @@ data.
   \caption{ Accuracy and speed on PTB \S 23 and CTB 5.1 test split. Comparisons are to state-of-the-art non-reranking supervised
     phrase-structure parsers
     \cite{charniak2000maximum,klein2003accurate,petrov2007improved,carreras2008tag,zhu2013fast,bikel2004parameter},
-    and semi-supervised parsers \cite{charniak2005coarse,socher2013parsing}.
+    and semi-supervised and reranking parsers \cite{charniak2005coarse,socher2013parsing}.
   \label{tab:acc}
 }
 \end{table}
@@ -1291,8 +1291,9 @@ phrase-structure parser.
 
 Furthermore the Chinese results suggest that, even without making
 language-specific changes in the feature system we can still achieve
-competitive parsing accuracy.  In future work we hope to add
-additional Chinese specific features to the system.
+competitive parsing accuracy.  
+% In future work we hope to add
+% additional Chinese specific features to the system.
 
 % explorations like adopting better d-parse systems such as ZPar
 % \cite{zhang2011syntactic} and feature engineering a future work.

@@ -538,7 +538,7 @@ c-parsers enjoy wide use as well.
     \begin{deptext}[column sep=0.7cm]
       I$_1$ \& saw$_2$ \& the$_3$ \& man$_4$ \\
     \end{deptext}
-    \deproot{2}{ROOT}
+    % \deproot{2}{ROOT}
       \depedge{2}{1}{}
       \depedge{4}{3}{}
       \depedge{2}{4}{}
@@ -582,6 +582,7 @@ given a d-parse.
 
 
 \begin{figure*}
+  \small 
   \begin{multicols}{2}
   \noindent \textbf{Premise:}
   \[(\Span{i, i}, i, A)\ \ \ \forall i \in \{1 \ldots n\}, A \in {\cal N}\]
@@ -722,14 +723,11 @@ algorithm to $O(\sum_{h} (L(h) \times R(h) \times
 Second, as noted above, at any point a word $x_h$ with may combine with its
 next left or right dependent, leading to $L(h)\times R(h)$ possible orderings.
 However, in practice we can often predict which side will come next. 
-To make this prediction, we estimate a distribution 
-
-\[\eta(\textrm{side}) = p(\textrm{side} \mid \TagFN{x_h}, \TagFN{x_l}, \TagFN{x_r})\]
-
+To make this prediction, we estimate a distribution, $ \eta(\textrm{side}) = p(\textrm{side} \mid \TagFN{x_h}, \TagFN{x_l}, \TagFN{x_r})$,
 where $x_l$ is the next left dependent and $x_r$ is the next right
 dependent. If
-the conditional probability of $\eta{\mathrm{left}}$ or
-$\eta{\mathrm{right}}$ is greater than a threshold parameter $\gamma$,
+the conditional probability of $\eta(\mathrm{left})$ or
+$\eta(\mathrm{right})$ is greater than a threshold parameter $\gamma$,
 we make a hard decision to combine with that side next. This pruning
 further reduces the impact of outlier words $h$ with large $L(h)
 \times R(h)$.
@@ -1117,7 +1115,7 @@ Additionally, while our parser does not use dependency labels,
 we found that labels have a significant impact on the performance of
 the RedShift parser. We therefore train a labeled parser, but 
 discard the labels before conversion.
-\lpkcomment{we did not use classical label though... but it's annoying to explain..}
+% \lpkcomment{we did not use classical label though... but it's annoying to explain..}
 
 
 % \footnote{We experimented with using
@@ -1125,11 +1123,11 @@ discard the labels before conversion.
 %   structures, i.e., $\argmin_{y' \in \mathcal{Y}(x, d')} \Delta(y, y')$,
 %   but found that this did not improve performance.}
 
-For our model the ``gold'' d-parses $d^1, \ldots, d^D$   
-used at training come from the gold c-parse converted with 
-the Collins head rules. Since the trained
-model is independent of the d-parser,  
-all experiments use the same model, regardless of the d-parser.
+% For our model the ``gold'' d-parses $d^1, \ldots, d^D$   
+% used at training come from the gold c-parse converted with 
+% the Collins head rules. Since the trained
+% model is independent of the d-parser,  
+% all experiments use the same model, regardless of the d-parser.
 
 Evaluation for phrase-structure parses is performed using the
 \texttt{evalb}\footnote{\url{http://nlp.cs.nyu.edu/evalb}} script with the
@@ -1162,7 +1160,7 @@ data.
 
 \begin{table}
   \centering
-  
+  \small
 
   \begin{tabular}{|l|rr|}
     \hline
@@ -1184,23 +1182,23 @@ data.
 \hline
     \ParseName        &   90.4 & 58.6 \\
     \hline
-  \end{tabular}
+  % \end{tabular}
 
 
-  \begin{tabular}{|l|r|}
+  % \begin{tabular}{|l|r|}
     \hline
-     & CTB \\
+     & \multicolumn{2}{|c|}{CTB} \\
     \hline
 
     \hline
-    Model & $F_1$ \\
+    Model & \multicolumn{2}{|c|}{$F_1$}  \\
     \hline
-    Charniak (2000)     &   80.8  \\
-    Bikel(2004)     &    80.6 \\
-    Petrov (2007)       &   83.3  \\
-    Zhu (2013)           &   83.2 \\
+    Charniak (2000)     &   \multicolumn{2}{|c|}{80.8}   \\
+    Bikel(2004)     &    \multicolumn{2}{|c|}{80.6} \\
+    Petrov (2007)       &   \multicolumn{2}{|c|}{83.3}  \\
+    Zhu (2013)           &   \multicolumn{2}{|c|}{83.2} \\
     \hline
-    \ParseName        &   81.0  \\
+    \ParseName        &   \multicolumn{2}{|c|}{81.0} \\
     \hline
   \end{tabular}
 
@@ -1237,8 +1235,7 @@ data.
     % \ParseName    & & & 81.4 \\
     % \hline
   % \end{tabular}
-  \caption{ Accuracy and speed on PTB \S 23 \nascomment{check!  said
-      CTB as well}. and CTB 5.1 test split. Comparisons are to state-of-the-art non-reranking supervised
+  \caption{ Accuracy and speed on PTB \S 23 and CTB 5.1 test split. Comparisons are to state-of-the-art non-reranking supervised
     phrase-structure parsers
     \cite{charniak2000maximum,klein2003accurate,petrov2007improved,carreras2008tag,zhu2013fast,bikel2004parameter},
     and semi-supervised parsers \cite{charniak2005coarse,socher2013parsing}.
@@ -1278,8 +1275,8 @@ on seven different dependency inputs of varying quality measured
 by unlabeled accuracy score (UAS).
 Table~\ref{tab:oracle}  shows the results for each d-parser:  its UAS,
 labeled $F_1$ when it is used with \ParseName and with an oracle converter.\footnote{For a gold parse $y$ and predicted
-dependencies $\hat{d}$, define the oracle parse $y'$ as
-\[ y' = \argmin_{y' \in \mathcal{Y}(x, \hat{d})} \Delta(y, y') \]}
+dependencies $\hat{d}$, define the oracle parse as
+$y' = \argmin_{y' \in \mathcal{Y}(x, \hat{d})} \Delta(y, y') $}
 Figure~\ref{fig:corr}  shows that there is a direct correlation
 between the UAS of the inputs and labeled $F_1$.
 % \nascomment{there was a claim about small changes in d accuracy having
@@ -1349,7 +1346,8 @@ and three versions of TurboParser trained with projective constraints
 \end{table}
 
 \begin{figure}
-  \includegraphics[scale=0.5]{../notebooks/parsers}
+  \centering
+  \includegraphics[scale=0.4]{../notebooks/parsers}
 \caption{\label{fig:corr} Relationship of d-parsing performance to
   c-parsing performance using \ParseName to convert different
   dependency parsers' output.}
@@ -1358,7 +1356,7 @@ and three versions of TurboParser trained with projective constraints
 
 \begin{figure}
   \centering
-  \includegraphics[scale=0.5]{../notebooks/comp}
+  \includegraphics[scale=0.4]{../notebooks/comp}
   \caption{Empirical runtime of the parser on sentences of varying length, with and without pruning. 
   Despite a worst-case quadratic complexity, observed runtime is
   linear. Pruning significantly improves the slope.
@@ -1466,12 +1464,12 @@ parser or from the conversion itself.
 
 \begin{figure}
   \centering
-  \includegraphics[scale=0.5]{../notebooks/data}
+  \includegraphics[scale=0.4]{../notebooks/data}
 \label{fig:dataamo}
 \end{figure}
 
-\nascomment{missing:  the part about varying the amount of labeled
-  constituent data}
+% \nascomment{missing:  the part about varying the amount of labeled
+%   constituent data}
 
 
 

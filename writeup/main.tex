@@ -274,16 +274,10 @@ In the next section, we consider the reverse transformation.
 \subsection{CFG Parsing}
 
 The phrase-structure trees annotated in the Penn Treebank are derivation trees from a context-free grammar. 
-Define a binarized\footnote{For notational simplicity we ignore unary rules for this section.} context-free grammar (CFG) as a 4-tuple $(\nonterms, \rules, \terms, \Root)$ where:
-\begin{itemize}
-\item $\nonterms$, a set of nonterminal symbols (e.g. \Tag{NP},
-  \Tag{VP});
-\item $\terms$, a set of terminal symbols, consisting of the
-  words in the language;
-\item $\rules$, a set of binarized rule productions
-  of the form $\Rule{A}{\beta_1}{\beta_2}$;
-\item $\Root \in \nonterms$, a distinguished root symbol.
-\end{itemize}
+Define a binary\footnote{For notational simplicity we ignore unary rules for this section.} context-free grammar (CFG) as a 4-tuple $(\nonterms, \rules, \terms, \Root)$ where $\nonterms$ is a set of nonterminal symbols (e.g. \Tag{NP},
+  \Tag{VP}), $\terms$ is a set of terminal symbols, consisting of the
+  words in the language, $\rules$ is a set of binary rule productions
+  of the form $\Rule{A}{\beta_1}{\beta_2}$, and  $\Root \in \nonterms$ is  a distinguished root symbol.
 
 % \end{itemize}
 
@@ -326,7 +320,7 @@ sequence $\{x_i, \ldots, x_j\}$ of the sentence covered by this vertex.
   \begin{deptext}[column sep=0.7cm]
     The$_1$ \& automaker$_2$ \& sold$_3$ \& $\ldots$ \\
   \end{deptext}
-  \deproot{3}{}
+  % \deproot{3}{}
   \depedge{2}{1}{}
   \depedge{3}{2}{}  
 \end{dependency}
@@ -343,12 +337,11 @@ Dependency trees provide an alternative, and in some sense simpler,
 representation of sentence structure. These d-parses can be
 derived through mechanical transformation from context-free trees.
 There are several popular transformation in wide use; each 
-provides a different representations of a sentence's structure \cite{collins2003head,de2008stanford,yamada2003statistical,johansson2007extended}.
-In this work we consider transformations that are defined through local transformations known 
-as head rules.
+provides a different representation of a sentence's structure \cite{collins2003head,de2008stanford,yamada2003statistical,johansson2007extended}.
+In this work we consider transformations that are defined through local head rules.
 
 For a binary CFG, define a collection of head rules as a function $\mathcal{H} : \rules \mapsto \{L, R\}$ 
-mapping each CFG rule to its head preference for its left- or right-child. We use the notation 
+mapping each CFG rule to a head preference for its left or right child. We use the notation 
 $\RuleA{A}{\beta_1}{\beta_2}$ and $\RuleB{A}{\beta_1}{\beta_2}$ to indicate a left-
 or right-headed rule, respectively. 
 
@@ -364,7 +357,7 @@ Define a sentence's dependencies as a sequence $d_1, \ldots d_n$
 where word $m$ is a dependent of word $d_m \in \{0, \ldots n\}$ and $0$ is 
 a special pseudo-root symbol. Let vertex $v$ be the first 
 parent vertex of $x_m$ not headed by $m$, i.e., $h(v) \neq m$. 
-If this vertex exists, then $d_m = h(v)$, otherwise $d_m = 0$.  
+If this vertex exists, then $d_m = h(v)$, else $d_m = 0$.  
 Figure~\ref{fig:spine} illustrates the conversion.
 
   % Next, for each word $x_i$ let the \textit{spine} of the word be the
@@ -379,7 +372,7 @@ These dependencies $d_1, \ldots, d_n$ can be viewed as a directed tree with arcs
 $(d_m, m)$ for all $m$. This tree differs from the original c-parse
 since the words are directly connected. However we can relate the two
 trees through their spans. Define a dependency span $\Span{\Left{m},
-  \Right{m}}$ as the sequence of words reachable from word $m$. By
+  \Right{m}}$ as the contiguous sequence of words reachable from word $m$. By
 construction this span is the same as the span $\Span{i, j}$
 of the top vertex $v$ with $h(v) = m$.
 
@@ -632,7 +625,7 @@ given a d-parse.
 We start by considering the search problem with a given scoring function.
 First consider the standard problem of predicting the best c-parse under a CFG with head rules. 
 Assume that we are given a binary CFG defining a set of valid c-parses $\mathcal{Y}(x)$.
-The parsing problem is to find the highest-scoring parse in this set, i.e.  \[ \hat{y} \gets \argmax_{y \in {\cal Y}(x)} s(y;x) \] where
+The parsing problem is to find the highest-scoring parse in this set, i.e.  $ \argmax_{y \in {\cal Y}(x)} s(y;x) $ where
 $s$ is a scoring function that factors over rule productions.
 
 This problem is known as lexicalized context-free parsing. It can be
@@ -651,17 +644,17 @@ by index $m$.
 The highest-scoring parse can found by bottom-up dynamic programming
 over these productions. The standard lexicalized CKY algorithm requires $O(n^5
 |\rules|)$ time. While simple to implement, this algorithm is not practical to run without heavy pruning or
-further assumptions on the scoring function\cite{eisner1999efficient}. 
+further assumptions on the scoring function \cite{eisner1999efficient}. 
 
 Now, consider the same setup, but constrained to c-parses
 that are consistent with a given d-parse, $d_1, \ldots, d_n$ (i.e.,
 that could be converted, through the head rules, to this d-parse).
-Define this set as  $\mathcal{Y}(x,d)$.  The problem is now:
-
+Define this set as  $\mathcal{Y}(x,d)$ and the search problem as,
+$  \argmax_{y \in \mathcal{Y}(x, d)} s(y; x, d)$
 % Fortunately, the parsing problem becomes much simpler if 
 % we are constrained to a given d-parse
 
-\[ \hat{y} \leftarrow \argmax_{y \in \mathcal{Y}(x, d)} s(y; x, d)\]
+
 
 This new problem has a nice property. For any word $x_m$, the span $\Span{i,j}$ of the highest $v$ with $h(v) = n$  is the same as span $\Span{\Left{m},\Right{m}}$ in the dependency parse. Since we have the dependency parse, these spans can be efficiently pre-computed.
 

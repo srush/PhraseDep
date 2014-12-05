@@ -111,7 +111,7 @@
 We present a new algorithm for transforming dependency parse trees into
 phrase-structure parse trees.  We cast the problem as  structured
 prediction and learn a statistical model.  Our algorithm is faster than traditional
-phrase-structure parsing and achieves 90.4\% and 81.3\% accuracy near to the state of
+phrase-structure parsing and achieves 90.4\% and 81.3\% accuracy, near to the state of
 the art on English and Chinese benchmarks.
 
   % Motivated by the increase in accuracy of statistical dependency
@@ -789,7 +789,7 @@ to this discussion in Section~\ref{sec:exper}.
     \textsc{Full$^*$} is the complete lexicalized c-parser,
     but limited to only sentences less than 20 words for efficiency,
     \textsc{Dep} restricts c-parses to be consistent with a
-    predicted dependency skeleton, \textsc{Pruned1}, \textsc{Pruned2}, and \textsc{Pruned1+2}
+    predicted dependency skeleton, \textsc{Prune1}, \textsc{Prune2}, and \textsc{Prune1+2}
     are combinations of the pruning methods described in
     Section~\ref{sec:prune}. The oracle is the best labeled $F_1$ achievable on the
     development data (see Section~\ref{sec:analysis}). \label{tab:alg-oracle}}
@@ -1172,7 +1172,8 @@ data.
     CJ Reranking (2005)      &   91.5 & 4.3  \\
     Stanford RNN (2013)       &   90.0 & 2.8  \\ 
 \hline
-    \ParseName        &   90.4 & 58.6 \\
+    \ParseName        &   90.4 & 34.3 \\
+    \ParseName(Pruned)        &   90.3 & 58.6 \\
     \hline
   % \end{tabular}
 
@@ -1347,7 +1348,7 @@ speed results in Table~\ref{tab:alg-oracle}.
 Despite having a quadratic theoretical complexity
 the practical runtime was quite fast.
 Here we consider the empirical complexity of the 
-model by measuring the time spent of individual sentences. 
+model by measuring the time spent on individual sentences. 
 Figure~\ref{fig:speed} shows parser speed for
 sentences of varying length for both the full algorithm
 and  with pruning. In both 

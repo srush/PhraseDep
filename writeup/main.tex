@@ -76,7 +76,7 @@
 \newcommand{\TagFN}[1]{\mathrm{tag}({#1})}
 \newcommand{\WordFN}[1]{x_{#1}}
 \newcommand{\Reals}{\mathbb{R}}
-\newcommand{\ParseName}{\textsc{ParPar}\xspace}
+\newcommand{\ParseName}{\textsc{Converter}\xspace}
 
 \newcommand{\smrcomment}[1]{\textcolor{green}{\bf \small [#1 --smr]}}
 \newcommand{\lpkcomment}[1]{\textcolor{red}{\bf \small [#1 --lpk]}}
@@ -162,7 +162,7 @@ understood as a specially-trained coarse-to-fine
 decoding algorithm where a d-parser provides ``coarse'' structure and
 the second stage refines it \cite{charniak2005coarse,petrov2007improved}.
 
-Our lexicalized phrase-structure parser is asymptotically faster than
+Our lexicalized phrase-structure parser, \ParseName, is asymptotically faster than
 parsing with a lexicalized context-free grammar: $O(n^2)$ plus
 d-parsing, vs.~$O(n^5)$ worst case runtime in sentence length $n$,
 with the same grammar constant.  Experiments show
@@ -663,16 +663,17 @@ modifier, we simple precompute the spans $\langle
 \Left{m},\Right{m}\rangle$. Figure~\ref{fig:cky_new} shows the new
 algorithm.
 
-Furthermore, for each word $x_h$ in the d-parse, define $L(h)$ and $R(h)$ as the
-number of left and right dependents of $h$ respectively. At any point
-in the algorithm word $h$ may combine as head with its next left- or
-right-dependent.  There are therefore $L(h) \times R(h)$ possible
- left-right combinations for each head. Since any rule in
-$\rules$ can be used at each point, the running time of the algorithm
-is $O(\sum_{h} L(h)R(h)|\rules|)$.  While the number of
-dependents $L$ and $H$ could in theory be $O(n)$, in practice the
-number is often a constant. This leads to a linear-time algorithm
-in practice as we will show in Section~\ref{sec:exper}.
+Furthermore, for each word $x_h$ in the d-parse, define $L(h)$ and
+$R(h)$ as the number of left and right dependents of $h$
+respectively. At any point in the algorithm word $h$ may combine as
+head with its next left- or right-dependent.  There are therefore
+$L(h) \times R(h)$ possible left-right combinations for each
+head. Since any rule in $\rules$ can be used at each point, the
+running time of the algorithm is $O(\sum_{h} L(h)R(h)|\rules|)$.
+While the terms $L$ and $H$ could in theory make the run-time
+quadratic, in practice the number of dependents is often a
+constant. This leads to a linear-time algorithm in practice as we will
+show in Section~\ref{sec:exper}.
 
 % Second, a word $x_h$ with $L$ dependents to its left and $R$ dependents to 
 % its right may at any point  combine with a left or right dependent. There 
@@ -1029,7 +1030,7 @@ results using \S 19 and the full training set.
 There has been successful work combining dependency and
 phrase-structure information to build accurate c-parsers.
 \newcite{klein2002fast} construct a factored generative model that
-score both context-free syntactic information and semantic
+scores both context-free syntactic productions and semantic
 dependencies.  \newcite{carreras2008tag} construct a state-of-the-art
 parser that uses a dependency parsing model both for pruning and
 within a richer lexicalized parser. Similarly \newcite{rush2010dual}
@@ -1059,7 +1060,7 @@ down parser based on a simple X-bar grammar and a small set of lexicalized featu
 \section{Methods}
 
 We ran a series of experiments to assess the accuracy, efficiency,
-and applicability of the parser to several tasks. These experiments
+and applicability of our parser, \ParseName, to several tasks. These experiments
 use the following setup.  
 
 For English experiments we use the standard Penn Treebank (PTB)
@@ -1270,10 +1271,10 @@ experiments includes both the time for d-parsing and conversion.
 Despite the fixed dependency constraints, the English results show
 that the parser is comparable in accuracy to many widely-used systems,
 and is significantly faster. The parser most competitive in both speed
-and accuracy is the that of \newcite{zhu2013fast}, a fast shift-reduce
+and accuracy is that of \newcite{zhu2013fast}, a fast shift-reduce
 phrase-structure parser.
 
-Furthermore the Chinese results suggests that, even without making
+Furthermore the Chinese results suggest that, even without making
 language-specific changes in the feature system we can still achieve
 competitive parsing accuracy.  In future work we hope to add
 additional Chinese specific features to the system.
@@ -1318,7 +1319,7 @@ correlation between the UAS of the inputs and labeled $F_1$.
 \paragraph{Runtime}
 
 In Section~\ref{sec:pardeps} we considered the theoretical 
-complexity of the parsing model and present the main 
+complexity of the parsing model and presented the main 
 speed results in Table~\ref{tab:alg-oracle}.
 Despite having a quadratic theoretical complexity
 the practical runtime was quite fast.

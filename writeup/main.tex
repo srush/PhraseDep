@@ -1083,13 +1083,19 @@ structure trees. \newcite{zhu2013fast} found this simple technique
 gives an improvement to dependency accuracy of 0.4\% on English and
 2.0\% on Chinese.
 
-Unless otherwise noted, the input d-parsing is done using the RedShift
+Unless otherwise noted, in English the input d-parsing is done using the RedShift
 implementation\footnote{\url{https://github.com/syllog1sm/redshift}}
 of the Zhang-Nivre Parser \cite{zhang2011transition}, trained to
 follow the conventions of Collins head rules
 \cite{collins2003head}. This parser is a transition-based beam search
 parser, and the size of the beam $k$ controls a speed/accuracy trade-off.
 By default we use a beam of $k=16$. 
+
+For Chinese, we use the head rules compiled by
+\newcite{ding2005machine}\footnote{\url{http://stp.lingfil.uu.se/~nivre/research/chn_headrules.txt}}. Since
+RedShift does not yet have Chinese support, we train our d-parser
+using TurboParser standard trained with projective constraints.
+
 
 Additionally, while our parser does not use dependency labels, 
 we found that labels have a significant impact on the performance of
@@ -1136,7 +1142,7 @@ and the effect of the amount of annotated phrase-structure
 data.
 
 
-\subsection{Parsing Accuracy}
+\paragraph{Parsing Accuracy}
 
 \begin{table}
   \centering
@@ -1223,42 +1229,48 @@ data.
 }
 \end{table}
 
-Our first experiments, shown in Table~\ref{tab:acc}, give the accuracy
-and speed
-of the phrase-structure trees produced by the parser.  For these
-experiments we treat our system and the Zhang-Nivre parser as an
-independently trained, but complete end-to-end c-parser. Run-time 
-for these experiments includes both the time for d-parsing and conversion. This setup
-is limited in that the parser cannot change the dependencies given
-to it. Despite this limitation, the results show that the parser is
-comparable in accuracy to many widely-used systems, and is
+Table~\ref{tab:acc} compares the accuracy and speed of the
+phrase-structure trees produced by the parser.  For these experiments
+we treat our system and the Zhang-Nivre parser as an independently
+trained, but complete end-to-end c-parser. Run-time for these
+experiments includes both the time for d-parsing and conversion.
+Despite the fixed dependency constraints, the results show that the
+parser is comparable in accuracy to many widely-used systems, and is
 significantly faster. The only parser competitive in both speed and
-accuracy is the that of \newcite{zhu2013fast}, a fast shift-reduce phrase-structure parser.
+accuracy is the that of \newcite{zhu2013fast}, a fast shift-reduce
+phrase-structure parser.
 
-
-To apply our model on Chinese, we use the head rules complied by \newcite{ding2005machine} \footnote{\url{http://stp.lingfil.uu.se/~nivre/research/chn_headrules.txt}}. Since RedShift  does not yet have Chinese
-support, we train our d-parser using TurboParser second order model \footnote{\newcite{martins2013turning} show that with third-order features, the UAS of parsing Chinese actually decreases.} trained with projective constraints.
-
-The result in Table \ref{tab:acc} suggests that, even with out doing any language specific changes in the feature system (e.g. using the last character of a Chinese word as features), we still achieve competitive parsing accuracy. Due to the time constraints, we leave explorations like adopting better d-parse systems such as ZPar \cite{zhang2011syntactic} and feature engineering a future work.
-
- % For these experiments,
-% we use TurboParser \cite{martins2013turning} to predict downstream dependencies.
-
-$\ldots$
+\smrcomment{Finish this para}
+The result in Table \ref{tab:acc} suggests that, even with out doing
+any language specific changes in the feature system (e.g. using the
+last character of a Chinese word as features), we still achieve
+competitive parsing accuracy. Due to the time constraints, we leave
+explorations like adopting better d-parse systems such as ZPar
+\cite{zhang2011syntactic} and feature engineering a future work.
 
 
 \paragraph{Effect of Dependencies}
 
-Our next set of experiments look at the effect of different 
-input dependency trees. We ran the same trained converter 
-on seven different dependency inputs of varying quality measured 
-by unlabeled accuracy score (UAS).
-Table~\ref{tab:oracle}  shows the results for each d-parser:  its UAS,
-labeled $F_1$ when it is used with \ParseName and with an oracle converter.\footnote{For a gold parse $y$ and predicted
-dependencies $\hat{d}$, define the oracle parse as
-$y' = \argmin_{y' \in \mathcal{Y}(x, \hat{d})} \Delta(y, y') $}
-Figure~\ref{fig:corr}  shows that there is a direct correlation
-between the UAS of the inputs and labeled $F_1$.
+Table~\ref{tab:oracle} shows experiments comparing the effect of
+different input d-parses.  For these experiments we used the same
+trained parser with seven different d-parsers of varying quality and
+speed. We measure for each parser: its UAS, speed, and labeled $F_1$
+when used with \ParseName and with an oracle converter.\footnote{For a
+  gold parse $y$ and predicted dependencies $\hat{d}$, define the
+  oracle parse as $y' = \argmin_{y' \in \mathcal{Y}(x, \hat{d})}
+  \Delta(y, y') $} Figure~\ref{fig:corr} shows that there is a direct
+correlation between the UAS of the inputs and labeled $F_1$.
+
+% Our next set of experiments look at the effect of different 
+% input dependency trees. We ran the same trained converter 
+% on seven different dependency inputs of varying quality measured 
+% by unlabeled accuracy score (UAS).
+% shows the results for each d-parser:  its UAS,
+% labeled $F_1$ when it is used with \ParseName and with an oracle converter.\footnote{For a gold parse $y$ and predicted
+% dependencies $\hat{d}$, define the oracle parse as
+% $y' = \argmin_{y' \in \mathcal{Y}(x, \hat{d})} \Delta(y, y') $}
+% Figure~\ref{fig:corr}  shows that there is a direct correlation
+% between the UAS of the inputs and labeled $F_1$.
 % \nascomment{there was a claim about small changes in d accuracy having
 %   big effects, but the plot looks linear to me}
 %  , and that small 

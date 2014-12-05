@@ -616,7 +616,7 @@ given a d-parse.
   sentence. Right: the constrained CKY parsing algorithm for
   $\mathcal{Y}(x, d)$. The algorithm is nearly identical except that
   many of the free indices are now fixed given  the dependency
-  parse. Finding the optimal c-parse with the new algorithm is  $O\left((\sum_{h} L(h) \times R(h)) |\rules|\right)$ where $L$ and $R$ are the 
+  parse. Finding the optimal c-parse with the new algorithm now requires  $O\left((\sum_{h} L(h) \times R(h)) |\rules|\right)$ time where $L$ and $R$ are the 
   number of left and right dependents of word $h$. \label{fig:cky_new}
 }
 \end{figure*}
@@ -657,22 +657,22 @@ $  \argmax_{y \in \mathcal{Y}(x, d)} s(y; x, d)$
 
 
 This new problem has a nice property. For any word $x_m$, the span $\Span{i,j}$ of the highest $v$ with $h(v) = n$  is the same as span $\Span{\Left{m},\Right{m}}$ in the dependency parse. Since we have the dependency parse, these spans can be efficiently pre-computed.
-
 This property greatly reduces the search space of the parsing problem.
 Instead of searching over all possible spans $\Span{i, j}$ of each
 modifier, we simple precompute the spans $\langle
 \Left{m},\Right{m}\rangle$. Figure~\ref{fig:cky_new} shows the new
 algorithm.
 
-For each word $x_h$ in a d-parse, define $L(h)$ and $R(h)$ as the
+Furthermore, for each word $x_h$ in the d-parse, define $L(h)$ and $R(h)$ as the
 number of left and right dependents of $h$ respectively. At any point
 in the algorithm word $h$ may combine as head with its next left- or
 right-dependent.  There are therefore $L(h) \times R(h)$ possible
-orderings of these combinations for each head. Since any rule in
+ left-right combinations for each head. Since any rule in
 $\rules$ can be used at each point, the running time of the algorithm
-is $O((\sum_{h} L(h) \times R(h)) |\rules|)$.  While the number of
+is $O(\sum_{h} L(h)R(h)|\rules|)$.  While the number of
 dependents $L$ and $H$ could in theory be $O(n)$, in practice the
-number is often a constant term as we will show in Figure~\ref{fig:speed}. 
+number is often a constant. This leads to a linear-time algorithm
+in practice as we will show in Section~\ref{sec:exper}.
 
 % Second, a word $x_h$ with $L$ dependents to its left and $R$ dependents to 
 % its right may at any point  combine with a left or right dependent. There 
@@ -697,33 +697,31 @@ number is often a constant term as we will show in Figure~\ref{fig:speed}.
 \subsection{Pruning}
 \label{sec:prune}
 
-In addition to constraining the number of c-parses possible, 
+In addition to constraining the number of c-parses, 
 the d-parse also provides valuable information about the labeling 
 and structure of the c-parse. We can use this information to 
-further prune the search space. We experimented with two 
-heuristic pruning methods.
+further prune the search space. We use two pruning methods.
 
-First, we observe that in training the part-of-speech of the head word
-$x_h$ greatly restricts the possible rules
-$\Rule{A}{\beta_1}{\beta_2}$ available.  To exploit this property we
-build tables $\rules_{\TagFN{x_h}}$ where $\TagFN{}$ is the
-part-of-speech tag of word $x_h$ and further limit the search to
-rules seen in training for each head tag. This further reduces the run-time of the
-algorithm to $O(\sum_{h} (L(h) \times R(h) \times
-|\rules_{\TagFN{x_h}}|))$.
+Method 1 utilizes the part-of-speech of the head word $\TagFN{x_h}$ to
+greatly restrict the possible rules $\Rule{A}{\beta_1}{\beta_2}$
+available.  We build tables $\rules_{\TagFN{x_h}}$ and limit the
+search to rules seen in training for a particular head tag. This
+further reduces the run-time of the algorithm to $O(\sum_{h} L(h) R(h)
+|\rules_{\TagFN{x_h}}|)$.
 
 
-Second, as noted above, at any point a word $x_h$ with may combine with its
-next left or right dependent, leading to $L(h)\times R(h)$ possible orderings.
-However, in practice we can often predict which side will come next. 
-To make this prediction, we estimate a distribution, $ \eta(\textrm{side}) = p(\textrm{side} \mid \TagFN{x_h}, \TagFN{x_l}, \TagFN{x_r})$,
-where $x_l$ is the next left dependent and $x_r$ is the next right
-dependent. If
-the conditional probability of $\eta(\mathrm{left})$ or
-$\eta(\mathrm{right})$ is greater than a threshold parameter $\gamma$,
-we make a hard decision to combine with that side next. This pruning
-further reduces the impact of outlier words $h$ with large $L(h)
-\times R(h)$.
+Method 2 uses the current state of a head word in the parse.  At any
+point, a word $x_h$ with may combine with its next left or right
+dependent, leading to $L(h)\times R(h)$ possible orderings.  However,
+in practice it is often possible to predict which side, left or right,
+will come next.  For this method, we estimate a distribution,
+$ \eta(\textrm{side}) = p(\textrm{side} \mid \TagFN{x_h}, \TagFN{x_l},
+\TagFN{x_r})$, where $x_l$ is the next left dependent and $x_r$ is the
+next right dependent. If the conditional probability of
+$\eta(\mathrm{left})$ or $\eta(\mathrm{right})$ is greater than a
+threshold parameter $\gamma$, we make a hard decision to combine with
+that side next. This pruning further reduces the impact of outlier
+words $x_h$ with large $L(h) \times R(h)$.
 
 
 % This reduces the effect of the  at runtime. 
@@ -785,15 +783,15 @@ to this discussion in Section~\ref{sec:exper}.
     \textsc{Prune1+2} & -- &  425.1 & 92.5 \\
     \hline
   \end{tabular}
-  \label{tab:alg-oracle}
+
   \caption{Comparison of three parsing setups: 
-    \textsc{Full$^*$} is the standard lexicalized grammar,
-    but limited to only sentences less than 20 words,
+    \textsc{Full$^*$} is the complete lexicalized c-parser,
+    but limited to only sentences less than 20 words for efficiency,
     \textsc{Dep} restricts c-parses to be consistent with a
-    predicted dependency skeleton, and \textsc{Pruned1}, \textsc{Pruned2}, and \textsc{Pruned1+2}
-    are the pruning methods described in
+    predicted dependency skeleton, \textsc{Pruned1}, \textsc{Pruned2}, and \textsc{Pruned1+2}
+    are combinations of the pruning methods described in
     Section~\ref{sec:prune}. The oracle is the best labeled $F_1$ achievable on the
-    development data (see Section~\ref{sec:analysis}).}
+    development data (see Section~\ref{sec:analysis}). \label{tab:alg-oracle}}
 \end{table}
 
 \subsection{Binarization}
@@ -824,15 +822,7 @@ In order to apply the algorithm, we need to binarize the grammar and
 We replace this rule with binary rules that consume each side
 independently as a simple chain.
 The transformation introduces new rules:\footnote{These rules are slightly modified when $k=1$.}
-
-\begin{itemize}
-\item
-$\Rule{A}{\beta_1}{\bar{A}^{*}}$ 
-\item
-$\Rule{\bar{A}} {\beta_i}{\bar{A}^{*}} $ for $i \in \{2, \ldots, k\}$
-\item
-$\Rule{\bar{A}}{\bar{A}^{*}}{\beta_i}$ for $i \in \{k, \ldots, m\}$
-\end{itemize}
+$\Rule{A}{\beta_1}{\bar{A}^{*}}$, $\Rule{\bar{A}} {\beta_i}{\bar{A}^{*}} $ for $i \in \{2, \ldots, k\}$, and  $\Rule{\bar{A}}{\bar{A}^{*}}{\beta_i}$ for $i \in \{k, \ldots, m\}$.
 
 % As an example consider the rule
 
@@ -842,7 +832,7 @@ $\Rule{\bar{A}}{\bar{A}^{*}}{\beta_i}$ for $i \in \{k, \ldots, m\}$
 %  &\Rule{A^{\Leftarrow}_{\beta_{k-1}}}{\beta_{k-1}}{A^{\Rightarrow *}} & \Rule{A}{\beta_1}{ A^{\Leftarrow*}_{\beta_{2}}}\\
 % \end{align*}
 
-\noindent As an example consider the transformation of a rule with four children:
+As an example consider the transformation of a rule with four children:
 
 \begin{center}
   \scalebox{0.6}{ \Tree [ .S NP VP$^*$ NP NP ] $\Rightarrow$ \Tree [
@@ -876,11 +866,7 @@ improvements in accuracy.
 \label{sec:strpred}
 While the parser only requires a d-parse at prediction time, 
 the transformation it implements is learned from a treebank of c-parses.
-Define this scoring function $s$ as 
-
-\[s(y;x, d, \theta) =  \theta^{\top} f(x, d, y) \]
-
-\noindent
+Define this scoring function $s$ as $s(y;x, d, \theta) =  \theta^{\top} f(x, d, y)$
 where $\theta$ is a parameter vector and $f(x, d, y)$ is a feature
 function that maps parse productions to sparse feature vectors. 
 
@@ -912,12 +898,13 @@ training, there are a total of around 2 million non-zero features.
 For efficiency, we use lossy feature hashing. We found this had no
 impact on parsing accuracy but made the parsing significantly faster.
 
+
 \begin{figure}
   \footnotesize
   \centering
   For a production $ \infer{(\Span{i, j}, h, A)}{(\Span{i, k}, m, \beta_1) &  (\Span{k+1, j}, h, \beta_2)} $
 
-  \vspace{0.5cm}
+  \vspace{-0.1cm}
 
   \begin{multicols}{2}
 
@@ -928,19 +915,19 @@ impact on parsing accuracy but made the parsing significantly faster.
   \hline
 
   \hline
-  $(A$, $\beta_1)$ \\
-  $(A$, $\beta_2)$ \\
-  $(A, \beta_1, \TagFN{m})$ \\
-  $(A, \beta_2, \TagFN{h})$ \\
+  $(A$, $\beta_1)$ \  $(A, \beta_1, \TagFN{m})$  \\
+  $(A$, $\beta_2)$ \  $(A, \beta_2, \TagFN{h})$ \\
+
+
   \hline
     \hline
   Span Features \\
   \hline
 
   \hline
-  $(\RuleSym, \WordFN{i})$ $(\RuleSym, \WordFN{i-1})$\\
-  $(\RuleSym, \WordFN{j})$ $(\RuleSym, \WordFN{j+1})$\\
-  $(\RuleSym, \WordFN{k})$ $(\RuleSym, \WordFN{k+1})$\\
+  $(\RuleSym, \WordFN{i})$ \ $(\RuleSym, \WordFN{i-1})$\\
+  $(\RuleSym, \WordFN{j})$ \  $(\RuleSym, \WordFN{j+1})$\\
+  $(\RuleSym, \WordFN{k})$ \  $(\RuleSym, \WordFN{k+1})$\\
   $(\RuleSym, \BinFN{j-i})$\\
   \hline
 
@@ -971,7 +958,7 @@ impact on parsing accuracy but made the parsing significantly faster.
   \end{tabular}
   \end{multicols}
 
-  \caption{The feature templates used in the function $f(x, d, y)$. For the span features, the symbol $\RuleSym$ is expanded into both $\Rule{A}{B}{C}$ and $A$. The function $\TagFN{i}$ gives the part-of-speech tag of word $x_i$. The function $\BinFN{i}$ partitions a span length into one of 10 bins.
+  \caption{The feature templates used in the function $f(x, d, y)$. For the span features, the symbol $\RuleSym$ is expanded into both $\Rule{A}{B}{C}$ and $A$. The function $\BinFN{i}$ partitions a span length into one of 10 bins.
    \label{fig:features} }
 \end{figure}
 

@@ -10,7 +10,6 @@
 // const int n_tags = 1000;
 const int n_size = 100000000;
 
-class FeatureGen;
 class FeatureGenBackoff;
 class Double;
 class Triple;
@@ -45,28 +44,6 @@ class Double {
     long _size_b;
 
 };
-
-// Replicated from python training code.
-class FeatureGen {
-  public:
-    FeatureGen(const Grammar *grammar, bool delex);
-
-
-    double generate(const Sentence &sentence,
-                    const AppliedRule &rule,
-                    vector<long> *base,
-                    const vector<double> *weights) const;
-
-
-
-  private:
-    vector <int> singles;
-    vector <Triple> triples;
-    vector <Double> doubles;
-    const Grammar *grammar_;
-    bool delex_;
-};
-
 
 struct FeatureState {
     FeatureState(vector<long> *base_,
@@ -231,8 +208,6 @@ class FeatureScorer : public Scorer {
     int full_feature_count_ = 1;
 
   private:
-
-    // FeatureGen feature_gen_;
     FeatureGenBackoff feature_gen_;
     const Sentence *sentence_;
 

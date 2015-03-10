@@ -36,7 +36,7 @@ struct Arg: public option::Arg
 enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, LAMBDA,
                     MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE,
                     LABEL_PRUNING, POSITIVE_FEATURES, NO_HASH, FEATURE_FILE, ITEMS,
-                    NO_DEP, LIMIT, LOWER_LIMIT, SIMPLE_FEATURES, DIR_PRUNING};
+                    NO_DEP, LIMIT, LOWER_LIMIT, SIMPLE_FEATURES, CHINESE_FEATURES, DIR_PRUNING};
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , "", option::Arg::None, "USAGE: example [options]\n\n"
@@ -62,6 +62,7 @@ const option::Descriptor usage[] =
     {LIMIT,    0,"", "limit", Arg::Numeric, "  --limit  \n ." },
     {LOWER_LIMIT,    0,"", "lower_limit", Arg::Numeric, "  --lower_limit  \n ." },
     {SIMPLE_FEATURES,    0,"", "simple_features", option::Arg::None, "  --simple_features  \n ." },
+    {CHINESE_FEATURES,    0,"", "chinese_features", option::Arg::None, "  --chinese_features  \n ." },
     {DIR_PRUNING,    0,"", "dir_pruning", option::Arg::None, "  --dir_pruning  \n ." },
     {UNKNOWN, 0,"" ,  ""   , option::Arg::None, "\nExamples:\n"
                                                   "  example --unknown -- --this_is_no_option\n"

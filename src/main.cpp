@@ -117,7 +117,7 @@ int main(int argc, char* argv[]) {
     }
 
     FeatureScorer scorer(grammar, options[DELEX],
-                         options[POSITIVE_FEATURES], options[NO_HASH], options[SIMPLE_FEATURES]);
+                         options[POSITIVE_FEATURES], options[NO_HASH], options[SIMPLE_FEATURES], options[CHINESE_FEATURES]);
     if (options[POSITIVE_FEATURES]) {
         for (auto sentence : *sentences) {
             for (auto rule : sentence.gold_rules) {

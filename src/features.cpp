@@ -115,8 +115,8 @@ inline int span_length(int span_length) {
     return bin_span_length;
 }
 
-FeatureGenBackoff::FeatureGenBackoff(const Grammar *grammar, bool delex, bool simple)
-        : grammar_(grammar), simple_(simple) {
+FeatureGenBackoff::FeatureGenBackoff(const Grammar *grammar, bool delex, bool simple, bool chinese)
+        : grammar_(grammar), simple_(simple), chinese_(chinese) {
     int n_tags = grammar->tag_index.size();
     int n_nonterms = grammar->n_nonterms;
     int n_rules = grammar->n_rules;

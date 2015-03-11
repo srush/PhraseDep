@@ -258,6 +258,7 @@ class Grammar {
     }
 
     int to_word(string word);
+    int to_last_chinese_char(string last_chinese_char);
     int to_deplabel(string deplabel);
 
     int to_nonterm(string nonterm);
@@ -281,6 +282,7 @@ class Grammar {
     int n_rules;
     int n_words;
     int n_deplabel;
+    int n_last_chinese_char;
 
     vector<int> roots;
 
@@ -296,6 +298,8 @@ class Grammar {
     map<string, int> word_map;
     map<string, int> nonterm_map;
     map<int, string> rev_nonterm_map;
+
+    map<string, int> last_chinese_char_map;
 
     map<string, int> deplabel_map;
 

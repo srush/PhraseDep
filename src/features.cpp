@@ -87,6 +87,18 @@ inline long get_word_int(const Grammar* grammar,
     }
 }
 
+inline long get_last_chinese_char(const Grammar* grammar,
+                         const Sentence &sentence,
+                         int index){
+    if (index >= 0 && index < sentence.int_chinese_last_char.size()) {
+        return sentence.int_chinese_last_char[index];
+    } else if (index == -1) {
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
 inline long get_tag_int(const Grammar* grammar,
                         const Sentence &sentence,
                         int index){
@@ -151,7 +163,7 @@ FeatureGenBackoff::FeatureGenBackoff(const Grammar *grammar, bool delex, bool si
         add_template(n_rules, n_labels);
         add_template(n_nonterms, n_nonterms, n_labels);
         add_template(n_nonterms, n_nonterms, n_labels);
-    } else {
+    }
         add_template(grammar_->tag_index.size(), grammar_->n_rules, 1);
         add_template(grammar_->tag_index.size(), grammar_->n_nonterms, 1);
         add_template(grammar_->tag_index.size(), grammar_->n_rules, 1);
@@ -160,7 +172,7 @@ FeatureGenBackoff::FeatureGenBackoff(const Grammar *grammar, bool delex, bool si
         add_template(grammar_->tag_index.size(), grammar_->tag_index.size(), grammar_->n_rules);
         add_template(grammar_->n_nonterms, 1, 1);
         add_template(grammar_->n_nonterms, 1, 1);
-    }
+    
 }
 
 void FeatureGenBackoff::add_template(int a, int b, int c/*1*/) {
@@ -168,11 +180,16 @@ void FeatureGenBackoff::add_template(int a, int b, int c/*1*/) {
 }
 
 void FeatureGenBackoff::add_backed_off_template(int plus) {
-    add_template(grammar_->n_words, grammar_->n_rules, plus);
-    add_template(grammar_->n_words, grammar_->n_nonterms, plus);
+        add_template(grammar_->n_words, grammar_->n_rules, plus);
+        add_template(grammar_->n_words, grammar_->n_nonterms, plus);
+    
     if (!simple_) {
         add_template(grammar_->tag_index.size(), grammar_->n_rules, plus);
         add_template(grammar_->tag_index.size(), grammar_->n_nonterms, plus);
+    }
+    if (chinese_) {
+        // add_template(grammar_->n_last_chinese_char, grammar_->n_rules, plus);
+        // add_template(grammar_->n_last_chinese_char, grammar_->n_nonterms, plus);
     }
 }
 
@@ -182,16 +199,22 @@ void FeatureGenBackoff::backed_off_features(const Sentence &sentence,
                                             int extra,
                                             FeatureState *state) const {
     int word = get_word_int(grammar_, sentence, index);
+    int chinese_last_char = get_last_chinese_char(grammar_, sentence, index);
 
     int rule_ = rule.rule;
     int X = grammar_->head_symbol[rule.rule];
 
-    state->inc(word, rule_, extra);
-    state->inc(word, X, extra);
+        state->inc(word, rule_, extra);
+        state->inc(word, X, extra);
+    
     if (!simple_) {
         int tag = get_tag_int(grammar_, sentence, index);
         state->inc(tag, rule_, extra);
         state->inc(tag, X, extra);
+    }
+    if (chinese_){
+        // state->inc(chinese_last_char, rule_, extra);
+        // state->inc(chinese_last_char, X, extra);
     }
 }
 
@@ -231,8 +254,6 @@ double FeatureGenBackoff::generate(const Sentence &sentence,
     state.inc(is_unary, X);
     state.inc(is_unary, rule.rule);
 
-
-
     int bin_span_length = span_length(rule.k - rule.i);
     state.inc(bin_span_length, X);
     state.inc(bin_span_length, rule.rule);
@@ -251,7 +272,7 @@ double FeatureGenBackoff::generate(const Sentence &sentence,
         state.inc(rule.rule, m_deplabel);
         state.inc(X, Y, m_deplabel);
         state.inc(X, Z, m_deplabel);
-    } else {
+    } 
         state.inc(h_tag, rule.rule, 1);
         state.inc(h_tag, X, 1);
         state.inc(m_tag, rule.rule, 1);
@@ -260,7 +281,7 @@ double FeatureGenBackoff::generate(const Sentence &sentence,
         state.inc(m_tag, h_tag, rule.rule);
         state.inc(Y, 1);
         state.inc(Z, 1);
-    }
+    
 
     return state.score;
 }

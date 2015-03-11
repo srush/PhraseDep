@@ -70,9 +70,16 @@ const option::Descriptor usage[] =
     {0,0,0,0,0,0}
 };
 
+inline string get_last_chinese_char(string word){
+    if(word.size() <= 3){
+        return word;
+    }else{
+        return word.substr(word.size()-3, 3);
+    }
+}
 
 void process_sentence(Sentence *sentence,
-                      Grammar *grammar) {
+                      Grammar *grammar, bool chinese) {
     for (int j = 0; j < sentence->tags.size(); ++j) {
         sentence->int_tags.push_back(
             grammar->tag_index.fget(sentence->tags[j]));
@@ -82,8 +89,13 @@ void process_sentence(Sentence *sentence,
             grammar->to_word(sentence->words[j]));
         sentence->int_deplabels.push_back(
             grammar->to_deplabel(sentence->deplabels[j]));
+        if (chinese) {
+            sentence->int_chinese_last_char.push_back(
+                grammar->to_last_chinese_char(get_last_chinese_char(sentence->words[j])));
+        }
     }
 }
+
 
 int main(int argc, char* argv[]) {
     argc-=(argc>0); argv+=(argc>0); // skip program name argv[0] if present
@@ -108,12 +120,15 @@ int main(int argc, char* argv[]) {
     grammar->to_word("#START#");
     grammar->to_word("#END#");
 
+    grammar->to_last_chinese_char("#START#");
+    grammar->to_last_chinese_char("#END#");
+
     grammar->tag_index.fget("#START#");
     grammar->tag_index.fget("#END#");
 
     vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
     for (int i = 0; i < sentences->size(); ++i) {
-        process_sentence(&(*sentences)[i], grammar);
+        process_sentence(&(*sentences)[i], grammar, options[CHINESE_FEATURES]);
     }
 
     FeatureScorer scorer(grammar, options[DELEX],
@@ -212,7 +227,7 @@ int main(int argc, char* argv[]) {
         vector<Sentence> *sentences =
                 read_sentence(string(options[SENTENCE_TEST].arg));
         for (int i = 0; i < sentences->size(); ++i) {
-            process_sentence(&(*sentences)[i], grammar);
+            process_sentence(&(*sentences)[i], grammar, options[CHINESE_FEATURES]);
         }
 
         ifstream in;
@@ -278,7 +293,7 @@ int main(int argc, char* argv[]) {
         vector<Sentence> *sentences =
                 read_sentence(string(options[SENTENCE_TEST].arg));
         for (int i = 0; i < sentences->size(); ++i) {
-            process_sentence(&(*sentences)[i], grammar);
+            process_sentence(&(*sentences)[i], grammar, options[CHINESE_FEATURES]);
         }
 
         for (int i = 0; i < sentences->size(); ++i) {

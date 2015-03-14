@@ -293,7 +293,293 @@ def test():
     print findHead("VP",["ADVP", "VBN", "PP", "NP"])
     print findHead("NP",["NP", "NP",",","NP",",","NP","CC","NP"])
 
+
+dic_head_rules = {}
+default_left_rule = ["leftexcept", "''", "``", "-LRB-", "-RRB-", ".", ":", ","]
+
+default_right_rule = ["rightexcept", "''", "``", "-LRB-", "-RRB-", ".", ":", ","]
+default_rule = default_right_rule
+
+def init_rules_mod_collins():
+    dic_head_rules = {}
+    # This version from Collins' diss (1999: 236-238)
+    # NNS, NN is actually sensible (money, etc.)!
+    # QP early isn't; should prefer JJR NN RB
+    # remove ADVP; it just shouldn't be there.
+    # if two JJ, should take right one (e.g. South Korean)
+    # dic_head_rules["ADJP"] = [["left", "NNS", "NN", "$", "QP"], ["right", "JJ"], ["left", "VBN", "VBG", "ADJP", "JJP", "JJR", "NP", "JJS", "DT", "FW", "RBR", "RBS", "SBAR", "RB"]]
+    dic_head_rules["ADJP"] = [["left", "$"], ["rightdis", "NNS", "NN", "JJ", "QP", "VBN", "VBG"], ["left", "ADJP"], ["rightdis", "JJP", "JJR", "JJS", "DT", "RB", "RBR", "CD", "IN", "VBD"], ["left", "ADVP", "NP"]]
+    dic_head_rules["JJP"] = [["left", "NNS", "NN", "$", "QP", "JJ", "VBN", "VBG", "ADJP", "JJP", "JJR", "NP", "JJS", "DT", "FW", "RBR", "RBS", "SBAR", "RB"]]  # JJP is introduced for NML-like adjective phrases in Vadas' treebank; Chris wishes he hadn't used JJP which should be a POS-tag.
+    # ADVP rule rewritten by Chris in Nov 2010 to be rightdis.  This is right! JJ.* is often head and rightmost.
+    dic_head_rules["ADVP"] = [["left", "ADVP", "IN"],
+                                               ["rightdis", "RB", "RBR", "RBS", "JJ", "JJR", "JJS"],
+                                               ["rightdis", "RP", "DT", "NN", "CD", "NP", "VBN", "NNP", "CC", "FW", "NNS", "ADJP", "NML"]]
+    dic_head_rules["CONJP"] = [["right", "CC", "RB", "IN"]]
+    dic_head_rules["FRAG"] = [["right"]] # crap
+    dic_head_rules["INTJ"] = [["left"]]
+    dic_head_rules["LST"] = [["right", "LS", ":"]]
+
+    # NML is head in: (NAC-LOC (NML San Antonio) (, ,) (NNP Texas))
+    # TODO: NNP should be head (rare cases, could be ignored):
+    #   (NAC (NML New York) (NNP Court) (PP of Appeals))
+    #   (NAC (NML Prudential Insurance) (NNP Co.) (PP Of America))
+    # Chris: This could maybe still do with more thought, but NAC is rare.
+    dic_head_rules["NAC"] = [["left", "NN", "NNS", "NML", "NNP", "NNPS", "NP", "NAC", "EX", "$", "CD", "QP", "PRP", "VBG", "JJ", "JJS", "JJR", "ADJP", "JJP", "FW"]]
+    dic_head_rules["NX"] = [["right", "NP", "NX"]]
+
+    # Added JJ to PP head table, since it is a head in several cases, e.g.:
+    # (PP (JJ next) (PP to them))
+    # When you have both JJ and IN daughters, it is invariably "such as" -- not so clear which should be head, but leave as IN
+    # should prefer JJ? (PP (JJ such) (IN as) (NP (NN crocidolite)))  Michel thinks we should make JJ a head of PP
+    # added SYM as used in new treebanks for symbols filling role of IN
+    # Changed PP search to left -- just what you want for conjunction (and consistent with SemanticHeadFinder)
+    dic_head_rules["PP"] = [["right", "IN", "TO", "VBG", "VBN", "RP", "FW", "JJ", "SYM"], ["left", "PP"]]
+
+    dic_head_rules["PRN"] = [["left", "VP", "NP", "PP", "SQ", "S", "SINV", "SBAR", "ADJP", "JJP", "ADVP", "INTJ", "WHNP", "NAC", "VBP", "JJ", "NN", "NNP"]]
+    dic_head_rules["PRT"] = [["right", "RP"]]
+    # add '#' for pounds!!
+    dic_head_rules["QP"] = [["left", "$", "IN", "NNS", "NN", "JJ", "CD", "PDT", "DT", "RB", "NCD", "QP", "JJR", "JJS"]]
+    # reduced relative clause can be any predicate VP, ADJP, NP, PP.
+    # For choosing between NP and PP, really need to know which one is temporal and to choose the other.
+    # It's not clear ADVP needs to be in the list at all (delete?).
+    dic_head_rules["RRC"] = [["left", "RRC"], ["right", "VP", "ADJP", "JJP", "NP", "PP", "ADVP"]]
+
+    # delete IN -- go for main part of sentence; add FRAG
+
+    dic_head_rules["S"] = [["left", "TO", "VP", "S", "FRAG", "SBAR", "ADJP", "JJP", "UCP", "NP"]]
+    dic_head_rules["SBAR"] = [["left", "WHNP", "WHPP", "WHADVP", "WHADJP", "IN", "DT", "S", "SQ", "SINV", "SBAR", "FRAG"]]
+    dic_head_rules["SBARQ"] = [["left", "SQ", "S", "SINV", "SBARQ", "FRAG", "SBAR"]]
+    # cdm: if you have 2 VP under an SINV, you should really take the 2nd as syntactic head, because the first is a topicalized VP complement of the second, but for now I didn't change this, since it didn't help parsing.  (If it were changed, it'd need to be also changed to the opposite in SemanticHeadFinder.)
+    dic_head_rules["SINV"] = [["left", "VBZ", "VBD", "VBP", "VB", "MD", "VBN", "VP", "S", "SINV", "ADJP", "JJP", "NP"]]
+    dic_head_rules["SQ"] = [["left", "VBZ", "VBD", "VBP", "VB", "MD", "AUX", "AUXG", "VP", "SQ"]]  # TODO: Should maybe put S before SQ for tag questions. Check.
+    dic_head_rules["UCP"] = [["right"]]
+    # below is weird!! Make 2 lists, one for good and one for bad heads??
+    # VP: added AUX and AUXG to work with Charniak tags
+    dic_head_rules["VP"] = [["left", "TO", "VBD", "VBN", "MD", "VBZ", "VB", "VBG", "VBP", "VP", "AUX", "AUXG", "ADJP", "JJP", "NN", "NNS", "JJ", "NP", "NNP"]]
+    dic_head_rules["WHADJP"] = [["left", "WRB", "WHADVP", "RB", "JJ", "ADJP", "JJP", "JJR"]]
+    dic_head_rules["WHADVP"] = [["right", "WRB", "WHADVP"]]
+    dic_head_rules["WHNP"] = [["left", "WDT", "WP", "WP$", "WHADJP", "WHPP", "WHNP"]]
+    dic_head_rules["WHPP"] = [["right", "IN", "TO", "FW"]]
+    dic_head_rules["X"] = [["right", "S", "VP", "ADJP", "JJP", "NP", "SBAR", "PP", "X"]]
+    dic_head_rules["NP"] = [["rightdis", "NN", "NNP", "NNPS", "NNS", "NML", "NX", "POS", "JJR"], ["left", "NP", "PRP"], ["rightdis", "$", "ADJP", "JJP", "PRN", "FW"], ["right", "CD"], ["rightdis", "JJ", "JJS", "RB", "QP", "DT", "WDT", "RBR", "ADVP"]]
+    # TODO: seems JJ should be head of NML in this case:
+    # (NP (NML (JJ former) (NML Red Sox) (JJ great)) (NNP Luis) (NNP Tiant)),
+    dic_head_rules["NML"] = [["rightdis", "NN", "NNP", "NNPS", "NNS", "NX", "NML", "POS", "JJR"], ["left", "NP", "PRP"], ["rightdis", "$", "ADJP", "JJP", "PRN"], ["right", "CD"], ["rightdis", "JJ", "JJS", "RB", "QP", "DT", "WDT", "RBR", "ADVP"]]
+
+    dic_head_rules["POSSP"] = [["right", "POS"]]
+
+    /* HJT: Adding the following to deal with oddly formed data in (for example) the Brown corpus */
+    dic_head_rules["ROOT"] = [["left", "S", "SQ", "SINV", "SBAR", "FRAG"]]
+    dic_head_rules["TYPO"] = [["left", "NN", "NP", "NML", "NNP", "NNPS", "TO",
+      "VBD", "VBN", "MD", "VBZ", "VB", "VBG", "VBP", "VP", "ADJP", "JJP", "FRAG"]] # for Brown (Roger)
+    dic_head_rules["ADV"] = [["right", "RB", "RBR", "RBS", "FW",
+      "ADVP", "TO", "CD", "JJR", "JJ", "IN", "NP", "NML", "JJS", "NN"]]
+
+    # SWBD
+    dic_head_rules["EDITED"] =  [["left"]]  # crap rule for Switchboard (if don't delete EDITED nodes)
+    # in sw2756, a "VB". (copy "VP" to handle this problem, though should really fix it on reading)
+    dic_head_rules["VB"] = [["left", "TO", "VBD", "VBN", "MD", "VBZ", "VB", "VBG", "VBP", "VP", "AUX", "AUXG", "ADJP", "JJP", "NN", "NNS", "JJ", "NP", "NNP"]]
+
+    dic_head_rules["META"] =  [["left"]]  # rule for OntoNotes, but maybe should just be deleted in TreeReader??
+    dic_head_rules["XS"] =  [["right", "IN"]] # rule for new structure in QP, introduced by Stanford in QPTreeTransformer
+    # nonTerminalInfo.put(null] =  [["left"]]  # rule for OntoNotes from Michel, but it would be better to fix this in TreeReader or to use a default rule?
+
+    # todo: Uncomment this line if we always want to take the leftmost if no head rule is defined for the mother category.
+    # defaultRule = defaultLeftRule; # Don't exception, take leftmost if no rule defined for a certain parent category
+
+def init_rules_stanford():
+    dic_head_rules = {}
+    init_rules_mod_collins()
+    #  NP: don't want a POS to be the head
+    dic_head_rules["NP"] = [["rightdis", "NN", "NNP", "NNPS", "NNS", "NX", "NML", "JJR", "WP" ], ["left", "NP", "PRP"], ["rightdis", "$", "ADJP", "FW"], ["right", "CD"], ["rightdis", "JJ", "JJS", "QP", "DT", "WDT", "NML", "PRN", "RB", "RBR", "ADVP"], ["left", "POS"]]
+    # WHNP clauses should have the same sort of head as an NP
+    # but it a WHNP has a NP and a WHNP under it, the WHNP should be the head.  E.g.,  (WHNP (WHNP (WP$ whose) (JJ chief) (JJ executive) (NN officer))(, ,) (NP (NNP James) (NNP Gatward))(, ,))
+    dic_head_rules["WHNP"] = [["rightdis", "NN", "NNP", "NNPS", "NNS", "NX", "NML", "JJR", "WP"], ["left", "WHNP", "NP"], ["rightdis", "$", "ADJP", "PRN", "FW"], ["right", "CD"], ["rightdis", "JJ", "JJS", "RB", "QP"], ["left", "WHPP", "WHADJP", "WP$", "WDT"]]
+    #WHADJP
+    dic_head_rules["WHADJP"] = [["left", "ADJP", "JJ", "JJR", "WP"], ["right", "RB"], ["right"]]
+    #WHADJP
+    dic_head_rules["WHADVP"] = [["rightdis", "WRB", "WHADVP", "RB", "JJ"]] # if not WRB or WHADVP, probably has flat NP structure, allow JJ for "how long" constructions
+    # QP: we don't want the first CD to be the semantic head (e.g., "three billion": head should be "billion"), so we go from right to left
+    dic_head_rules["QP"] = [["right", "$", "NNS", "NN", "CD", "JJ", "PDT", "DT", "IN", "RB", "NCD", "QP", "JJR", "JJS"]]
+
+    # S, SBAR and SQ clauses should prefer the main verb as the head
+    # S: "He considered him a friend" -> we want a friend to be the head
+    dic_head_rules["S"] = [["left", "VP", "S", "FRAG", "SBAR", "ADJP", "UCP", "TO"], ["right", "NP"]]
+
+    dic_head_rules["SBAR"] = [["left", "S", "SQ", "SINV", "SBAR", "FRAG", "VP", "WHNP", "WHPP", "WHADVP", "WHADJP", "IN", "DT"]]
+    # VP shouldn't be needed in SBAR, but occurs in one buggy tree in PTB3 wsj_1457 and otherwise does no harm
+
+    dic_head_rules["SQ"] = [["left", "VP", "SQ", "ADJP", "VB", "VBZ", "VBD", "VBP", "MD", "AUX", "AUXG"]]
+
+
+    # UCP take the first element as head
+    dic_head_rules["UCP"] = [["left"]]
+
+    # CONJP: we want different heads for "but also" and "but not" and we don't want "not" to be the head in "not to mention"; now make "mention" head of "not to mention"
+    dic_head_rules["CONJP"] = [["right", "VB", "JJ", "RB", "IN", "CC"]]
+
+    # FRAG: crap rule needs to be change if you want to parse glosses; but it is correct to have ADJP and ADVP before S because of weird parses of reduced sentences.
+    dic_head_rules["FRAG"] = [["left", "IN"], ["right", "RB"], ["left", "NP"], ["left", "ADJP", "ADVP", "FRAG", "S", "SBAR", "VP"]]
+
+    # PRN: sentence first
+    dic_head_rules["PRN"] = [["left", "VP", "SQ", "S", "SINV", "SBAR", "NP", "ADJP", "PP", "ADVP", "INTJ", "WHNP", "NAC", "VBP", "JJ", "NN", "NNP"]]
+
+    # add the constituent XS (special node to add a layer in a QP tree introduced in our QPTreeTransformer)
+    dic_head_rules["XS"] = [["right", "IN"]]
+
+    # add a rule to deal with the CoNLL data
+    dic_head_rules["EMBED"] = [["right", "INTJ"]]
+
+
+def findHeaderNormal_Stanford(parent, child_list):
+    theHead = None
+
+    # We know we have nonterminals underneath
+    # (a bit of a Penn Treebank assumption, but).
+
+    rule = dic_head_rules[parent]
+
+    if rule == None:
+      if default_rule != None:
+        return traverse_locate(child_list, default_rule, True)
+
+    for i in xrange(len(rule)):
+      last_resort = (i == (len(rule) - 1))
+      theHead = traverse_locate(child_list, rule[i], last_resort)
+      if theHead != None:
+        break
+    return theHead
+
+# def findHeaderNormal_Stanford(parent, child_list):
+    # Create Head Rules
+    
+    # (ROOT
+    # (SBARQ
+    #   (WHNP (WP Who))
+    #   (SQ (VBP am)
+    #     (NP (PRP I))
+    #     (VP (TO to)
+    #       (VP (VB judge))))
+    #   (. ?)))
+    # WHNP is the head here
+
+    # (ROOT
+    #   (SBARQ
+    #     (WHNP (WP what))
+    #     (SQ
+    #       (VP (VBZ is)
+    #         (ADJP (JJ wrong))))))
+    # ADJP is the head here
+
+    # LPK: Basically, these two rules are global, we will miss. There seems to be no hope here.
+
+    # do VPs with auxiliary as special case
+    # looks for copular verbs
+
+    # Another two things we missed here, they conflict with us because we assume (NT -> NT NT) -> head is a deterministic mapping
+    
+
+def traverse_locate(child_list, rule, last_resort):
+    head_ind = None
+    if rule[0] = "left":
+        head_ind = findLeftHead(child_list, rule[1:])
+    elif rule[0] = "leftdis":
+        head_ind = findLeftDisHead(child_list, rule[1:])
+    elif rule[0] = "leftexcept":
+        head_ind = findLeftExceptHead(child_list, rule[1:])
+    elif rule[0] = "right":
+        head_ind = findRightHead(child_list, rule[1:])
+    elif rule[0] = "rightdis":
+        head_ind = findRightDisHead(child_list, rule[1:])
+    elif rule[0] = "rightexcept":
+        head_ind = findRightExceptHead(child_list, rule[1:])
+    else:
+        print "error head rule"
+        exit()
+    
+
+    # what happens if our rule didn't match anything
+    if head_ind < 0:
+      if last_resort:
+          # use the default rule to try to match anything except categoriesToAvoid
+          # if that doesn't match, we'll return the left or rightmost child (by
+          # setting head_ind).  We want to be careful to ensure that postOperationFix
+          # runs exactly once.
+          if rule[0].startswith("left"):
+              head_ind = 0
+              rule = default_left_rule
+          else:
+              head_ind = len(child_list) - 1
+              rule = default_right_rule
+        
+          child = traverse_locate(child_list, rule, False)
+
+          if child > 0:
+              return child
+          else:
+              return head_ind
+        
+        else:
+            # if we're not the last resort, we can return None to let the next rule try to match
+            return None
+
+    return head_ind
+
+# Functions based on Chris Manning's code from Stanford NLP
+def findLeftHead(child_list, rule):
+    for i in xrange(len(rule)):
+        for j in xrange(len(child_list)):
+            if rule[i] == child_list[j]:
+                return j
+    return -1
+
+
+def findLeftDisHead(child_list, rule):
+    for j in xrange(len(child_list)):
+        for i in xrange(len(rule)):
+            if rule[i] == child_list[j]:
+                return j
+    return -1
+
+def findLeftExceptHead(child_list, rule):
+    for j in xrange(len(child_list)):
+        found = True
+        for i in xrange(len(rule)):
+            if rule[i] == child_list[j]:
+                found = False
+        if found:
+            return j 
+    return -1
+
+def findRightHead(child_list, rule):
+    for i in xrange(len(rule)):
+        for j in reversed(xrange(len(child_list))):
+            if rule[i] == child_list[j]:
+                return j
+    return -1
+
+def findRightDisHead(child_list, rule):
+    for j in reversed(xrange(len(child_list))):
+        for i in xrange(len(rule)):
+            if rule[i] == child_list[j]:
+                return j
+    return -1
+
+def findRightExceptHead(child_list, rule):
+    for j in reversed(xrange(len(child_list))):
+        found = True
+        for i in xrange(len(rule)):
+            if rule[i] == child_list[j]:
+                found = False
+        if found:
+            return j 
+    return -1
+
 def findHeaderNormal(parent, child_list):
+    # return findHeaderNormal_Stanford(parent, child_list)
+    return findHeaderNormal_Collins(parent, child_list)
+
+def findHeaderNormal_Collins(parent, child_list):
         # Rules for NPs
         if parent == "NP":
             # If the last word is tagged POS return (last word)
@@ -1119,5 +1405,7 @@ def demo():
 
 if __name__ == '__main__':
     # demo()
-    dep()
+    #dep()
+    test()
+
     #read_from_ptb('/media/lingpenk/Data/PhraseDep/treebank/dev.1.notraces')

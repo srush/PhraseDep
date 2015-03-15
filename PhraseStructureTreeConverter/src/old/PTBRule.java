@@ -1,3 +1,4 @@
+package old;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -247,6 +248,8 @@ public class PTBRule {
 
 	public static void main(String[] args) {
 		PTBRule ptbr = new PTBRule("NP",Arrays.asList(new String[] { "A", "B", "C", "D", "E" }),3,100);
+//		PTBRule ptbr = new PTBRule("NP",Arrays.asList(new String[] { "NP", "B", "C", "D", "E" }),3,100);
+		
 		ArrayList<PTBRule> set = ptbr.binRule();
 		for(PTBRule r : set){
 			System.out.println(r.toString());

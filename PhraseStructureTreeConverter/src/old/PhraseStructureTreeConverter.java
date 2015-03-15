@@ -1,3 +1,4 @@
+package old;
 /*
  * Lingpeng Kong, lingpenk@cs.cmu.edu
  * 
@@ -291,9 +292,9 @@ public class PhraseStructureTreeConverter {
 
 	public static void main(String[] args) {
 		try {
-			ConvertPennTreeToDep(readTrees("train.1.notraces"));
-			printLexicalizedTree(readTrees("train.1.notraces"));
-			ExtractRules(readTrees("train.1.notraces"));
+			ConvertPennTreeToDep(readTrees("small_training.notraces"));
+			printLexicalizedTree(readTrees("small_training.notraces"));
+			ExtractRules(readTrees("small_training.notraces"));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

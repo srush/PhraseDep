@@ -224,7 +224,8 @@ Grammar *read_rule_set(string file) {
     }
     vector<int> roots;
 
-    roots.push_back(grammar->to_nonterm("TOP"));
+    // roots.push_back(grammar->to_nonterm("TOP"));
+    roots.push_back(grammar->to_nonterm("ROOT"));
 
     grammar->finish(roots);
     return grammar;

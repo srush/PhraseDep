@@ -6,13 +6,15 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Stack;
 
+import edu.stanford.nlp.ling.Label;
 import edu.stanford.nlp.parser.lexparser.TreebankLangParserParams;
 import edu.stanford.nlp.trees.GrammaticalStructure;
 import edu.stanford.nlp.trees.PennTreeReader;
 import edu.stanford.nlp.trees.Tree;
-import edu.stanford.nlp.trees.TreeCoreAnnotations;
 import edu.stanford.nlp.trees.TreeGraphNode;
+import edu.stanford.nlp.trees.TypedDependency;
 import edu.stanford.nlp.util.Filters;
+import edu.stanford.nlp.util.IntPair;
 import edu.stanford.nlp.util.ReflectionLoading;
 import edu.stanford.nlp.util.StringUtils;
 
@@ -27,6 +29,7 @@ public class StanfordHeadRuleFinder {
 				trees.add(t);
 				t = ptr.readTree();
 			}
+			ptr.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -50,19 +53,8 @@ public class StanfordHeadRuleFinder {
 			stack.push(root);
 			while(!stack.isEmpty()){
 				TreeGraphNode node = (TreeGraphNode)stack.pop();
-				String nt = node.label().value();
-				boolean is_unary = (node.children().length == 1);
-				if(is_unary){
-					String nt1 = node.children()[0].label().value();
-					String rule = "1 " + nt + " " + nt1;
-					full_rule_set.add(rule);
-				}else{
-					String nt1 = node.children()[0].label().value();
-					String nt2 = node.children()[1].label().value();
-					int head_side = (TreeHelper.getHeadNodeInd(node) == TreeHelper.getHeadNodeInd(node.children()[0])) ? 0 : 1;
-					String rule = "0 " + nt + " " + nt1 + " " + nt2 + " " + head_side;
-					full_rule_set.add(rule);
-				}
+				String rule = getRuleAt(node);
+				full_rule_set.add(rule);
 				for(Tree child : node.children()){
 					if(child.isPreTerminal()){
 						if(child.isLeaf()) continue;
@@ -115,136 +107,126 @@ public class StanfordHeadRuleFinder {
 		for(Tree t : trees){
 			GrammaticalStructure gs = params.getGrammaticalStructure(t, Filters.acceptFilter(), params.typedDependencyHeadFinder());
 			TreeGraphNode root = gs.root();
-			TreeHelper.BinarizeTree(root, params);
 			
+			ArrayList<String> tokens = new ArrayList<String>();
+			ArrayList<String> poss = new ArrayList<String>();
+			
+			// Get the tokens and the POS
+			for (Tree leaf: root.getLeaves()){
+				tokens.add(leaf.label().value());
+			}
+			for (Label pos : root.preTerminalYield()){
+				poss.add(pos.value());
+			}
+			int sentence_length = poss.size();
+			
+			int[] headList = new int[sentence_length];
+			
+			ArrayList<String> relnList = new ArrayList<String>();
+			// Get the dependencies and their corresponding labels
+			for(TypedDependency td : gs.typedDependencies(false)){
+				// We use root = -1, first word index is 0, so -1 here
+				int head = td.gov().index() - 1;
+				int child = td.dep().index() - 1;
+				headList[child] = head;	
+				relnList.add(td.reln().toString());
+			}
+			ArrayList<String> headListString = new ArrayList<String>();
+			for(int h : headList){
+				headListString.add(""+h);
+			}
+			
+			// Now finally, we start to generate the parts.
+			TreeHelper.BinarizeTree(root, params);
+
+			ArrayList<String> parts = new ArrayList<String>();
+			
+			// Go through every non-terminal node in the tree.
 			Stack<Tree> stack = new Stack<Tree>();
 			stack.push(root);
+			root.setSpans();
 			while(!stack.isEmpty()){
 				TreeGraphNode node = (TreeGraphNode)stack.pop();
-				String nt = node.label().value();
-				boolean is_unary = (node.children().length == 1);
-				if(is_unary){
-					String nt1 = node.children()[0].label().value();
-					String rule = "1 " + nt + " " + nt1;
-					
-				}else{
-					String nt1 = node.children()[0].label().value();
-					String nt2 = node.children()[1].label().value();
-					int head_side = (TreeHelper.getHeadNodeInd(node) == TreeHelper.getHeadNodeInd(node.children()[0])) ? 0 : 1;
-					String rule = "0 " + nt + " " + nt1 + " " + nt2 + " " + head_side;
-					
+				String rule = getRuleAt(node);
+				
+				// This produce i and k
+				IntPair span = node.getSpan();
+				int i = span.get(0);
+				int k = span.get(1);
+				
+				//This produce j
+				int j = node.firstChild().getSpan().get(1);
+				
+				int head_position = TreeHelper.getHeadNodeInd(node) - 1;
+				int left_head = TreeHelper.getHeadNodeInd(node.firstChild()) - 1;
+				int right_head = TreeHelper.getHeadNodeInd(node.lastChild()) - 1;				
+				
+				int h = head_position;
+				int m = head_position == left_head ? right_head : left_head;
+				
+				int rule_num = ruleMap.get(rule);
+				
+				for(Tree child : node.children()){
+					if(child.isPreTerminal() || child.isLeaf()){
+						continue;
+					}else{
+						stack.push(child);
+					}
 				}
-				//TODO
+
+				String part = "" + i + " " + j + " " + k + " " + h + " " + m + " " + rule_num;
+				parts.add(part);
+			}
+			int parts_num = parts.size();
+			lw.writeln(sentence_length + " " + parts_num);
+			lw.writeln(String.join(" ", tokens));
+			lw.writeln(String.join(" ", poss));
+			lw.writeln(String.join(" ", headListString));
+			lw.writeln(String.join(" ", relnList));
+			for(String part : parts){
+				lw.writeln(part);
 			}
 		}
+	}
+	
+	private static String getRuleAt(Tree node){
+		String nt = node.label().value();
+		boolean is_unary = (node.children().length == 1);
+		String rule = null;
+		if(is_unary){
+			String nt1 = node.children()[0].label().value();
+			rule = "1 " + nt + " " + nt1;	
+		}else{
+			String nt1 = node.children()[0].label().value();
+			String nt2 = node.children()[1].label().value();
+			int head_side = (TreeHelper.getHeadNodeInd(node) == TreeHelper.getHeadNodeInd(node.children()[0])) ? 0 : 1;
+			rule = "0 " + nt + " " + nt1 + " " + nt2 + " " + head_side;
+		}
+		return rule;
 	}
 	
 	public static void generateConll(ArrayList<Tree> trees, TreebankLangParserParams params){
 		for(Tree t : trees){
 			GrammaticalStructure gs = params.getGrammaticalStructure(t, Filters.acceptFilter(), params.typedDependencyHeadFinder());
-			//System.out.println(gs.toString());
 			GrammaticalStructure.printDependencies(gs, gs.typedDependencies(false), t, true, false);
-//			break;
 		}
 	}
 	
 	public static void main(String[] args){
 		Properties props = StringUtils.argsToProperties(args);
+		String treeFileName = props.getProperty("treeFile");
+		String outputDir = props.getProperty("outputDir");
+		ArrayList<Tree> trees = readTrees(treeFileName);
+	    
 		
-		ArrayList<Tree> trees = readTrees("dev.1.notraces");
-		//ArrayList<Tree> trees = readTrees("/home/lingpenk/Data/PTB/penn_tb_3.0_preprocessed/train.withtop.jack");
-	    TreebankLangParserParams params = ReflectionLoading.loadByReflection("edu.stanford.nlp.parser.lexparser.EnglishTreebankParserParams");
-	    
-	    
-	    // generateConll(trees, params);
-	    
-//		TreeTransformer tt = new TreeBinarizer(params.typedDependencyHeadFinder(), params.treebankLanguagePack(), false, false, 0, false, false, 20.0, false, false, false);
-//		TreeTransformer ttt = new TreeBinarizer(new CollinsHeadFinder(), params.treebankLanguagePack(), false, false, 0, false, false, 20.0, false, false, false);
-//
-//		for (Tree t : trees) {
-//			Tree newT = tt.transformTree(t);
-//			System.out.println("Original tree:");
-//			t.pennPrint();
-//			System.out.println("Binarized tree1:");
-//			newT.pennPrint();
-//			System.out.println();
-//			System.out.println("Binarized tree2:");
-//			Tree newnewT = ttt.transformTree(t);
-//			newnewT.pennPrint();
-//			System.out.println();
-//			break;
-//		}
-	    
-	    // Head to determine the Head for a tree node
-	    LineWriter lw = new LineWriter("rules");
-	    generateRules(trees, params, true, lw);
+		TreebankLangParserParams params = ReflectionLoading.loadByReflection("edu.stanford.nlp.parser.lexparser.EnglishTreebankParserParams");
+	    LineWriter lw = new LineWriter(outputDir + "/rules");
+	    HashMap<String, Integer> ruleMap = generateRules(trees, params, true, lw);
 	    lw.closeAll();
 	    
-		for(Tree t : trees){
-			t = trees.get(0);
-			GrammaticalStructure gs = params.getGrammaticalStructure(t, Filters.acceptFilter(), params.typedDependencyHeadFinder());
-			System.out.println(gs.toString());
-			TreeGraphNode tgn = gs.root();
-			Tree copy_tree = tgn.deepCopy();
-			System.out.println("***" + TreeHelper.getHeadNodeInd(copy_tree));
-			System.out.println("***" + TreeHelper.getHeadNodeInd(tgn));
-			System.out.println("***" + tgn.label().value());
-			((TreeGraphNode)copy_tree).label().set(TreeCoreAnnotations.HeadWordAnnotation.class, new TreeGraphNode());
-			//System.out.println("***" + TreeHelper.getHeadNodeInd(copy_tree));
-			System.out.println("***" + TreeHelper.getHeadNodeInd(tgn));		
-			System.out.println("***" + tgn.pennString());
-//			TreeGraphNode newNode = new TreeGraphNode();
-//			CoreLabel cl =  new CoreLabel();
-//			// This is a generated label
-//			cl.setValue(t.label().value() + "|");
-//			//cl.set(TreeCoreAnnotations.HeadWordAnnotation.class, (headNode.label().get(TreeCoreAnnotations.HeadWordAnnotation.class)));
-//			newNode.setLabel(cl);
-//			Tree[] childTrees = new Tree[2];
-//			childTrees[0] = tgn.children()[0];
-//			childTrees[1] = tgn.children()[0];
-//			
-//			tgn.setChildren(childTrees);
-//			System.out.println("***" + tgn.pennString());
-//			System.out.println("***" + newNode.pennString());
-//			System.out.println("***" + tgn.children()[0].parent());
-//			
-////			System.out.println(TreeHelper.getHeadNodeInd(tgn));
-////			System.out.println("=======0");
-////			System.out.println(tgn.label());
-//			for(TreeGraphNode child : tgn.children()){
-//				int head_child_int = TreeHelper.headPosition(child, params);
-//				System.out.println(head_child_int);
-//			}
-			TreeHelper.BinarizeTree(tgn, params);
-			
-//			Stack<Tree> stack = new Stack<Tree>();
-//			stack.push(tgn);
-//			while(!stack.isEmpty()){
-//				TreeGraphNode node = (TreeGraphNode)stack.pop();
-//				CoreLabel cl = node.label();
-//				cl.setValue(cl.value() + "-" + TreeHelper.getHeadNodeInd(node));
-//				for(Tree child : node.children()){
-//					stack.push(child);
-//				}
-//			}
-			
-			tgn.pennPrint(); 
-			
-			
-			
-//			System.out.println("=======1");
-//			for(Tree subtree : t.preOrderNodeList()){
-//				if(!(subtree.isLeaf() || subtree.isPreTerminal())){
-//					System.out.println("=======2");
-//					subtree.pennPrint();
-//					System.out.println("=======3");
-//					Tree headTree = params.typedDependencyHeadFinder().determineHead(subtree);
-//					headTree.pennPrint();
-//					System.out.println("=======4");
-//				}
-//			}
-			break;
-		}
+	    lw = new LineWriter(outputDir + "/parts");
+	    generateParts(trees, params, ruleMap, lw);
+	    lw.closeAll();
 	}
 }
 

@@ -30,11 +30,11 @@ public class TreeHelper {
 			// Create a new node
 			TreeGraphNode newNode = null;
 			
-			if(headPosition < (originalChildrenList.length-1)){
-					// At least got one right child
-					// Attach the right children one by one
-					TreeGraphNode left_child = headNode;
-					for(int j = headPosition+1; j < originalChildrenList.length; j++){
+			if(headPosition > 0){
+					// At least got one left child
+					// Attach the left children one by one
+					TreeGraphNode right_child = headNode;
+					for(int j = headPosition-1; j >= 0; j--){
 						newNode = new TreeGraphNode();
 						CoreLabel cl =  new CoreLabel();
 						// This is a generated label
@@ -43,19 +43,19 @@ public class TreeHelper {
 						newNode.setLabel(cl);
 						
 						Tree[] childTrees = new Tree[2];
-						childTrees[0] = left_child;
-						childTrees[1] = originalChildrenList[j];
+						childTrees[0] = originalChildrenList[j];
+						childTrees[1] = right_child;
 						newNode.setChildren(childTrees);
-						left_child = newNode;
+						right_child = newNode;
 					}
 			    }else{
-					// No right child
+					// No left child
 					newNode = headNode;
 				}
 				
-				// The new node should to grab the left children
-				TreeGraphNode right_child = newNode;
-				for(int j = headPosition-1; j >= 0; j--){
+				// The new node should to grab the right children
+				TreeGraphNode left_child = newNode;
+				for(int j = headPosition+1; j < originalChildrenList.length; j++){
 					newNode = new TreeGraphNode();
 					CoreLabel cl =  new CoreLabel();
 					// This is a generated label
@@ -63,10 +63,10 @@ public class TreeHelper {
 					cl.set(TreeCoreAnnotations.HeadWordAnnotation.class, (headNode.label().get(TreeCoreAnnotations.HeadWordAnnotation.class)));
 					newNode.setLabel(cl);
 					Tree[] childTrees = new Tree[2];
-					childTrees[0] = originalChildrenList[j];
-					childTrees[1] = right_child;
+					childTrees[0] = left_child;
+					childTrees[1] = originalChildrenList[j];
 					newNode.setChildren(childTrees);
-					right_child = newNode;
+					left_child = newNode;
 				}
 				// new node now should have one or children and the children list is the children list of the original node
 				t.setChildren(newNode.children());
@@ -74,6 +74,51 @@ public class TreeHelper {
 		return;
 		
 	}
+	
+	// First grab right then left, code
+	// Create a new node
+//				TreeGraphNode newNode = null;
+//				
+//				if(headPosition < (originalChildrenList.length-1)){
+//						// At least got one right child
+//						// Attach the right children one by one
+//						TreeGraphNode left_child = headNode;
+//						for(int j = headPosition+1; j < originalChildrenList.length; j++){
+//							newNode = new TreeGraphNode();
+//							CoreLabel cl =  new CoreLabel();
+//							// This is a generated label
+//							cl.setValue(t.label().value() + "|");
+//							cl.set(TreeCoreAnnotations.HeadWordAnnotation.class, (headNode.label().get(TreeCoreAnnotations.HeadWordAnnotation.class)));
+//							newNode.setLabel(cl);
+//							
+//							Tree[] childTrees = new Tree[2];
+//							childTrees[0] = left_child;
+//							childTrees[1] = originalChildrenList[j];
+//							newNode.setChildren(childTrees);
+//							left_child = newNode;
+//						}
+//				    }else{
+//						// No right child
+//						newNode = headNode;
+//					}
+//					
+//					// The new node should to grab the left children
+//					TreeGraphNode right_child = newNode;
+//					for(int j = headPosition-1; j >= 0; j--){
+//						newNode = new TreeGraphNode();
+//						CoreLabel cl =  new CoreLabel();
+//						// This is a generated label
+//						cl.setValue(t.label().value() + "|");
+//						cl.set(TreeCoreAnnotations.HeadWordAnnotation.class, (headNode.label().get(TreeCoreAnnotations.HeadWordAnnotation.class)));
+//						newNode.setLabel(cl);
+//						Tree[] childTrees = new Tree[2];
+//						childTrees[0] = originalChildrenList[j];
+//						childTrees[1] = right_child;
+//						newNode.setChildren(childTrees);
+//						right_child = newNode;
+//					}
+//					// new node now should have one or children and the children list is the children list of the original node
+//					t.setChildren(newNode.children());
 	
 	// Use position when talking about relative positions. Use index only when refer to the index of the words.
 	// Return the head word index of this subtree

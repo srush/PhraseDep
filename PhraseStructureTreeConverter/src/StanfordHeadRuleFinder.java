@@ -215,18 +215,22 @@ public class StanfordHeadRuleFinder {
 	public static void main(String[] args){
 		Properties props = StringUtils.argsToProperties(args);
 		String treeFileName = props.getProperty("treeFile");
-		String outputDir = props.getProperty("outputDir");
 		ArrayList<Tree> trees = readTrees(treeFileName);
-	    
-		
 		TreebankLangParserParams params = ReflectionLoading.loadByReflection("edu.stanford.nlp.parser.lexparser.EnglishTreebankParserParams");
-	    LineWriter lw = new LineWriter(outputDir + "/rules");
-	    HashMap<String, Integer> ruleMap = generateRules(trees, params, true, lw);
-	    lw.closeAll();
 	    
-	    lw = new LineWriter(outputDir + "/parts");
-	    generateParts(trees, params, ruleMap, lw);
-	    lw.closeAll();
+		boolean extractDependencies = props.getProperty("extractDep") != null;
+		if(extractDependencies){
+			generateConll(trees,params);
+		}else{
+			String outputDir = props.getProperty("outputDir");    
+			LineWriter lw = new LineWriter(outputDir + "/rules");
+		    HashMap<String, Integer> ruleMap = generateRules(trees, params, true, lw);
+		    lw.closeAll();
+		    
+		    lw = new LineWriter(outputDir + "/parts");
+		    generateParts(trees, params, ruleMap, lw);
+		    lw.closeAll();
+		}
 	}
 }
 

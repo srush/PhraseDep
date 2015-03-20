@@ -1079,7 +1079,6 @@ tables in Python, and the parser, features, and training in C++.
 % The
 % core runtime decoding algorithm is self-contained and requires less
 % than 400 lines of code. Both are publicly available.\footnote{\ParserUrl}
-\lpkcomment{think we have that in conclustion? remove here?}
 Experiments are performed on a Lenovo ThinkCentre desktop computer
 with 32GB of memory and  Core i7-3770 3.4GHz 8M cache CPU.
 
@@ -1181,10 +1180,10 @@ data.
   \label{tab:acc}
 }
 \end{table}
-\begin{table}
+\begin{table}[t!]
   \centering
   \small
-  \includegraphics[scale=0.5]{../notebooks/camera_ready_plot.png}
+  \includegraphics[scale=0.45]{../notebooks/camera_ready_plot.png}
   \begin{tabular}[scale=0.8]{lcccc}
     \toprule
     Model & UAS  & $F_1$ & Sent./s.  & Oracle  \\
@@ -1424,7 +1423,7 @@ parsing first, followed by a statistical conversion algorithm to
 fill in phrase-structure trees. 
 Our implementation is available as open-source software at \ParserUrl.
 
-\section*{Acknowledgments}
+\paragraph{Acknowledgments}
 % NSF PARTIAL project
 The authors thank the anonymous reviewers
 and Andr\'{e} Martins, Chris Dyer, and Slav Petrov \nascomment{who to thank?  Andr\'{e}?  cite their tech report

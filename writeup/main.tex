@@ -125,7 +125,7 @@
 We present a new algorithm for transforming dependency parse trees into
 phrase-structure parse trees.  We cast the problem as  structured
 prediction and learn a statistical model.  Our algorithm is faster than traditional
-phrase-structure parsing and achieves 90.4\% English parsing accuracy and 81.3\% Chinese parsing accuracy, near to the state of
+phrase-structure parsing and achieves 90.4\% English parsing accuracy and 82.4\% Chinese parsing accuracy, near to the state of
 the art on both benchmarks.
 
   % Motivated by the increase in accuracy of statistical dependency
@@ -888,9 +888,9 @@ parameters to minimize the regularized empirical risk
 \noindent where we define $\ell$ as
 $\ell(x, d, y, \theta) = - s(y) + \max_{y' \in \mathcal{Y}(x, d)}\left(s(y')  + \Delta(y, y') \right) $
 \noindent and where $\Delta$ is a problem specific cost-function.
-In experiments, we use a Hamming loss  $\Delta(y, y') = || y -y'||$
-\nascomment{I think you want this to be $|y-y'|$ -- what you have
-  suggests an L2 norm!}
+In experiments, we use a Hamming loss  $\Delta(y, y') = | y -y'|$
+%\nascomment{I think you want this to be $|y-y'|$ -- what you have
+%  suggests an L2 norm!}
 where $y$ is an indicator for production rules firing over pairs of
 adjacent spans (i.e., $i, j, k$).
 
@@ -944,14 +944,20 @@ results using \S 19 and the full training set.
 
 
 An important line of previous work also uses dependency parsers to
-produce phrase-structure trees. In particular \newcite{hall2007}
-\nascomment{missing ref here}  and
-\newcite{hall2008dependency} develop a specialized dependency label
+produce phrase-structure trees. In particular \newcite{hall2007hybrid}
+%\nascomment{missing ref here}  
+and \newcite{hall2008dependency} develop a specialized dependency label
 set to encode phrase-structure information in the d-parse. After
 predicting a d-parse this label information can be used to assemble
 a predicted c-parse. Our work differs in that it does not make any
 assumptions on the labeling of the dependency tree used and it uses  
  structured prediction to produce the final c-parse.
+
+ Very recently, \newcite{fernandez2015parsing} also show that an off-the-shelf,
+trainable, dependency parser is enough to build
+a highly-competitive constituent parser. They proposed a new intermediate representation called ``head-ordered dependency trees'',
+which encode head ordering information in dependeny labels. 
+Their algorithm is based on a reduction of the constituent parsing to dependency parsing of such trees.
 
 
 
@@ -1000,7 +1006,8 @@ regularization parameter, $\lambda=1e-8$, and the pruning threshold, $\gamma=0.9
 For Chinese experiments, we use version 5.1 of the Penn  Chinese Treebank 5.1 (CTB) \cite{xue2005penn}. We followed previous work and used
 articles 001--270 and 440--1151 for training, 
 301--325 for development, and 
-271--300 for test. \nascomment{hyperparameter discussion as for English?}
+271--300 for test. We also use the development set to tune the regularization parameter, $\lambda=1e-3$.
+%\nascomment{hyperparameter discussion as for English?}
 
 Part-of-speech tagging is performed for all models using TurboTagger
 \cite{martins2013turning}.  Prior to training the d-parser, the
@@ -1032,9 +1039,10 @@ a labeled parser, but discard the labels.
 
 For Chinese, we use the head rules compiled by
 \newcite{ding2005machine}\footnote{\url{http://stp.lingfil.uu.se/~nivre/research/chn_headrules.txt}}.
-For this data-set we trained the d-parser using the TurboParser
-``Full'' model with projective constraints. In experiments, we
-found that Chinese labels were quite helpful, and added four
+For this data-set we trained the d-parser using the YaraParser implementation\footnote{\url{https://github.com/yahoo/YaraParser}}
+of the Zhang-Nivre Parser \cite{zhang2011transition}, because it has a better Chinese implementation. 
+By default we use a beam of $k=64$.
+In experiments, we found that Chinese labels were quite helpful, and added four
 additional features templates conjoining the label with the
 non-terminals of a rule.
 
@@ -1122,7 +1130,7 @@ data.
     Petrov (2007)       &   \multicolumn{2}{c}{83.3}  \\
     Zhu (2013)           &   \multicolumn{2}{c}{83.2} \\
     \midrule
-    \ParseName        &   \multicolumn{2}{c}{81.3} \\
+    \ParseName        &   \multicolumn{2}{c}{82.4} \\
     \bottomrule
   \end{tabular}
 
@@ -1197,7 +1205,8 @@ data.
  MaltParser \cite{nivre2006maltparser}, 
     the RedShift implementation of the Zhang-Nivre parser
     \cite{zhang2011transition} with beam size $K \in \{1, 4, 16\}$,
-and three versions of TurboParser trained with projective constraints
+the YaraParser implementation of the Zhang-Nivre parser
+    \cite{zhang2011transition} with beam size $K \in \{1, 16, 32, 64\}$, and three versions of TurboParser trained with projective constraints
     \cite{martins2013turning}.
 \label{tab:oracle} }
 \end{table}

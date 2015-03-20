@@ -12,6 +12,15 @@ int Grammar::to_word(string word) {
         return n_words-1;
     }
 }
+int Grammar::to_last_chinese_char(string last_chinese_char){
+    if (last_chinese_char_map.find(last_chinese_char) != last_chinese_char_map.end()) {
+        return last_chinese_char_map[last_chinese_char];
+    } else {
+        last_chinese_char_map[last_chinese_char] = n_last_chinese_char;
+        n_last_chinese_char++;
+        return n_last_chinese_char-1;
+    }
+}
 
 int Grammar::to_deplabel(string deplabel) {
     if (deplabel_map.find(deplabel) != deplabel_map.end()) {
@@ -215,7 +224,8 @@ Grammar *read_rule_set(string file) {
     }
     vector<int> roots;
 
-    roots.push_back(grammar->to_nonterm("TOP"));
+    // roots.push_back(grammar->to_nonterm("TOP"));
+    roots.push_back(grammar->to_nonterm("ROOT"));
 
     grammar->finish(roots);
     return grammar;

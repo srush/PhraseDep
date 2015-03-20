@@ -10,7 +10,6 @@
 // const int n_tags = 1000;
 const int n_size = 100000000;
 
-class FeatureGen;
 class FeatureGenBackoff;
 class Double;
 class Triple;
@@ -45,28 +44,6 @@ class Double {
     long _size_b;
 
 };
-
-// Replicated from python training code.
-class FeatureGen {
-  public:
-    FeatureGen(const Grammar *grammar, bool delex);
-
-
-    double generate(const Sentence &sentence,
-                    const AppliedRule &rule,
-                    vector<long> *base,
-                    const vector<double> *weights) const;
-
-
-
-  private:
-    vector <int> singles;
-    vector <Triple> triples;
-    vector <Double> doubles;
-    const Grammar *grammar_;
-    bool delex_;
-};
-
 
 struct FeatureState {
     FeatureState(vector<long> *base_,
@@ -104,7 +81,7 @@ struct FeatureState {
 
 class FeatureGenBackoff {
   public:
-    FeatureGenBackoff(const Grammar *grammar, bool delex, bool simple);
+    FeatureGenBackoff(const Grammar *grammar, bool delex, bool simple, bool chinese);
 
     double generate(const Sentence &sentence,
                     const AppliedRule &rule,
@@ -126,15 +103,16 @@ class FeatureGenBackoff {
     vector <Triple> features_;
     const Grammar *grammar_;
     bool simple_;
+    bool chinese_;
 };
 
 
 class FeatureScorer : public Scorer {
   public:
     FeatureScorer(const Grammar *grammar, bool delex, bool positive_features,
-                  bool dont_hash_features, bool simple)
+                  bool dont_hash_features, bool simple, bool chinese)
             : perceptron_(n_size),
-              feature_gen_(grammar, delex, simple),
+              feature_gen_(grammar, delex, simple, chinese),
               use_positive_features_(positive_features),
               dont_hash_features_(dont_hash_features) {}
 
@@ -231,8 +209,6 @@ class FeatureScorer : public Scorer {
     int full_feature_count_ = 1;
 
   private:
-
-    // FeatureGen feature_gen_;
     FeatureGenBackoff feature_gen_;
     const Sentence *sentence_;
 

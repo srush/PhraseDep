@@ -36,7 +36,7 @@ struct Arg: public option::Arg
 enum  optionIndex { UNKNOWN, HELP, GRAMMAR, SENTENCE, EPOCH, LAMBDA,
                     MODEL, TEST, SENTENCE_TEST, PRUNING, DELEX, ORACLE, ORACLE_TREE,
                     LABEL_PRUNING, POSITIVE_FEATURES, NO_HASH, FEATURE_FILE, ITEMS,
-                    NO_DEP, LIMIT, LOWER_LIMIT, SIMPLE_FEATURES, DIR_PRUNING};
+                    NO_DEP, LIMIT, LOWER_LIMIT, SIMPLE_FEATURES, CHINESE_FEATURES, DIR_PRUNING};
 const option::Descriptor usage[] =
 {
     {UNKNOWN, 0,"" , "", option::Arg::None, "USAGE: example [options]\n\n"
@@ -62,6 +62,7 @@ const option::Descriptor usage[] =
     {LIMIT,    0,"", "limit", Arg::Numeric, "  --limit  \n ." },
     {LOWER_LIMIT,    0,"", "lower_limit", Arg::Numeric, "  --lower_limit  \n ." },
     {SIMPLE_FEATURES,    0,"", "simple_features", option::Arg::None, "  --simple_features  \n ." },
+    {CHINESE_FEATURES,    0,"", "chinese_features", option::Arg::None, "  --chinese_features  \n ." },
     {DIR_PRUNING,    0,"", "dir_pruning", option::Arg::None, "  --dir_pruning  \n ." },
     {UNKNOWN, 0,"" ,  ""   , option::Arg::None, "\nExamples:\n"
                                                   "  example --unknown -- --this_is_no_option\n"
@@ -69,9 +70,16 @@ const option::Descriptor usage[] =
     {0,0,0,0,0,0}
 };
 
+inline string get_last_chinese_char(string word){
+    if(word.size() <= 3){
+        return word;
+    }else{
+        return word.substr(word.size()-3, 3);
+    }
+}
 
 void process_sentence(Sentence *sentence,
-                      Grammar *grammar) {
+                      Grammar *grammar, bool chinese) {
     for (int j = 0; j < sentence->tags.size(); ++j) {
         sentence->int_tags.push_back(
             grammar->tag_index.fget(sentence->tags[j]));
@@ -81,8 +89,13 @@ void process_sentence(Sentence *sentence,
             grammar->to_word(sentence->words[j]));
         sentence->int_deplabels.push_back(
             grammar->to_deplabel(sentence->deplabels[j]));
+        if (chinese) {
+            sentence->int_chinese_last_char.push_back(
+                grammar->to_last_chinese_char(get_last_chinese_char(sentence->words[j])));
+        }
     }
 }
+
 
 int main(int argc, char* argv[]) {
     argc-=(argc>0); argv+=(argc>0); // skip program name argv[0] if present
@@ -107,16 +120,19 @@ int main(int argc, char* argv[]) {
     grammar->to_word("#START#");
     grammar->to_word("#END#");
 
+    grammar->to_last_chinese_char("#START#");
+    grammar->to_last_chinese_char("#END#");
+
     grammar->tag_index.fget("#START#");
     grammar->tag_index.fget("#END#");
 
     vector<Sentence> *sentences = read_sentence(string(options[SENTENCE].arg));
     for (int i = 0; i < sentences->size(); ++i) {
-        process_sentence(&(*sentences)[i], grammar);
+        process_sentence(&(*sentences)[i], grammar, options[CHINESE_FEATURES]);
     }
 
     FeatureScorer scorer(grammar, options[DELEX],
-                         options[POSITIVE_FEATURES], options[NO_HASH], options[SIMPLE_FEATURES]);
+                         options[POSITIVE_FEATURES], options[NO_HASH], options[SIMPLE_FEATURES], options[CHINESE_FEATURES]);
     if (options[POSITIVE_FEATURES]) {
         for (auto sentence : *sentences) {
             for (auto rule : sentence.gold_rules) {
@@ -211,7 +227,7 @@ int main(int argc, char* argv[]) {
         vector<Sentence> *sentences =
                 read_sentence(string(options[SENTENCE_TEST].arg));
         for (int i = 0; i < sentences->size(); ++i) {
-            process_sentence(&(*sentences)[i], grammar);
+            process_sentence(&(*sentences)[i], grammar, options[CHINESE_FEATURES]);
         }
 
         ifstream in;
@@ -277,7 +293,7 @@ int main(int argc, char* argv[]) {
         vector<Sentence> *sentences =
                 read_sentence(string(options[SENTENCE_TEST].arg));
         for (int i = 0; i < sentences->size(); ++i) {
-            process_sentence(&(*sentences)[i], grammar);
+            process_sentence(&(*sentences)[i], grammar, options[CHINESE_FEATURES]);
         }
 
         for (int i = 0; i < sentences->size(); ++i) {

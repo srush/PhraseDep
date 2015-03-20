@@ -12,6 +12,7 @@ struct Sentence {
     vector<int> int_tags;
     vector<string> words;
     vector<int> int_words;
+    vector<int> int_chinese_last_char;
 
     vector<string> deplabels;
     vector<int> int_deplabels;

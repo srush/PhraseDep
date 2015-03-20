@@ -84,7 +84,8 @@
 \newcommand{\Reals}{\mathbb{R}}
 \newcommand{\Head}{\mathrm{head}}
 \newcommand{\ParseName}{\textsc{Converter}\xspace}
-\newcommand{\ParserUrl}{\url{https://github.com/srush/PhraseDep}}
+%\newcommand{\ParserUrl}{\url{https://github.com/srush/PhraseDep}}
+\newcommand{\ParserUrl}{\url{https://github.com/ikekonglp/Converter}}
 
 \newcommand{\smrcomment}[1]{\textcolor{green}{\bf \small [#1 --smr]}}
 \newcommand{\lpkcomment}[1]{\textcolor{red}{\bf \small [#1 --lpk]}}
@@ -420,7 +421,7 @@ Figure~\ref{fig:inverse}.
 
 
 
-\begin{figure*}
+\begin{figure}
   \centering
 
   \vspace{-1cm}
@@ -432,13 +433,14 @@ Figure~\ref{fig:inverse}.
       \depedge{2}{1}{}
       \depedge{4}{3}{}
       \depedge{2}{4}{}
-  \end{dependency}   \vspace{-2cm} \scalebox{0.6}{\Tree [ .X(2) [ .X(1) [ .N I$_1$ ] ]  [ .V saw$_2$ ] [ .X(4) [ .D
+  \end{dependency}   \vspace{-0.1cm} 
+  \scalebox{0.6}{\Tree [ .X(2) [ .X(1) [ .N I$_1$ ] ]  [ .V saw$_2$ ] [ .X(4) [ .D
     the$_3$ ]  [ .N man$_4$ ] ] ] \hspace*{0.6cm}
  \Tree [ .X(2)  [ .N I$_1$ ] [ .X(2)  [ .V saw$_2$ ] [ .X(4) [ .D
     the$_3$ ]  [ .N man$_4$ ] ] ] ] \hspace*{0.6cm}
     \Tree [ .X(2) [ .X(2) [ .N I$_1$ ]   [ .V saw$_2$ ] ]  [ .X(4) [
     .D the$_3$ ]  [ .N man$_4$ ] ] ] }
-  
+
   
   \caption{{
       % While a phrase-structure parse determines a
@@ -447,10 +449,10 @@ Figure~\ref{fig:inverse}.
       [Adapted from \cite{collins1999statistical}.] A d-parse (left)
       and several c-parses consistent with it (right).  Our goal is to select
       the best parse from this set. \label{fig:inverse}
-      \nascomment{todo:  deal with layout issue here}
+ %     \nascomment{todo:  deal with layout issue here}
     }
     }
-\end{figure*}
+\end{figure}
 
 \begin{figure*}
   \small 
@@ -488,6 +490,7 @@ Figure~\ref{fig:inverse}.
 \[(\Span{1, n}, m, \Root) \mbox{\ for\ any } m \in \RightS(0) \]
 
 \end{multicols}
+\vspace{-0.8cm} 
 \caption{The two algorithms written as deductive parsers. Starting
   from the \textit{premise}, any valid application of \textit{rules}
   that leads to a \textit{goal} is a valid parse.  Left: lexicalized CKY
@@ -1041,7 +1044,7 @@ For Chinese, we use the head rules compiled by
 \newcite{ding2005machine}\footnote{\url{http://stp.lingfil.uu.se/~nivre/research/chn_headrules.txt}}.
 For this data-set we trained the d-parser using the YaraParser implementation\footnote{\url{https://github.com/yahoo/YaraParser}}
 of the Zhang-Nivre Parser \cite{zhang2011transition}, because it has a better Chinese implementation. 
-By default we use a beam of $k=64$.
+We use a beam of $k=64$.
 In experiments, we found that Chinese labels were quite helpful, and added four
 additional features templates conjoining the label with the
 non-terminals of a rule.
@@ -1072,9 +1075,12 @@ precision. For dependency parsing, we report unlabeled accuracy score
 (UAS).
 
 We implemented the grammar binarization, head rules, and pruning
-tables in Python, and the parser, features, and training in C++. The
-core runtime decoding algorithm is self-contained and requires less
-than 400 lines of code. Both are publicly available.\footnote{\ParserUrl} Experiments are performed on a Lenovo ThinkCentre desktop computer
+tables in Python, and the parser, features, and training in C++. 
+% The
+% core runtime decoding algorithm is self-contained and requires less
+% than 400 lines of code. Both are publicly available.\footnote{\ParserUrl}
+\lpkcomment{think we have that in conclustion? remove here?}
+Experiments are performed on a Lenovo ThinkCentre desktop computer
 with 32GB of memory and  Core i7-3770 3.4GHz 8M cache CPU.
 
 
@@ -1134,6 +1140,7 @@ data.
     \bottomrule
   \end{tabular}
 
+
   % \begin{tabular}{|l|rrrr|}
   %   \hline
   %   & \multicolumn{3}{|c|}{PTB} \\
@@ -1178,7 +1185,7 @@ data.
   \centering
   \small
   \includegraphics[scale=0.55]{../notebooks/parsers}
-  \begin{tabular}{lcccc}
+  \begin{tabular}[scale=0.8]{lcccc}
     \toprule
     Model & UAS  & $F_1$ & Sent./s.  & Oracle  \\
     \midrule
@@ -1195,9 +1202,6 @@ data.
     \textsc{TP-Full}     & 93.5 & 90.8 & 13.2 & 92.9 \\
     \bottomrule
   \end{tabular}
-
-
-  
   \caption{The effect of d-parsing accuracy (PTB \S 22)
     on \ParseName{} and an oracle converter.  Runtime includes
     d-parsing and c-parsing.  
@@ -1209,8 +1213,8 @@ the YaraParser implementation of the Zhang-Nivre parser
     \cite{zhang2011transition} with beam size $K \in \{1, 16, 32, 64\}$, and three versions of TurboParser trained with projective constraints
     \cite{martins2013turning}.
 \label{tab:oracle} }
-\end{table}
 
+\end{table}
 
 
 Table~\ref{tab:acc} compares the accuracy and speed of the
@@ -1422,10 +1426,11 @@ Our implementation is available as open-source software at \ParserUrl.
 
 \section*{Acknowledgments}
 % NSF PARTIAL project
-
+The authors thank the anonymous reviewers
+and Andr\'{e} Martins, Chris Dyer, and Slav Petrov \nascomment{who to thank?  Andr\'{e}?  cite their tech report
+  somewhere?  who else?} for helpful feedback.
 This research was supported in part by NSF grant IIS-1352440 and computing resources provided by Google and the Pittsburgh Supercomputing Center.
-\nascomment{who to thank?  Andr\'{e}?  cite their tech report
-  somewhere?  who else?}
+
 
 % One question for future work is whether these results are language
 % dependent, or whether these transformation can be projected across

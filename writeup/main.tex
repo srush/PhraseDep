@@ -1031,7 +1031,7 @@ we found that this hurt performance of the parser.
 Unless otherwise noted, in English the test d-parsing is done using
 the RedShift
 implementation\footnote{\url{https://github.com/syllog1sm/redshift}}
-of the Zhang-Nivre Parser \cite{zhang2011transition}, trained to
+of the parser of Zhang and Nivre (2011), trained to
 follow the conventions of Collins head rules
 \cite{collins2003head}. This parser is a transition-based beam search
 parser, and the size of the beam $k$ controls a speed/accuracy
@@ -1043,7 +1043,7 @@ a labeled parser, but discard the labels.
 For Chinese, we use the head rules compiled by
 \newcite{ding2005machine}\footnote{\url{http://stp.lingfil.uu.se/~nivre/research/chn_headrules.txt}}.
 For this data-set we trained the d-parser using the YaraParser implementation\footnote{\url{https://github.com/yahoo/YaraParser}}
-of the Zhang-Nivre Parser \cite{zhang2011transition}, because it has a better Chinese implementation. 
+of the parser of Zhang and Nivre (2011), because it has a better Chinese implementation. 
 We use a beam of $k=64$.
 In experiments, we found that Chinese labels were quite helpful, and added four
 additional features templates conjoining the label with the
@@ -1206,13 +1206,13 @@ data.
     d-parsing and c-parsing.  
     Inputs include 
     MaltParser \cite{nivre2006maltparser}, 
-    the RedShift Parser, and the YaraParser 
-    implementation of the parser of Zhang and Nivre (2011) 
+    the RedShift and the Yara
+    implementations of the parser of Zhang and Nivre (2011) 
     with various beam size,
     and three versions of TurboParser trained with projective constraints
     \cite{martins2013turning}.
 \label{tab:oracle}}
-\vspace{-0.8cm}
+\vspace{-0.5cm}
 \end{table}
 
 
@@ -1244,7 +1244,7 @@ competitive parsing accuracy.
 
 Table~\ref{tab:oracle} shows experiments comparing the effect of
 different input d-parses.  For these experiments we used the same version of \ParseName with
- with 11 different d-parsers of varying quality and
+ 11 different d-parsers of varying quality and
 speed. We measure for each parser: its UAS, speed, and labeled $F_1$
 when used with \ParseName and with an oracle converter.\footnote{For a
   gold parse $y$ and predicted dependencies $\hat{d}$, define the
@@ -1297,7 +1297,7 @@ cases the observed runtime is  linear.
 Annotating phrase-structure trees is often more expensive and slower than annotating unlabeled dependency trees \cite{schneider2013framework}. For low-resource languages, an alternative approach to developing fully annotated phrase-structure treebanks might be to label a small amount of c-parses and a large amount of cheaper d-parses. Assuming this setup, we ask how many c-parses would be necessary to obtain reasonable performance?
 
 For this experiment, we train \ParseName on only 5\% of the PTB training set and apply it to predicted d-parses from a fully-trained model. Even with this small amount of 
-data, we obtain a parser with development score of  $F_1 = 89.1\%$, which is comparable to \newcite{charniak2000maximum} and Stanford PCFG \cite{klein2003accurate} trained on the complete c-parse training set. Additionally, if the gold dependencies are available, \ParseName{} with 5\% training achieves $F_1 = 95.8\%$ on development, demonstrating a strong ablity to recover the phrase-structure trees from dependency annotations.
+data, we obtain a parser with development score of  $F_1 = 89.1\%$, which is comparable to \newcite{charniak2000maximum} and Stanford PCFG \cite{klein2003accurate} trained on the complete c-parse training set. Additionally, if the gold dependencies are available, \ParseName{} with 5\% training achieves $F_1 = 95.8\%$ on development, demonstrating a strong ability to recover the phrase-structure trees from dependency annotations.
 
 
 % Our next set of experiments consider the efficiency of the model. For these experiments we consider both the full and pruned version of the parser using the pruning described in section~\ref{sec:prune}. Table~\ref{tab:speed} shows that in practice the parser is quite fast,  averaging around \% tokens per second at high accuracy.

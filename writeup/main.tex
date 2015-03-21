@@ -85,7 +85,7 @@
 \newcommand{\Head}{\mathrm{head}}
 \newcommand{\ParseName}{\textsc{Pad}\xspace}
 %\newcommand{\ParserUrl}{\url{https://github.com/srush/PhraseDep}}
-\newcommand{\ParserUrl}{\url{https://github.com/ikekonglp/Converter}}
+\newcommand{\ParserUrl}{\url{https://github.com/ikekonglp/PAD}}
 
 \newcommand{\smrcomment}[1]{\textcolor{green}{\bf \small [#1 --smr]}}
 \newcommand{\lpkcomment}[1]{\textcolor{red}{\bf \small [#1 --lpk]}}
@@ -1018,7 +1018,7 @@ training sections are automatically processed using 10-fold
 jackknifing \cite{collins2005discriminative} for both dependency and phrase
 structure trees. \newcite{zhu2013fast} found this simple technique
 gives an improvement to dependency accuracy of 0.4\% on English and
-2.0\% on Chinese. 
+2.0\% on Chinese in their system. 
 
 During training, we use the d-parses induced by the head rules from
 the gold c-parses as constraints. There is a slight mismatch here with
@@ -1184,7 +1184,7 @@ data.
   \centering
   \small
   \includegraphics[scale=0.45]{../notebooks/camera_ready_plot.png}
-  \begin{tabular}[scale=0.8]{lcccc}
+  \begin{tabular}[scale=0.7]{lcccc}
     \toprule
     Model & UAS  & $F_1$ & Sent./s.  & Oracle  \\
     \midrule
@@ -1205,15 +1205,16 @@ data.
     on \ParseName{} and an oracle converter.  Runtime includes
     d-parsing and c-parsing.  
     Inputs include 
- MaltParser \cite{nivre2006maltparser}, 
-    the RedShift implementation of the Zhang-Nivre parser
-    \cite{zhang2011transition} with beam size $K \in \{1, 4, 16\}$,
-the YaraParser implementation of the Zhang-Nivre parser
-    \cite{zhang2011transition} with beam size $K \in \{1, 16, 32, 64\}$, and three versions of TurboParser trained with projective constraints
+    MaltParser \cite{nivre2006maltparser}, 
+    the RedShift Parser, and the YaraParser 
+    implementation of the parser of Zhang and Nivre (2011) 
+    with various beam size,
+    and three versions of TurboParser trained with projective constraints
     \cite{martins2013turning}.
-\label{tab:oracle} }
-
+\label{tab:oracle}}
+\vspace{-0.8cm}
 \end{table}
+
 
 
 Table~\ref{tab:acc} compares the accuracy and speed of the
@@ -1242,8 +1243,8 @@ competitive parsing accuracy.
 \paragraph{Effect of Dependencies}
 
 Table~\ref{tab:oracle} shows experiments comparing the effect of
-different input d-parses.  For these experiments we used the same
-trained parser with seven different d-parsers of varying quality and
+different input d-parses.  For these experiments we used the same version of \ParseName with
+ with 11 different d-parsers of varying quality and
 speed. We measure for each parser: its UAS, speed, and labeled $F_1$
 when used with \ParseName and with an oracle converter.\footnote{For a
   gold parse $y$ and predicted dependencies $\hat{d}$, define the
@@ -1426,8 +1427,10 @@ Our implementation is available as open-source software at \ParserUrl.
 \paragraph{Acknowledgments}
 % NSF PARTIAL project
 The authors thank the anonymous reviewers
-and Andr\'{e} Martins, Chris Dyer, and Slav Petrov \nascomment{who to thank?  Andr\'{e}?  cite their tech report
-  somewhere?  who else?} for helpful feedback.
+and Andr\'{e} Martins, Chris Dyer, and Slav Petrov 
+%\nascomment{who to thank?  Andr\'{e}?  cite their tech report
+%  somewhere?  who else?}
+for helpful feedback.
 This research was supported in part by NSF grant IIS-1352440 and computing resources provided by Google and the Pittsburgh Supercomputing Center.
 
 

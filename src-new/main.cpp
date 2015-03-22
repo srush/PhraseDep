@@ -42,17 +42,14 @@ enum optionIndex { HELP, GRAMMAR, SENTENCES, EPOCHS, LAMBDA,
                    ORACLE, LABEL_PRUNING, SIMPLE_FEATURES, DIR_PRUNING};
 
 const option::Descriptor usage[] = {
-    {HELP,    0, "" , "help", option::Arg::None,
-     "  --help  \tPrint usage and exit." },
-
     {GRAMMAR, 0, "g", "grammar", Arg::Required,
      "  --grammar, -g  \nGrammar file." },
 
     {SENTENCES, 0, "s", "sentences", Arg::Required,
-     "  --sentences, -g  \nSentence file." },
+     "  --sentences, -g  \nCoNLL sentence file." },
 
     {ANNOTATIONS, 0, "s", "annotations", Arg::Required,
-     "  --annotations, -g  \nAnnotation file." },
+     "  --annotations, -g  \nGold annotation file." },
 
     {SENTENCE_TEST, 0, "t", "sentence_test", Arg::Required,
      "  --sentence_test, -t  \nSentence test file." },
@@ -61,16 +58,16 @@ const option::Descriptor usage[] = {
      "  --epochs[=10], -e  \nNumber of epochs." },
 
     {LAMBDA, 0, "l", "lambda", Arg::Required,
-     "  --lambda[=0.0001]  \n Regularization constant. " },
+     "  --lambda[=0.0001]  \nL1 Regularization constant. " },
 
     {MODEL, 0, "m", "model", Arg::Required,
      "  --model, -m  \nModel file." },
 
     {ORACLE, 0, "o", "oracle", option::Arg::None,
-     "  --oracle, -o  \n ." },
+     "  --oracle, -o  \nRun in oracle mode." },
 
     {SIMPLE_FEATURES, 0, "", "simple_features", option::Arg::None,
-     "  --simple_features  \n ." },
+     "  --simple_features  \nUse simple set of features (debugging)." },
 
     {PRUNING, 0, "p", "pruning", option::Arg::None,
      "  --pruning, -p  \n ." },
@@ -80,6 +77,9 @@ const option::Descriptor usage[] = {
 
     {DIR_PRUNING, 0, "", "dir_pruning", option::Arg::None,
      "  --dir_pruning  \n ." },
+
+    {HELP,    0, "" , "help", option::Arg::None,
+     "  --help  \tPrint usage and exit." },
 
     {0, 0, 0, 0, 0, 0}
 };

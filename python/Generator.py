@@ -67,14 +67,14 @@ def generate_rule(treebank_file):
 
     f.close()
     #core_pos_set = [pos for pos in pos_set if pos[0] <= 'Z' and pos[0] >= 'A']
-    
+
     # print core_pos_set
     # Generate the back-off rules
     backoff_rule_set = set([])
     for r in full_rule_set:
         args = r.split(" ")
     #   #print "___".join(args)
-        
+
         for i in xrange(1, len(args)-1):
     #        #sys.stdout.write("*" + args[i] + "*")
             if args[i] in pos_set:
@@ -135,36 +135,56 @@ def generate_part(treebank_file, rule_file):
         work_tree = deepcopy(t)
         NewTree.lexLabel(work_tree)
         parent_dic, dep_label_set = NewTree.getParentDic(work_tree)
-        print len(t.leaves()), len([item for item in parts if item != None])
-        print " ".join(t.leaves())
-        if not dep_from_conll:
-            print " ".join([x.label() for x in t.subtrees(lambda t: t.height() == 2)])
+        # print len(t.leaves()), len([item for item in parts if item != None])
+
+        if False:
+
             parent_list = []
             label_list = []
             for ind in xrange(1, (len(t.leaves()) + 1)):
                 p = str(int(parent_dic[str(ind)]) - 1)
                 parent_list.append(p)
-            print " ".join(parent_list)
+
             for ind in xrange(1, (len(t.leaves()) + 1)):
                 l = dep_label_set[str(ind)]
                 label_list.append(l)
-            print " ".join(label_list)
+            a_list = [x.label() for x in t.subtrees(lambda t: t.height() == 2)]
+            for i, (le, a, p, l) in enumerate(zip(t.leaves(), a_list,  parent_list, label_list)):
+                print "\t".join(map(str, (i+1, le,  "_", a, a, "_", int(p)+1, l)))
+            print
         else:
-            dep_sentence = corpus[s_ind]
-            if language_setting == "chn":
-                dep_sentence = dep_sentence.decode('utf-8')
-            pos_list = [line[4] for line in dep_sentence]
-            parent_list = [str(int(line[6])-1) for line in dep_sentence]
-            label_list = [line[7] for line in dep_sentence]
-            # print " ".join(word_list)
-            print " ".join(pos_list)
-            print " ".join(parent_list)
-            print " ".join(label_list)
-        for p in parts:
-            if p != None:
-                print " ".join(p)
+        #print " ".join(t.leaves())
+
+            print len([item for item in parts if item != None])
+            if not dep_from_conll:
+                # print " ".join([x.label() for x in t.subtrees(lambda t: t.height() == 2)])
+                parent_list = []
+                label_list = []
+                for ind in xrange(1, (len(t.leaves()) + 1)):
+                    p = str(int(parent_dic[str(ind)]) - 1)
+                    parent_list.append(p)
+                # print " ".join(parent_list)
+                for ind in xrange(1, (len(t.leaves()) + 1)):
+                    l = dep_label_set[str(ind)]
+                    label_list.append(l)
+                # print " ".join(label_list)
             else:
-                pass
+                dep_sentence = corpus[s_ind]
+                if language_setting == "chn":
+                    dep_sentence = dep_sentence.decode('utf-8')
+                pos_list = [line[4] for line in dep_sentence]
+                parent_list = [str(int(line[6])-1) for line in dep_sentence]
+                label_list = [line[7] for line in dep_sentence]
+                # print " ".join(word_list)
+
+                print " ".join(pos_list)
+                print " ".join(parent_list)
+                print " ".join(label_list)
+            for p in parts:
+                if p != None:
+                    print " ".join(p)
+                else:
+                    pass
     f.close()
 
 def read_rule_file(rulef):

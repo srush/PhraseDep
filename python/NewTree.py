@@ -368,7 +368,7 @@ def init_rules_mod_collins():
 
     dic_head_rules["POSSP"] = [["right", "POS"]]
 
-    /* HJT: Adding the following to deal with oddly formed data in (for example) the Brown corpus */
+    # /* HJT: Adding the following to deal with oddly formed data in (for example) the Brown corpus */
     dic_head_rules["ROOT"] = [["left", "S", "SQ", "SINV", "SBAR", "FRAG"]]
     dic_head_rules["TYPO"] = [["left", "NN", "NP", "NML", "NNP", "NNPS", "TO",
       "VBD", "VBN", "MD", "VBZ", "VB", "VBG", "VBP", "VP", "ADJP", "JJP", "FRAG"]] # for Brown (Roger)
@@ -452,7 +452,7 @@ def findHeaderNormal_Stanford(parent, child_list):
 
 # def findHeaderNormal_Stanford(parent, child_list):
     # Create Head Rules
-    
+
     # (ROOT
     # (SBARQ
     #   (WHNP (WP Who))
@@ -477,53 +477,53 @@ def findHeaderNormal_Stanford(parent, child_list):
     # looks for copular verbs
 
     # Another two things we missed here, they conflict with us because we assume (NT -> NT NT) -> head is a deterministic mapping
-    
 
-def traverse_locate(child_list, rule, last_resort):
-    head_ind = None
-    if rule[0] = "left":
-        head_ind = findLeftHead(child_list, rule[1:])
-    elif rule[0] = "leftdis":
-        head_ind = findLeftDisHead(child_list, rule[1:])
-    elif rule[0] = "leftexcept":
-        head_ind = findLeftExceptHead(child_list, rule[1:])
-    elif rule[0] = "right":
-        head_ind = findRightHead(child_list, rule[1:])
-    elif rule[0] = "rightdis":
-        head_ind = findRightDisHead(child_list, rule[1:])
-    elif rule[0] = "rightexcept":
-        head_ind = findRightExceptHead(child_list, rule[1:])
-    else:
-        print "error head rule"
-        exit()
-    
 
-    # what happens if our rule didn't match anything
-    if head_ind < 0:
-      if last_resort:
-          # use the default rule to try to match anything except categoriesToAvoid
-          # if that doesn't match, we'll return the left or rightmost child (by
-          # setting head_ind).  We want to be careful to ensure that postOperationFix
-          # runs exactly once.
-          if rule[0].startswith("left"):
-              head_ind = 0
-              rule = default_left_rule
-          else:
-              head_ind = len(child_list) - 1
-              rule = default_right_rule
-        
-          child = traverse_locate(child_list, rule, False)
+# def traverse_locate(child_list, rule, last_resort):
+#     head_ind = None
+#     if rule[0] = "left":
+#         head_ind = findLeftHead(child_list, rule[1:])
+#     elif rule[0] = "leftdis":
+#         head_ind = findLeftDisHead(child_list, rule[1:])
+#     elif rule[0] = "leftexcept":
+#         head_ind = findLeftExceptHead(child_list, rule[1:])
+#     elif rule[0] = "right":
+#         head_ind = findRightHead(child_list, rule[1:])
+#     elif rule[0] = "rightdis":
+#         head_ind = findRightDisHead(child_list, rule[1:])
+#     elif rule[0] = "rightexcept":
+#         head_ind = findRightExceptHead(child_list, rule[1:])
+#     else:
+#         print "error head rule"
+#         exit()
 
-          if child > 0:
-              return child
-          else:
-              return head_ind
-        
-        else:
-            # if we're not the last resort, we can return None to let the next rule try to match
-            return None
 
-    return head_ind
+#     # what happens if our rule didn't match anything
+#     if head_ind < 0:
+#       if last_resort:
+#           # use the default rule to try to match anything except categoriesToAvoid
+#           # if that doesn't match, we'll return the left or rightmost child (by
+#           # setting head_ind).  We want to be careful to ensure that postOperationFix
+#           # runs exactly once.
+#           if rule[0].startswith("left"):
+#               head_ind = 0
+#               rule = default_left_rule
+#           else:
+#               head_ind = len(child_list) - 1
+#               rule = default_right_rule
+
+#           child = traverse_locate(child_list, rule, False)
+
+#           if child > 0:
+#               return child
+#           else:
+#               return head_ind
+
+#         else:
+#             # if we're not the last resort, we can return None to let the next rule try to match
+#             return None
+
+#     return head_ind
 
 # Functions based on Chris Manning's code from Stanford NLP
 def findLeftHead(child_list, rule):
@@ -548,7 +548,7 @@ def findLeftExceptHead(child_list, rule):
             if rule[i] == child_list[j]:
                 found = False
         if found:
-            return j 
+            return j
     return -1
 
 def findRightHead(child_list, rule):
@@ -572,7 +572,7 @@ def findRightExceptHead(child_list, rule):
             if rule[i] == child_list[j]:
                 found = False
         if found:
-            return j 
+            return j
     return -1
 
 def findHeaderNormal(parent, child_list):

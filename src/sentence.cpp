@@ -1,5 +1,7 @@
 #include <fstream>
 #include <iostream>
+#include <vector>
+#include <string>
 #include "sentence.hpp"
 
 using namespace std;
@@ -26,20 +28,21 @@ void output_sentence(const Sentence &sentence) {
         cout << sentence.deplabels[i] << " ";
     }
     cout << endl;
+
     for (int i = 0; i < sentence.gold_rules.size(); ++i) {
         const AppliedRule &rule = sentence.gold_rules[i];
         cout << rule.i << " " << rule.j << " " << rule.k
              << " " << rule.h << " " << rule.m << " " << rule.rule << endl;
     }
-    // cout << endl;
 }
 
 
 vector<Sentence> *read_sentence(string file) {
     ifstream in_file;
-    vector<Sentence> *sentences = new vector<Sentence>();
+    vector <Sentence> *sentences = new vector<Sentence>();
     in_file.open(file.c_str());
-    while(in_file.good()) {
+
+    while (in_file.good()) {
         Sentence sentence;
 
         int n_words, n_rules;
@@ -71,12 +74,6 @@ vector<Sentence> *read_sentence(string file) {
             sentence.deps.push_back(dep);
         }
 
-        // for (int i = 0; i < n_words; ++i) {
-        //     int dep;
-        //     in_file >> dep;
-        //     sentence.deps.push_back(dep);
-        // }
-
         for (int i = 0; i < n_words; ++i) {
             string deplabel;
             in_file >> deplabel;
@@ -85,7 +82,8 @@ vector<Sentence> *read_sentence(string file) {
 
         for (int i = 0; i < n_rules; ++i) {
             AppliedRule rule;
-            in_file >> rule.i >> rule.j >> rule.k >> rule.h >> rule.m >> rule.rule;
+            in_file >> rule.i >> rule.j >> rule.k
+                    >> rule.h >> rule.m >> rule.rule;
             sentence.gold_rules.push_back(rule);
         }
         sentences->push_back(sentence);

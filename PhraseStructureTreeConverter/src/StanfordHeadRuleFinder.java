@@ -72,15 +72,12 @@ public class StanfordHeadRuleFinder {
 	        nt_set.add(args[1]);
 	        for(int i = 1; i < args.length -1; i++){
 	            if (pos_set.contains(args[i])){
-	            	// TODO: CHECK IF IT IS A DEEP COPY HERE
-	                String[] args_copy = Arrays.copyOf(args,args.length);
+	            	String[] args_copy = Arrays.copyOf(args,args.length);
 	                args_copy[i] = "BPOS|";
 	                backoff_rule_set.add(String.join(" ", args_copy));
 	            }
 	        }
 	    }
-
-
 	    int ind = 0;
 	    for (String r : full_rule_set){
 	    	ruleMap.put(r, ind);
@@ -104,6 +101,12 @@ public class StanfordHeadRuleFinder {
 	}
 	
 	public static void generateParts(ArrayList<Tree> trees, TreebankLangParserParams params, HashMap<String, Integer> ruleMap, LineWriter lw){
+		generateParts(trees, params, ruleMap, lw, false);
+	}
+	
+	// useCollinsLabels means, instead of the original Stanford typed dependencies label, generate the labels using "ParentNT+CurrentNT"
+	// where NT is not POS (if it is, use * to be the place holder)
+	public static void generateParts(ArrayList<Tree> trees, TreebankLangParserParams params, HashMap<String, Integer> ruleMap, LineWriter lw, boolean useCollinsLabels){
 		for(Tree t : trees){
 			GrammaticalStructure gs = params.getGrammaticalStructure(t, Filters.acceptFilter(), params.typedDependencyHeadFinder());
 			TreeGraphNode root = gs.root();
@@ -123,14 +126,26 @@ public class StanfordHeadRuleFinder {
 			int[] headList = new int[sentence_length];
 			
 			ArrayList<String> relnList = new ArrayList<String>();
+			HashMap<IntPair, String> relnMap = useCollinsLabels ? TreeHelper.getCollinsStyleReln(root) : null; 
+			
 			// Get the dependencies and their corresponding labels
 			for(TypedDependency td : gs.typedDependencies(false)){
 				// We use root = -1, first word index is 0, so -1 here
 				int head = td.gov().index() - 1;
 				int child = td.dep().index() - 1;
-				headList[child] = head;	
-				relnList.add(td.reln().toString());
+				headList[child] = head;
+				if(useCollinsLabels){
+					// check labels from the map
+					if(head == -1){
+						relnList.add("ROOT");
+					}else{
+						relnList.add(relnMap.get(new IntPair(td.gov().index(), td.dep().index())));
+					}
+				}else{
+					relnList.add(td.reln().toString());
+				}
 			}
+
 			ArrayList<String> headListString = new ArrayList<String>();
 			for(int h : headList){
 				headListString.add(""+h);
@@ -205,10 +220,50 @@ public class StanfordHeadRuleFinder {
 		return rule;
 	}
 	
-	public static void generateConll(ArrayList<Tree> trees, TreebankLangParserParams params){
+	public static void generateConll(ArrayList<Tree> trees, TreebankLangParserParams params, boolean useCollinsLabels){
 		for(Tree t : trees){
 			GrammaticalStructure gs = params.getGrammaticalStructure(t, Filters.acceptFilter(), params.typedDependencyHeadFinder());
-			GrammaticalStructure.printDependencies(gs, gs.typedDependencies(false), t, true, false);
+			TreeGraphNode root = gs.root();
+			
+			ArrayList<String> tokens = new ArrayList<String>();
+			ArrayList<String> poss = new ArrayList<String>();
+			
+			// Get the tokens and the POS
+			for (Tree leaf: root.getLeaves()){
+				tokens.add(leaf.label().value());
+			}
+			for (Label pos : root.preTerminalYield()){
+				poss.add(pos.value());
+			}
+			int sentence_length = poss.size();
+			
+			int[] headList = new int[sentence_length+1];
+			
+			ArrayList<String> relnList = new ArrayList<String>();
+			HashMap<IntPair, String> relnMap = useCollinsLabels ? TreeHelper.getCollinsStyleReln(root) : null;
+			
+			for(TypedDependency td : gs.typedDependencies(false)){
+				int head = td.gov().index();
+				int child = td.dep().index();
+				headList[child] = head;
+				if(useCollinsLabels){
+					// check labels from the map
+					if(head == 0){
+						relnList.add("ROOT");
+					}else{
+						relnList.add(relnMap.get(new IntPair(td.gov().index(), td.dep().index())));
+					}
+				}else{
+					relnList.add(td.reln().toString());
+				}
+			}
+			
+			for(int i = 0; i < tokens.size();i++){
+				// 1	No	_	RB	RB	_	4	_	_
+				System.out.println(String.join("\t", ""+(i+1), tokens.get(i), "_", poss.get(i), poss.get(i), "_", ""+headList[i+1], relnList.get(i), "_", "_"));
+			}
+			System.out.println();
+			
 		}
 	}
 	
@@ -219,8 +274,9 @@ public class StanfordHeadRuleFinder {
 		TreebankLangParserParams params = ReflectionLoading.loadByReflection("edu.stanford.nlp.parser.lexparser.EnglishTreebankParserParams");
 	    
 		boolean extractDependencies = props.getProperty("extractDep") != null;
+		boolean useCollinsLabel = props.getProperty("useCollinsLabel") != null;
 		if(extractDependencies){
-			generateConll(trees,params);
+			generateConll(trees, params, useCollinsLabel);
 		}else{
 			String outputDir = props.getProperty("outputDir");    
 			LineWriter lw = new LineWriter(outputDir + "/rules");
@@ -228,7 +284,7 @@ public class StanfordHeadRuleFinder {
 		    lw.closeAll();
 		    
 		    lw = new LineWriter(outputDir + "/parts");
-		    generateParts(trees, params, ruleMap, lw);
+		    generateParts(trees, params, ruleMap, lw, useCollinsLabel);
 		    lw.closeAll();
 		}
 	}

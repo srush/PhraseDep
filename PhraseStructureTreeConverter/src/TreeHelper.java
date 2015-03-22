@@ -1,8 +1,12 @@
+import java.util.HashMap;
+import java.util.Stack;
+
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.parser.lexparser.TreebankLangParserParams;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations;
 import edu.stanford.nlp.trees.TreeGraphNode;
+import edu.stanford.nlp.util.IntPair;
 
 //Assume the tree here is a TreeGraphNode, otherwise, this can't be use.
 
@@ -14,7 +18,7 @@ public class TreeHelper {
 		}else{
 			Tree[] originalChildrenList = t.children();
 			
-			int headPosition = headPosition(t, params);
+			int headPosition = headPosition(t);
 			TreeGraphNode headNode = (TreeGraphNode)originalChildrenList[headPosition];
 			
 			// Recursively binarize all the children trees
@@ -129,9 +133,50 @@ public class TreeHelper {
 	}
 	
 	// Get the head child position in the children list
-	public static int headPosition(Tree t, TreebankLangParserParams params){
-		Tree head_child = params.typedDependencyHeadFinder().determineHead(t);
-		return t.getChildrenAsList().indexOf(head_child);
+	
+	//  The following method is actually wrong because the decision is not local.
+	//	public static int headPosition(Tree t, TreebankLangParserParams params){
+	//		Tree head_child = params.typedDependencyHeadFinder().determineHead(t);
+	//		return t.getChildrenAsList().indexOf(head_child);
+	//	}
+	
+	// Should use this one to determine the head position
+	// This requires that the tree is already head word labeled.
+	public static int headPosition(Tree t){
+		int p = getHeadNodeInd(t);
+		for(int i = 0; i < t.children().length; i++){
+			Tree st = (t.children())[i];
+			if(getHeadNodeInd(st) == p){
+				return i;
+			}
+		}
+		System.err.println("Can't find head!");
+		return -1;
+	}
+	
+	public static HashMap<IntPair, String> getCollinsStyleReln(Tree root){
+		HashMap<IntPair, String> relnMap = new HashMap<IntPair, String>(); 
+		Stack<Tree> stack = new Stack<Tree>();
+		stack.push(root);
+		while(!stack.isEmpty()){
+			TreeGraphNode node = (TreeGraphNode)stack.pop();
+			if(node.isPreTerminal()||node.isLeaf()) continue;
+			Tree head_child = (node.children())[TreeHelper.headPosition(node)];
+			// there should be dependencies the word head_child represented to other words
+			int head_ind = TreeHelper.getHeadNodeInd(head_child);
+			for (Tree st : node.children()){
+				if(st == head_child) continue;
+				IntPair hmp = new IntPair(head_ind, TreeHelper.getHeadNodeInd(st));
+				String head_string = node.nodeString();
+				String child_string = (st.isPreTerminal()||st.isLeaf()) ? "*" : st.nodeString();
+				String reln = String.join("+", head_string, child_string);
+				relnMap.put(hmp, reln);
+			}
+			for(Tree st : node.children()){
+				stack.push(st);
+			}
+		}
+		return relnMap;
 	}
 	
 	public static void main(String[] args) {

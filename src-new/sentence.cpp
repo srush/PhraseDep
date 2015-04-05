@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <sstream>
 #include "sentence.hpp"
 
 using namespace std;
@@ -23,40 +24,15 @@ void annotate_gold(string file, vector<Sentence> *sentences) {
     }
 }
 
-vector<Sentence> *read_sentences(string file,
+vector<Sentence> *read_sentences(istream &in_file,
                                  Lexicon *lexicon, Grammar *grammar) {
-    ifstream in_file;
     vector<Sentence> *sentences = new vector<Sentence>();
-    in_file.open(file.c_str());
     bool first = true;
-    Sentence sentence;
-    string word, tag, deplabel, lemma, coarse_tag, blank;
-    int position, dep;
+
     while (in_file.good()) {
-
-        in_file >> position >> word >> lemma
-                >> coarse_tag >> tag
-                >> blank >> dep >> deplabel;
-
-        if (position == 1 && !first) {
-            sentences->push_back(sentence);
-            sentence = Sentence();
-        }
-        first = false;
-        sentence.words.push_back(word);
-        sentence.tags.push_back(tag);
-
-        dep -= 1;
-        int root_dep = -1;
-        if (dep == -1) {
-            if (root_dep == -1) {
-                root_dep = position - 1;
-            } else {
-                dep = root_dep;
-            }
-        }
-        sentence.deps.push_back(dep);
-        sentence.deplabels.push_back(deplabel);
+        Sentence sentence;
+        read_sentence(in_file, lexicon, grammar, &sentence);
+        sentences->push_back(sentence);
     }
 
     for (auto &sentence : *sentences) {
@@ -64,6 +40,41 @@ vector<Sentence> *read_sentences(string file,
     }
     return sentences;
 }
+
+void read_sentence(istream &in_file, Lexicon *lexicon, Grammar *grammar,
+                   Sentence *sentence) {
+    string word, tag, deplabel, lemma, coarse_tag, blank;
+    int position, dep;
+
+    string s;
+    while (getline(in_file, s)) {
+        if (s.empty()) {
+            return;
+        } else {
+            istringstream tmp(s);
+
+            tmp >> position >> word >> lemma
+                    >> coarse_tag >> tag
+                    >> blank >> dep >> deplabel;
+
+            sentence->words.push_back(word);
+            sentence->tags.push_back(tag);
+
+            dep -= 1;
+            int root_dep = -1;
+            if (dep == -1) {
+                if (root_dep == -1) {
+                    root_dep = position - 1;
+                } else {
+                    dep = root_dep;
+                }
+            }
+            sentence->deps.push_back(dep);
+            sentence->deplabels.push_back(deplabel);
+        }
+    }
+}
+
 
 
 void Lexicon::process_sentence(Sentence *sentence, const Grammar *grammar) {

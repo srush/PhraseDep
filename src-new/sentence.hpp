@@ -56,7 +56,8 @@ class Lexicon {
     Index deplabel_index;
 };
 
-vector<Sentence> *read_sentences(string file, Lexicon *lexicon, Grammar *grammar);
+vector<Sentence> *read_sentences(istream &in_file, Lexicon *lexicon, Grammar *grammar);
+void read_sentence(istream &in_file, Lexicon *lexicon, Grammar *grammar, Sentence *sentence);
 void annotate_gold(string file, vector<Sentence> *sentences);
 
 #endif  // SENTENCE_H_

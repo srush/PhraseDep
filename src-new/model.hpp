@@ -13,7 +13,7 @@
 
 class Model : public Scorer {
   public:
-    Model(bool simple)
+    Model(bool simple=false)
             : adagrad_(n_size), simple_(simple) {}
 
     void set(const FeatureGen *feature_gen) {

@@ -1,7 +1,7 @@
 # From http://stackoverflow.com/questions/14844268/makefile-template-for-large-c-project
 
 # Project Name (executable)
-PROJECT = main
+PROJECT = pad
 # Compiler
 CC = g++
 
@@ -39,8 +39,11 @@ DEPENDENCIES = $(patsubst %.cpp, %.d, $(SOURCE_FILES))
 # Make $(PROJECT) the default target
 all: $(DEPENDENCIES) $(PROJECT)
 
-$(PROJECT): $(OBJECTS)
-	$(CC) -o $(PROJECT) $(OBJECTS) $(LIBS)
+pad : $(OBJECTS)
+	$(CC) -o pad $(OBJECTS) $(LIBS)
+
+padt : $(OBJECTS)
+	$(CC) -o padt $(OBJECTS) $(LIBS)
 
 # Include dependencies (if there are any)
 ifneq "$(strip $(DEPENDENCIES))" ""
@@ -51,9 +54,6 @@ endif
 %.o: %.cpp
 	$(CC) -c $(COMPILE_OPTIONS) -o $@ $< $(HEADERS)
 
-# Build & Run Project
-run: $(PROJECT)
-	./$(PROJECT) $(COMMANDLINE_OPTIONS)
 
 # Clean & Debug
 .PHONY: makefile-debug

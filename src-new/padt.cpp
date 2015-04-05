@@ -15,32 +15,12 @@
 
 #include <cereal/types/memory.hpp>
 #include <cereal/archives/binary.hpp>
+#include "util.hpp"
 
-struct Arg: public option::Arg {
-    static option::ArgStatus Required(const option::Option& option, bool msg) {
-        if (option.arg != 0)
-            return option::ARG_OK;
-
-        if (msg) cerr << "Option '" << option << "' requires an argument\n";
-        return option::ARG_ILLEGAL;
-    }
-    static option::ArgStatus Numeric(const option::Option& option, bool msg) {
-        char* endptr = 0;
-        if (option.arg != 0 && strtol(option.arg, &endptr, 10)) {}
-        if (endptr != option.arg && *endptr == 0)
-            return option::ARG_OK;
-
-        if (msg) {
-            cerr << "Option '" << option
-                 << "' requires a numeric argument" << endl;
-        }
-        return option::ARG_ILLEGAL;
-    }
-};
-
-enum optionIndex { HELP, GRAMMAR, SENTENCES, EPOCHS, LAMBDA,
-                   ANNOTATIONS, MODEL, SENTENCE_TEST, PRUNING,
-                   ORACLE, LABEL_PRUNING, SIMPLE_FEATURES, DIR_PRUNING};
+enum optionIndex {
+    HELP, GRAMMAR, SENTENCES, EPOCHS, LAMBDA,
+    ANNOTATIONS, MODEL, SENTENCE_TEST, PRUNING,
+    ORACLE, LABEL_PRUNING, SIMPLE_FEATURES, DIR_PRUNING};
 
 const option::Descriptor usage[] = {
     {GRAMMAR, 0, "g", "grammar", Arg::Required,
@@ -85,36 +65,6 @@ const option::Descriptor usage[] = {
     {0, 0, 0, 0, 0, 0}
 };
 
-
-struct FullModel {
-    FullModel(const option::Option options[])
-            : grammar(*read_rule_set(string(options[GRAMMAR].arg))),
-              lexicon(),
-              feature_gen(&lexicon,
-                          &grammar,
-                          options[SIMPLE_FEATURES]),
-              scorer(options[SIMPLE_FEATURES]) {
-        scorer.set(&feature_gen);
-    }
-
-    template <class Archive>
-    void save(Archive &ar) const {
-        ar(grammar, lexicon, scorer, feature_gen);
-    }
-
-    template <class Archive>
-    void load(Archive &ar) {
-        ar(grammar, lexicon, scorer, feature_gen);
-        scorer.set(&feature_gen);
-    }
-
-
-    Grammar grammar;
-    Lexicon lexicon;
-    FeatureGenBackoff feature_gen;
-    Model scorer;
-};
-
 int main(int argc, char* argv[]) {
     // For arg parsing.
     argc -= (argc>0);
@@ -132,7 +82,9 @@ int main(int argc, char* argv[]) {
         option::printUsage(std::cout, usage);
         return 0;
     }
-    FullModel model(options);
+
+    FullModel model(string(options[GRAMMAR].arg),
+                    options[SIMPLE_FEATURES]);
     Pruning *pruner = new Pruning(&model.lexicon, &model.grammar);
 
 
@@ -152,52 +104,7 @@ int main(int argc, char* argv[]) {
         pruner->set_dir_pruning(*sentences);
     }
 
-    // Make scorer.
-    if (options[SENTENCE_TEST] && !options[ORACLE]) {
-        model.scorer.is_cost_augmented_ = false;
-
-        // Read test sentences.
-        vector<Sentence> *sentences =
-                read_sentences(string(options[SENTENCE_TEST].arg),
-                              &model.lexicon, &model.grammar);
-
-        // Read model. Make function.
-        ifstream is(string(options[MODEL].arg),
-                    std::ios::binary);
-        cereal::BinaryInputArchive iarchive(is);
-        iarchive(model);
-
-
-        clock_t t = clock();
-
-        // Start parsing.
-        int total_tokens = 0;
-        int total_sentences = 0;
-
-        for (auto &sentence : *sentences) {
-            total_tokens += sentence.words.size();
-            total_sentences += 1;
-            model.scorer.set_sentence(&sentence);
-            Parser parser(&sentence, &model.grammar, &model.scorer, pruner);
-            parser.cky(true, false);
-        }
-
-        float sec = (float)(clock() - t) / CLOCKS_PER_SEC;
-        cerr << "(" << sec << ")" << endl;
-        cerr << total_tokens / sec << endl;
-        cerr << total_sentences / sec << endl;
-    } else if (options[ORACLE]) {
-        cerr << "ORACLE mode";
-        vector<Sentence> *sentences =
-                read_sentences(string(options[SENTENCE_TEST].arg),
-                               &model.lexicon, &model.grammar);
-
-        for (auto &sentence : *sentences) {
-            OracleScorer oracle(&sentence.gold_rules, &model.grammar);
-            Parser parser(&sentence, &model.grammar, &oracle, pruner);
-            parser.cky(true, false);
-        }
-    } else {
+    if (true) {
         model.scorer.is_cost_augmented_ = true;
 
         assert(options[ANNOTATIONS]);

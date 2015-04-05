@@ -40,10 +40,10 @@ DEPENDENCIES = $(patsubst %.cpp, %.d, $(SOURCE_FILES))
 all: $(DEPENDENCIES) $(PROJECT)
 
 pad : $(OBJECTS)
-	$(CC) -o pad $(OBJECTS) $(LIBS)
+	$(CC) -o pad $(filter-out padt.o,$(OBJECTS)) $(LIBS)
 
 padt : $(OBJECTS)
-	$(CC) -o padt $(OBJECTS) $(LIBS)
+	$(CC) -o padt $(filter-out pad.o,$(OBJECTS)) $(LIBS)
 
 # Include dependencies (if there are any)
 ifneq "$(strip $(DEPENDENCIES))" ""

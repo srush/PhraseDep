@@ -1,10 +1,10 @@
-* Overview
+- Overview
 
 Dependency parsers are fast, accurate, and produce easy-to-interpret results, but phrase-structure parses are nice too and are required input for many NLP tasks.
 
-The PAD parser produces phrases-after-dependencies.
+The PAD parser produces phrases-after-dependencies. Give it the output of a dependency parser and it will produce the optimal constrained phrase-structure parse. 
 
-* How to Use.
+- How to Use.
 
 > cat deps.conll | ./pad -m pad.model | head
 
@@ -13,12 +13,12 @@ The PAD parser produces phrases-after-dependencies.
 
 > ./pad --help
 
-* How to Train
+- How to Train
 
 > ./padt -m pad.model --sentences sents.conll --annotations sents.ptb
 
 > ./padt --help
 
-* Details
+- Details
 
 Cite

@@ -4,11 +4,11 @@
 using namespace std;
 
 int Grammar::to_nonterm(string nonterm) const {
-    return nonterm_index.fget_(nonterm);
+    return nonterm_index.index(nonterm);
 }
 
 int Grammar::to_nonterm(string nonterm) {
-    return nonterm_index.fget(nonterm);
+    return nonterm_index.get_or_add(nonterm);
 }
 
 unsigned Grammar::n_nonterms() const {

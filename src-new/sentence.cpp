@@ -69,12 +69,12 @@ vector<Sentence> *read_sentences(string file,
 void Lexicon::process_sentence(Sentence *sentence, const Grammar *grammar) {
     for (unsigned j = 0; j < sentence->tags.size(); ++j) {
         sentence->int_tags.push_back(
-            tag_index.fget(sentence->tags[j]));
+            tag_index.get_or_add(sentence->tags[j]));
         sentence->preterms.push_back(
             grammar->to_nonterm(sentence->tags[j]));
         sentence->int_words.push_back(
-            word_index.fget(sentence->words[j]));
+            word_index.get_or_add(sentence->words[j]));
         sentence->int_deplabels.push_back(
-            deplabel_index.fget(sentence->deplabels[j]));
+            deplabel_index.get_or_add(sentence->deplabels[j]));
     }
 }

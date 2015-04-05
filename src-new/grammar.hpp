@@ -1,3 +1,8 @@
+//
+// A class for reading lexicalized binarized CFG.
+//
+
+
 #ifndef GRAMMAR_H_
 #define GRAMMAR_H_
 
@@ -10,9 +15,7 @@
 #include "index.hpp"
 #include "sentence.hpp"
 
-
 using namespace std;
-
 
 struct UnaryRule {
     UnaryRule() {}
@@ -86,13 +89,11 @@ class Scorer {
     virtual double score(const AppliedRule &rule) const = 0;
 };
 
-class Index;
 
 class Grammar {
   public:
-    Grammar() {} //: nt_indices(3) {
-        // n_nonterms = 0;
-    // }
+    Grammar() {}
+
     unsigned n_rules() const {
         return n_rules_;
     }
@@ -136,6 +137,5 @@ class Grammar {
 };
 
 Grammar *read_rule_set(string file);
-
 
 #endif  // GRAMMAR_H_

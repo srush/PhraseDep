@@ -6,10 +6,11 @@
 #include <time.h>
 
 #include "optionparser.h"
-#include "features.hpp"
+#include "model.hpp"
+#include "parse_features.hpp"
 #include "sentence.hpp"
 #include "pruning.hpp"
-#include "dp.hpp"
+#include "inference.hpp"
 #include "oracle.hpp"
 
 #include <cereal/types/memory.hpp>
@@ -85,35 +86,36 @@ const option::Descriptor usage[] = {
 };
 
 
-struct Model {
-    // Model() {}
-
-    Model(const option::Option options[])
+struct FullModel {
+    FullModel(const option::Option options[])
             : grammar(*read_rule_set(string(options[GRAMMAR].arg))),
               lexicon(),
+              feature_gen(&lexicon,
+                          &grammar,
+                          options[SIMPLE_FEATURES]),
               scorer(options[SIMPLE_FEATURES]) {
-        scorer.set(&lexicon, &grammar);
+        scorer.set(&feature_gen);
     }
 
     template <class Archive>
     void save(Archive &ar) const {
-        ar(grammar, lexicon, scorer);
+        ar(grammar, lexicon, scorer, feature_gen);
     }
 
     template <class Archive>
     void load(Archive &ar) {
-        ar(grammar, lexicon, scorer);
-        scorer.set(&lexicon, &grammar);
+        ar(grammar, lexicon, scorer, feature_gen);
+        scorer.set(&feature_gen);
     }
 
 
     Grammar grammar;
     Lexicon lexicon;
-    FeatureScorer scorer;
+    FeatureGenBackoff feature_gen;
+    Model scorer;
 };
 
 int main(int argc, char* argv[]) {
-
     // For arg parsing.
     argc -= (argc>0);
     argv += (argc>0);
@@ -130,18 +132,13 @@ int main(int argc, char* argv[]) {
         option::printUsage(std::cout, usage);
         return 0;
     }
-    Model model(options);
-    // Grammar *grammar = read_rule_set(string(options[GRAMMAR].arg));
-    // Lexicon *lexicon = new Lexicon();
+    FullModel model(options);
     Pruning *pruner = new Pruning(&model.lexicon, &model.grammar);
+
 
     vector<Sentence> *sentences = read_sentences(string(options[SENTENCES].arg),
                                                  &model.lexicon, &model.grammar);
     cout << sentences->size() << endl;
-
-    // FeatureScorer scorer(grammar, lexicon, false,
-    //                      false, false, options[SIMPLE_FEATURES],
-    //                      false);
 
     if (options[LABEL_PRUNING]) {
         pruner->read_label_pruning(options[LABEL_PRUNING].arg);
@@ -216,10 +213,10 @@ int main(int argc, char* argv[]) {
         if (options[EPOCHS]) {
             epochs = strtol(options[EPOCHS].arg, &temp, 10);
         }
-        model.scorer.perceptron_.set_lambda(lambda);
+        model.scorer.adagrad_.set_lambda(lambda);
 
         cerr << "Begining training" << endl;
-        cerr << "lambda=" << model.scorer.perceptron_.get_lambda() << endl;
+        cerr << "lambda=" << model.scorer.adagrad_.get_lambda() << endl;
 
         char epoch_char = '1';
         for (int epoch = 0; epoch < epochs; ++epoch) {
@@ -238,7 +235,7 @@ int main(int argc, char* argv[]) {
                 total_score += correct2 /
                         static_cast<double>(sentence.gold_rules.size());
                 total += 1;
-                model.scorer.perceptron_.next_round();
+                model.scorer.adagrad_.next_round();
             }
             cout << "EPOCH: " << epoch << " "
                  << total_score / (float)total

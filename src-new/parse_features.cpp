@@ -1,4 +1,8 @@
 
+#include "grammar.hpp"
+#include "sentence.hpp"
+#include "parse_features.hpp"
+
 inline long get_word_int(const Grammar* grammar,
                          const Sentence &sentence,
                          int index) {

@@ -1,3 +1,7 @@
+//
+// Classes for handling the lexicon and sentences.
+//
+
 #ifndef SENTENCE_H_
 #define SENTENCE_H_
 
@@ -31,12 +35,13 @@ struct Sentence {
 class Lexicon {
   public:
     Lexicon() {
-        word_index.fget("#START#");
-        word_index.fget("#END#");
+        word_index.get_or_add("#START#");
+        word_index.get_or_add("#END#");
 
-        tag_index.fget("#START#");
-        tag_index.fget("#END#");
+        tag_index.get_or_add("#START#");
+        tag_index.get_or_add("#END#");
     }
+
 
     template <class Archive>
     void serialize(Archive &ar) {

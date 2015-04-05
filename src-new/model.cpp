@@ -3,15 +3,14 @@
 #include <map>
 #include <vector>
 
-#include "features.hpp"
+#include "model.hpp"
 
-const int n_size = 100000000;
-
+// const int n_size = 100000000;
 
 double Model::score(const AppliedRule &rule) const {
     vector<long> features;
-    double score = feature_gen_.generate(*sentence_, rule, &features,
-                                         &perceptron_.weights);
+    double score = feature_gen_->generate(*sentence_, rule, &features,
+                                          &adagrad_.weights);
 
     if (!is_cost_augmented_) {
         return score;
@@ -32,10 +31,9 @@ void Model::update(const vector<AppliedRule> &good,
     map<long, int> count_map;
     for (unsigned i = 0; i < good.size(); ++i) {
         vector<long> good_features;
-        feature_gen_.generate(*sentence_, good[i], &good_features, NULL);
-        for (unsigned j = 0; j < good_features.size(); ++j) {
-
-            long index = hashed_feature(good_features[j]);
+        feature_gen_->generate(*sentence_, good[i], &good_features, NULL);
+        for (long good_feature : good_features) {
+            long index = hashed_feature(good_feature);
             double orignal_value = 0.0;
             if (count_map.find(index) != count_map.end()) {
                 orignal_value = count_map[index];
@@ -45,9 +43,9 @@ void Model::update(const vector<AppliedRule> &good,
     }
     for (unsigned i = 0; i < bad.size(); ++i) {
         vector<long> bad_features;
-        feature_gen_.generate(*sentence_, bad[i], &bad_features, NULL);
-        for (unsigned j = 0; j < bad_features.size(); ++j) {
-            long index = hashed_feature(bad_features[j]);
+        feature_gen_->generate(*sentence_, bad[i], &bad_features, NULL);
+        for (long bad_feature : bad_features) {
+            long index = hashed_feature(bad_feature);
             double orignal_value = 0.0;
             if (count_map.find(index) != count_map.end()) {
                 orignal_value = count_map[index];
@@ -57,8 +55,7 @@ void Model::update(const vector<AppliedRule> &good,
     }
 
     for (auto& iter : count_map) {
-        perceptron_.update((long)iter.first,
-                           (int)iter.second);
+        adagrad_.update((long)iter.first, (int)iter.second);
     }
 }
 

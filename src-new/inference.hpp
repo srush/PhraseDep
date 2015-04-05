@@ -1,3 +1,7 @@
+#ifndef INFERENCE_H_
+#define INFERENCE_H_
+
+
 #include "grammar.hpp"
 #include "pruning.hpp"
 #include "sentence.hpp"
@@ -135,3 +139,5 @@ class Parser {
     vector<vector<int> > children_;
     vector<int> ordered_;
 };
+
+#endif  // INFERENCE_H_

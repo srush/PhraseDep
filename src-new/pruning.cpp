@@ -11,7 +11,7 @@ void Pruning::read_label_pruning(string file) {
     if (in_file.is_open()) {
         string label;
         while (in_file >> label) {
-            int label_id = lexicon_->deplabel_index.fget_(label);
+            int label_id = lexicon_->deplabel_index.index(label);
             int allowed_rules;
             in_file >> allowed_rules;
             for (int i = 0; i < allowed_rules; ++i) {

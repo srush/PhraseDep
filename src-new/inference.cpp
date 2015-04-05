@@ -7,7 +7,7 @@
 
 #include "grammar.hpp"
 #include "features.hpp"
-#include "dp.hpp"
+#include "inference.hpp"
 
 using namespace std;
 
@@ -20,7 +20,6 @@ Chart::Chart(int n, int N, const vector<string> *words, const Scorer *scorer) {
     words_ = words;
     scorer_ = scorer;
 }
-
 
 void Chart::promote(const Item &item, const Item &item1) {
     assert(has_item(item1));
@@ -131,17 +130,12 @@ bool Parser::to_tree(const Item &item,
 
     } else if (bp.single) {
         best_rules->push_back(bp.rule);
-        // NonTerminal nt = grammar_->non_terminals_[item.nt];
         if (output) {
-            // for (unsigned i = 0; i < nt.split.size(); ++i) {
-                out << " (" << item.nt << " ";
-            // }
+            out << " (" << item.nt << " ";
         }
         success &= to_tree(bp.item1, best_rules, output, out);
         if (output) {
-            // for (unsigned i = 0; i < nt.split.size(); ++i) {
-                out << ") ";
-            // }
+            out << ") ";
         }
     } else if (bp.promotion) {
         success &= to_tree(bp.item1, best_rules, output, out);
@@ -152,12 +146,9 @@ bool Parser::to_tree(const Item &item,
         }
 
         best_rules->push_back(bp.rule);
-        // NonTerminal nt = grammar_->non_terminals_[item.nt];
 
         if (output) { //&& !nt.removable) {
-            // for (unsigned i = 0; i < nt.split.size(); ++i) {
-                out << " (" << item.nt << " ";
-            // }
+            out << " (" << item.nt << " ";
         }
 
         success &= to_tree(bp.item1, best_rules, output, out);
@@ -165,9 +156,7 @@ bool Parser::to_tree(const Item &item,
             out << " ";
         success &= to_tree(bp.item2, best_rules, output, out);
         if (output) { // && !nt.removable) {
-            // for (unsigned i = 0; i < nt.split.size(); ++i) {
-                out << ") ";
-            // }
+            out << ") ";
         }
     }
     return success;
@@ -286,8 +275,6 @@ void Parser::find_spans(int h) {
 
 
 double Parser::cky(bool output, bool no_prune) {
-    clock_t start = clock();
-
     int n = sentence_->preterms.size();
 
     int root_word;
@@ -307,8 +294,6 @@ double Parser::cky(bool output, bool no_prune) {
     }
 
     // Main loop.
-    bitset<50000> have_nt;
-
     for (int h : ordered_) {
         vector<int> &deps = children_[h];
         vector<int> left_children;
@@ -350,13 +335,13 @@ double Parser::cky(bool output, bool no_prune) {
                     if (l == -1) {
                         left_pre = 1;
                     } else if (sentence_->preterms[left_children[l]] ==
-                               grammar_->nonterm_index.fget_(",")) {
+                               grammar_->nonterm_index.index(",")) {
                         left_pre = 2;
                     }
                     if (r == -1) {
                         right_pre = 1;
                     }  else if (sentence_->preterms[right_children[r]] ==
-                                grammar_->nonterm_index.fget_(",")) {
+                                grammar_->nonterm_index.index(",")) {
                         right_pre = 2;
                     }
                     DirPrune prune(head_tag, left_tag, right_tag, left_pre, right_pre);
@@ -395,9 +380,5 @@ double Parser::cky(bool output, bool no_prune) {
         cky(output, true);
     }
 
-    clock_t end = clock();
-    // cerr << "STATS: " <<  n << " " << total_combines << " "
-    // << total_scored << " " << max_size << " "
-    // << (end - start) << " " << CLOCKS_PER_SEC << endl;
     return chart_->score(item);
 }

@@ -1,3 +1,8 @@
+//
+// Helper class for constructing indexed sets.
+//
+
+
 #ifndef INDEX_H_
 #define INDEX_H_
 
@@ -10,7 +15,7 @@ using namespace std;
 struct Index {
     Index() : cur_index(0) {}
 
-    int fget(string item) {
+    int get_or_add(string item) {
         if (fmap.find(item) != fmap.end()) {
             return fmap[item];
         } else {
@@ -21,11 +26,11 @@ struct Index {
         }
     }
 
-    int fget_(string item) const {
+    int index(string item) const {
         return fmap.at(item);
     }
 
-    string rget(int index) const {
+    string get_string(int index) const {
         return rmap.at(index);
     }
 

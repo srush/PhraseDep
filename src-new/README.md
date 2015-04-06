@@ -64,20 +64,31 @@ TODO: Add docs here.
 
 ## Cite
 
+
+```
+
+```
+
 ## File Formats
 
 The grammar file has two types of lines. For unary rules:
 
+```
 RULE# 0 X Y 0
+```
 
 For binary rules:
 
+```
 RULE# 1 X Y Z HEAD
+```
 
 The annotation file is only required for training. Each line is of the form:
 
+```
 #RULES
 i j k h m r
+```
 
 Where i, j, k are the span of the rule, h is the head index, m is the modifier index, and r in the index of the rule from the grammar file. 
 

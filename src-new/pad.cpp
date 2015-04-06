@@ -1,5 +1,6 @@
 #include <cereal/types/memory.hpp>
 #include <cereal/archives/binary.hpp>
+#include <fstream>
 #include "util.hpp"
 
 enum optionIndex {
@@ -42,7 +43,6 @@ int main(int argc, char* argv[]) {
     // For arg parsing.
     argc -= (argc>0);
     argv += (argc>0);
-    char *temp = 0;
 
     option::Stats  stats(usage, argc, argv);
     option::Option options[stats.options_max], buffer[stats.buffer_max];
@@ -58,9 +58,14 @@ int main(int argc, char* argv[]) {
 
 
     FullModel model;
+    // Read model. Make function.
+    ifstream is(string(options[MODEL].arg),
+                std::ios::binary);
+    cereal::BinaryInputArchive iarchive(is);
+    iarchive(model);
+
     Pruning *pruner = new Pruning(&model.lexicon,
                                   &model.grammar);
-
 
     if (options[LABEL_PRUNING]) {
         pruner->read_label_pruning(
@@ -76,25 +81,19 @@ int main(int argc, char* argv[]) {
     // }
 
     // Make scorer.
+    istream *sentence_handle = &cin;
+    ifstream input;
+    if (options[SENTENCES]) {
+        input.open(options[SENTENCES].arg);
+        sentence_handle = &input;
+    }
+
+    model.scorer.is_cost_augmented_ = false;
     if (!options[ORACLE]) {
-        model.scorer.is_cost_augmented_ = false;
-
-        // Read test sentences.
-        vector<Sentence> *sentences =
-                read_sentences(cin,
-                               &model.lexicon,
-                               &model.grammar);
-
-        // Read model. Make function.
-        ifstream is(string(options[MODEL].arg),
-                    std::ios::binary);
-        cereal::BinaryInputArchive iarchive(is);
-        iarchive(model);
-
-        // Start parsing.
         while (cin.good()) {
             Sentence sentence;
-            read_sentence(cin, &model.lexicon, &model.grammar, &sentence);
+            read_sentence(*sentence_handle, &model.lexicon, &model.grammar, &sentence);
+            model.lexicon.process_sentence(&sentence, &model.grammar);
             model.scorer.set_sentence(&sentence);
             Parser parser(&sentence, &model.grammar, &model.scorer, pruner);
             parser.cky(true, false);
@@ -103,7 +102,8 @@ int main(int argc, char* argv[]) {
         cerr << "ORACLE mode";
         while (cin.good()) {
             Sentence sentence;
-            read_sentence(cin, &model.lexicon, &model.grammar, &sentence);
+            read_sentence(*sentence_handle, &model.lexicon, &model.grammar, &sentence);
+            model.lexicon.process_sentence(&sentence, &model.grammar);
             OracleScorer oracle(&sentence.gold_rules, &model.grammar);
             Parser parser(&sentence, &model.grammar, &oracle, pruner);
             parser.cky(true, false);

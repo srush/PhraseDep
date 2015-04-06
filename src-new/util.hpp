@@ -11,14 +11,11 @@ struct FullModel {
     FullModel(string grammar_file, bool simple_features)
             : grammar(*read_rule_set(grammar_file)),
               lexicon(),
-              feature_gen(
-                  &lexicon,
-                  &grammar,
-                  simple_features),
+              feature_gen(simple_features),
               scorer(simple_features) {
+        feature_gen.init(&lexicon, &grammar);
         scorer.set(&feature_gen);
     }
-
     FullModel() {}
 
     template <class Archive>
@@ -29,9 +26,9 @@ struct FullModel {
     template <class Archive>
     void load(Archive &ar) {
         ar(grammar, lexicon, scorer, feature_gen);
+        feature_gen.init(&lexicon, &grammar);
         scorer.set(&feature_gen);
     }
-
 
     Grammar grammar;
     Lexicon lexicon;
@@ -45,7 +42,8 @@ struct Arg: public option::Arg {
         if (option.arg != 0)
             return option::ARG_OK;
 
-        if (msg) cerr << "Option '" << option << "' requires an argument\n";
+        if (msg) cerr << "Option '" << option
+                      << "' requires an argument\n";
         return option::ARG_ILLEGAL;
     }
     static option::ArgStatus Numeric(const option::Option& option, bool msg) {

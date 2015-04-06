@@ -43,11 +43,14 @@ inline int span_length(int span_length) {
     return bin_span_length;
 }
 
-FeatureGenBackoff::FeatureGenBackoff(const Lexicon *lexicon,
-                                     const Grammar *grammar,
-                                     bool simple)
-        : lexicon_(lexicon),  grammar_(grammar),
-          simple_(simple) {
+FeatureGenBackoff::FeatureGenBackoff(bool simple)
+        : simple_(simple) {}
+
+void FeatureGenBackoff::init(const Lexicon *lexicon,
+                             const Grammar *grammar) {
+    lexicon_ = lexicon;
+    grammar_ = grammar;
+
     int n_tags = lexicon->tag_index.size();
     int n_nonterms = grammar->n_nonterms();
     int n_rules = grammar->n_rules();

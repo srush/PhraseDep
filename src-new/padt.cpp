@@ -81,7 +81,6 @@ int main(int argc, char* argv[]) {
     ifstream in_file(options[SENTENCES].arg);
     vector<Sentence> *sentences = read_sentences(in_file,
                                                  &model.lexicon, &model.grammar);
-    cout << sentences->size() << endl;
 
     model.scorer.is_cost_augmented_ = true;
 
@@ -100,13 +99,10 @@ int main(int argc, char* argv[]) {
     }
     model.scorer.adagrad_.set_lambda(lambda);
 
-    cerr << "Begining training" << endl;
-    cerr << "lambda=" << model.scorer.adagrad_.get_lambda() << endl;
-
+    cerr << "[Begining training]" << endl;
     Pruning *pruner = new Pruning(&model.lexicon,
                                   &model.grammar);
 
-    char epoch_char = '1';
     for (int epoch = 0; epoch < epochs; ++epoch) {
         double total_score = 0.0;
         int total = 0;
@@ -125,17 +121,16 @@ int main(int argc, char* argv[]) {
             total += 1;
             model.scorer.adagrad_.next_round();
         }
-        cout << "EPOCH: " << epoch << " "
+        cout << "[ EPOCH: " << epoch << " "
              << total_score / (float)total
-             << " " << endl;
+             << " ] " << endl;
 
-        ofstream os(string(options[MODEL].arg) + (char)(epoch_char + epoch),
-                    std::ios::binary);
+        ofstream os(string(options[MODEL].arg), std::ios::binary);
         cereal::BinaryOutputArchive archive(os);
         archive(model);
     }
 
-    // Output the model.
+    // Output the final model.
     ofstream os(string(options[MODEL].arg),
                 std::ios::binary);
     cereal::BinaryOutputArchive archive(os);

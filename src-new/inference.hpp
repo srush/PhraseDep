@@ -129,8 +129,9 @@ class Parser {
 
     const Sentence *sentence_;
     const Grammar *grammar_;
-    const Pruning *pruner_;
     const Scorer *scorer_;
+    const Pruning *pruner_;
+
     Chart *chart_;
 
 

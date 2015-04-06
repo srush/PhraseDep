@@ -125,13 +125,13 @@ bool Parser::to_tree(const Item &item,
         }
 
         if (output)
-            out << " (" << item.nt
+            out << " (" << grammar_->nonterm_index.get_string(item.nt)
                 << " " << sentence_->words[item.i] << ") ";
 
     } else if (bp.single) {
         best_rules->push_back(bp.rule);
         if (output) {
-            out << " (" << item.nt << " ";
+            out << " (" << grammar_->nonterm_index.get_string(item.nt) << " ";
         }
         success &= to_tree(bp.item1, best_rules, output, out);
         if (output) {
@@ -146,19 +146,21 @@ bool Parser::to_tree(const Item &item,
         }
 
         best_rules->push_back(bp.rule);
-
-        if (output) { //&& !nt.removable) {
-            out << " (" << item.nt << " ";
+        string nt_string = grammar_->nonterm_index.get_string(item.nt);
+        bool removable = nt_string.back() == '|';
+        if (output && !removable) {
+            out << " (" <<  nt_string << " ";
         }
 
         success &= to_tree(bp.item1, best_rules, output, out);
         if (output)
             out << " ";
         success &= to_tree(bp.item2, best_rules, output, out);
-        if (output) { // && !nt.removable) {
+        if (output && !removable) {
             out << ") ";
         }
     }
+
     return success;
 }
 
@@ -263,7 +265,7 @@ void Parser::find_spans(int h) {
         if (sentence_->deps[i] == h) {
             find_spans(i);
             children_[h].push_back(i);
-            if (i < h) {
+            if (i < (unsigned)h) {
                 left_[h] = min(left_[h], left_[i]);
             } else {
                 right_[h] = max(right_[h], right_[i]);
@@ -374,8 +376,9 @@ double Parser::cky(bool output, bool no_prune) {
 
     stringstream out;
     success = to_tree(item, &best_rules, output, out);
+
     if (success && out) {
-        cout << out.str();
+        cout << out.str() << endl;
     } else if (!no_prune) {
         cky(output, true);
     }

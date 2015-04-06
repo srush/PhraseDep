@@ -13,12 +13,10 @@ void annotate_gold(string file, vector<Sentence> *sentences) {
     for (int j = 0; j < sentences->size(); ++j) {
         int n_rules;
         in_file >> n_rules;
-        cout << (*sentences)[j].words.size() << " " << n_rules << endl;
         for (int i = 0; i < n_rules; ++i) {
             AppliedRule rule;
             in_file >> rule.i >> rule.j >> rule.k
                     >> rule.h >> rule.m >> rule.rule;
-            // assert(rule.h < (*sentences)[j].words.size());
             (*sentences)[j].gold_rules.push_back(rule);
         }
     }
@@ -27,7 +25,6 @@ void annotate_gold(string file, vector<Sentence> *sentences) {
 vector<Sentence> *read_sentences(istream &in_file,
                                  Lexicon *lexicon, Grammar *grammar) {
     vector<Sentence> *sentences = new vector<Sentence>();
-    bool first = true;
 
     while (in_file.good()) {
         Sentence sentence;

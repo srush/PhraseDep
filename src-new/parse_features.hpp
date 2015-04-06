@@ -10,9 +10,10 @@
 class FeatureGenBackoff : public FeatureGen {
   public:
     FeatureGenBackoff() {}
-    FeatureGenBackoff(const Lexicon *lexicon,
-                      const Grammar *grammar,
-                      bool simple);
+    FeatureGenBackoff(bool simple);
+
+    void init(const Lexicon *lexicon,
+              const Grammar *grammar);
 
     double generate(const Sentence &sentence,
                     const AppliedRule &rule,

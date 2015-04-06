@@ -33,8 +33,10 @@ struct UnaryRule {
 
 struct BinaryRule {
     BinaryRule() {}
-    BinaryRule(int rule_num_, int nt_X_, int nt_Y_, int nt_Z_, int dir_)
-            : rule_num(rule_num_), nt_X(nt_X_), nt_Y(nt_Y_), nt_Z(nt_Z_), dir(dir_)
+    BinaryRule(int rule_num_, int nt_X_,
+               int nt_Y_, int nt_Z_, int dir_)
+            : rule_num(rule_num_), nt_X(nt_X_),
+              nt_Y(nt_Y_), nt_Z(nt_Z_), dir(dir_)
       {}
     int rule_num;
     int nt_X;
@@ -50,8 +52,10 @@ struct BinaryRule {
 
 struct AppliedRule {
     AppliedRule() {}
-    AppliedRule(int i_, int j_, int k_, int h_, int m_, int rule_)
-            : i(i_), j(j_), k(k_), h(h_), m(m_), rule(rule_) {}
+    AppliedRule(int i_, int j_, int k_,
+                int h_, int m_, int rule_)
+            : i(i_), j(j_), k(k_),
+              h(h_), m(m_), rule(rule_) {}
 
     bool same_span(const AppliedRule &other) const{
         return other.i == i &&

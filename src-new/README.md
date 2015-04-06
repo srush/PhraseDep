@@ -1,30 +1,44 @@
-- Overview
+## Goal
 
 Dependency parsers are fast, accurate, and produce easy-to-interpret results, but phrase-structure parses are nice too and are required input for many NLP tasks.
 
 The PAD parser produces phrases-after-dependencies. Give it the output of a dependency parser and it will produce the optimal constrained phrase-structure parse.
 
-- How to Use.
+## How to Use.
 
-> cat deps.conll | ./pad -m pad.model | head
+```bash
+cat deps.conll | ./pad -m pad.model | head
+```
+
+```bash
+ ./dep_parser sents.txt | ./pad -m pad.model | head
+```
+
+```
+(TOP  (SINV  (CC But)   (S  (NP  (PRP you) ) )   (MD ca)   (NP  (RB n't) )   (VP  (VB dismiss)   (S  (NP  (NP  (NP  (NNP Mr.) 
+   (NNP Stoltzman)   (POS 's) )   (NN music) )   (CC or)   (NP  (PRP$ his)   (NNS motives) ) ) )   (PP  (RB as)   (ADJP  (RB m 
+erely)   (JJ commercial)   (CC and)   (JJ lightweight) ) ) )   (. .) ) )                                          
+```
 
 
-> ./dep_parser sents.txt | ./pad -m pad.model | head
+```bash
+ ./pad --help
+```
 
-> ./pad --help
-
+```
 PAD: Phrases After Dependencies
-USAGE: pad [options]
+  USAGE: pad [options]
 
-Options:
---help:              Print this message and exit.
---model, -m:         (Required) Model file.
---sentences, -g:     CoNLL sentence file.
---oracle, -o:        Run in oracle mode.
---pruning, -p:        .
---dir_pruning:        .
+  Options:
+  --help:              Print this message and exit.
+  --model, -m:         (Required) Model file.
+  --sentences, -g:     CoNLL sentence file.
+  --oracle, -o:        Run in oracle mode.
+  --pruning, -p:        .
+  --dir_pruning:        .
+```
 
-- How to Train
+## How to Train
 
 > ./padt -m pad.model --sentences sents.conll --annotations sents.ptb
 
@@ -45,9 +59,9 @@ Options:
 
 - Details
 
-Cite
+## Cite
 
-- Format
+## File Formats
 
 The grammar file has two types of lines. For unary rules:
 

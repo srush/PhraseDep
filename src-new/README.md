@@ -30,18 +30,18 @@ Options:
 
 > ./padt --help
 
-PADt: Phrases After Dependencies trainer
-USAGE: padt [options]
+>PADt: Phrases After Dependencies trainer
+>USAGE: padt [options]
 
-Options:
---help:             Print this message and exit.
---grammar, -g:      (Required) Grammar file.
---conll, -c:        (Required) CoNLL sentence file.
---model, -m:        (Required) Model file to output.
---annotations, -a   (Required) Gold phrase structure file.
---epochs[=10], -e:  Number of epochs.
---lambda[=0.0001]:  L1 Regularization constant.
---simple_features   Use simple set of features (debugging).
+>Options:
+>--help:             Print this message and exit.
+>--grammar, -g:      (Required) Grammar file.
+>--conll, -c:        (Required) CoNLL sentence file.
+>--model, -m:        (Required) Model file to output.
+>--annotations, -a   (Required) Gold phrase structure file.
+>--epochs[=10], -e:  Number of epochs.
+>--lambda[=0.0001]:  L1 Regularization constant.
+>--simple_features   Use simple set of features (debugging).
 
 - Details
 

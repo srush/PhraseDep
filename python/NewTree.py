@@ -1,4 +1,4 @@
-from nltk import Tree
+from tree import Tree
 from copy import deepcopy
 import codecs
 import sys

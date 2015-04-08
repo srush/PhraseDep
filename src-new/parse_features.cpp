@@ -143,6 +143,7 @@ double FeatureGenBackoff::generate(const Sentence &sentence,
     int X = grammar_->head_symbol[rule.rule];
     int Y = grammar_->left_symbol[rule.rule];
     int Z = grammar_->right_symbol[rule.rule];
+
     int m_tag = sentence.int_tags[rule.m];
     int h_tag = sentence.int_tags[rule.h];
     bool is_unary = grammar_->is_unary[rule.rule];

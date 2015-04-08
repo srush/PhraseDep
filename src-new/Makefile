@@ -1,7 +1,7 @@
 # From http://stackoverflow.com/questions/14844268/makefile-template-for-large-c-project
 
 # Project Name (executable)
-PROJECT = pad
+PROJECT = pad padt
 # Compiler
 CC = g++
 
@@ -9,7 +9,7 @@ CC = g++
 COMMANDLINE_OPTIONS = /dev/ttyS0
 
 # Compiler options during compilation
-COMPILE_OPTIONS = -ansi -pedantic -Wall -std=c++11 -g -I.
+COMPILE_OPTIONS = -Wno-sign-compare -march=native -ansi -pedantic -Wall -std=c++11 -g -I.
 
 #Header include directories
 HEADERS =

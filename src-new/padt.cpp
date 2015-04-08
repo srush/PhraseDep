@@ -104,14 +104,15 @@ int main(int argc, char* argv[]) {
                                   &model.grammar);
 
     for (int epoch = 0; epoch < epochs; ++epoch) {
+        cout << "[Begining epoch " << epoch << "]" << endl;  
         double total_score = 0.0;
         int total = 0;
-
-        for (auto &sentence : *sentences) {
+        for (unsigned i = 0; i < (*sentences).size(); i++) {
+            const Sentence sentence = (*sentences)[i];
             if (sentence.words.size() <= 5) continue;
             model.scorer.set_sentence(&sentence);
             Parser parser(&sentence, &model.grammar, &model.scorer, pruner);
-            parser.cky(false, false);
+            parser.cky(false, true);
 
             // Compute difference.
             int correct2 = model.scorer.update_full(sentence.gold_rules,
@@ -120,6 +121,7 @@ int main(int argc, char* argv[]) {
                     static_cast<double>(sentence.gold_rules.size());
             total += 1;
             model.scorer.adagrad_.next_round();
+
         }
         cout << "[ EPOCH: " << epoch << " "
              << total_score / (float)total
@@ -130,7 +132,7 @@ int main(int argc, char* argv[]) {
         archive(model);
     }
 
-    // Output the final model.
+    //Output the final model.
     ofstream os(string(options[MODEL].arg),
                 std::ios::binary);
     cereal::BinaryOutputArchive archive(os);

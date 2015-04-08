@@ -49,7 +49,6 @@ void read_sentence(istream &in_file, Lexicon *lexicon, Grammar *grammar,
             return;
         } else {
             istringstream tmp(s);
-
             tmp >> position >> word >> lemma
                     >> coarse_tag >> tag
                     >> blank >> dep >> deplabel;
@@ -58,14 +57,14 @@ void read_sentence(istream &in_file, Lexicon *lexicon, Grammar *grammar,
             sentence->tags.push_back(tag);
 
             dep -= 1;
-            int root_dep = -1;
-            if (dep == -1) {
-                if (root_dep == -1) {
-                    root_dep = position - 1;
-                } else {
-                    dep = root_dep;
-                }
-            }
+            // int root_dep = -1;
+            // if (dep == -1) {
+            //     if (root_dep == -1) {
+            //         root_dep = position - 1;
+            //     } else {
+            //         dep = root_dep;
+            //     }
+            // }
             sentence->deps.push_back(dep);
             sentence->deplabels.push_back(deplabel);
         }

@@ -279,12 +279,16 @@ void Parser::find_spans(int h) {
 double Parser::cky(bool output, bool no_prune) {
     int n = sentence_->preterms.size();
 
-    int root_word;
+    int root_word = -1;
     for (unsigned i = 0; i < sentence_->deps.size(); ++i) {
-        if (sentence_->deps[i] == -1) {
+        if (sentence_->deps[i] == -1) {   
             root_word = i;
             find_spans(i);
-        }
+        }   
+    }
+    if (root_word == -1){
+        cerr << "no root!" << endl;
+        exit(1);
     }
 
     // Initialize the chart.
@@ -378,7 +382,9 @@ double Parser::cky(bool output, bool no_prune) {
     success = to_tree(item, &best_rules, output, out);
 
     if (success && out) {
-        cout << out.str() << endl;
+        if(output){
+            cout << out.str() << endl;
+        }
     } else if (!no_prune) {
         cky(output, true);
     }

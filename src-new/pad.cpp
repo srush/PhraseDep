@@ -20,7 +20,7 @@ const option::Descriptor usage[] = {
      "--model, -m:         \t(Required) Model file." },
 
     {SENTENCES, 0, "s", "sentences", Arg::Required,
-     "--sentences, -g:     \tCoNLL sentence file." },
+     "--sentences, -s:     \tCoNLL sentence file." },
 
 
     {ORACLE, 0, "o", "oracle", option::Arg::None,

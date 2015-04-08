@@ -107,9 +107,7 @@ def generate_part(treebank_file, rule_file):
     rule_dic = read_rule_file(rule_file)
     f = open(treebank_file, "r")
     s_ind = -1
-    corpus = []
-    if dep_from_conll:
-        corpus = read_corpus(A.conll_dep_file)
+
     for sentence in f:
         if language_setting == "chn":
             sentence = sentence.decode('utf-8')
@@ -128,63 +126,27 @@ def generate_part(treebank_file, rule_file):
             elif nt.height() == 2:
                 continue
             else:
-                #print rule_dic
                 info = NewTree.get_span_info(nt,rule_dic)
                 parts.append(info)
 
         work_tree = deepcopy(t)
         NewTree.lexLabel(work_tree)
         parent_dic, dep_label_set = NewTree.getParentDic(work_tree)
-        # print len(t.leaves()), len([item for item in parts if item != None])
 
-        if False:
-
-            parent_list = []
-            label_list = []
-            for ind in xrange(1, (len(t.leaves()) + 1)):
-                p = str(int(parent_dic[str(ind)]) - 1)
-                parent_list.append(p)
-
-            for ind in xrange(1, (len(t.leaves()) + 1)):
-                l = dep_label_set[str(ind)]
-                label_list.append(l)
-            a_list = [x.label() for x in t.subtrees(lambda t: t.height() == 2)]
-            for i, (le, a, p, l) in enumerate(zip(t.leaves(), a_list,  parent_list, label_list)):
-                print "\t".join(map(str, (i+1, le,  "_", a, a, "_", int(p)+1, l)))
-            print
-        else:
-        #print " ".join(t.leaves())
-
-            print len([item for item in parts if item != None])
-            if not dep_from_conll:
-                # print " ".join([x.label() for x in t.subtrees(lambda t: t.height() == 2)])
-                parent_list = []
-                label_list = []
-                for ind in xrange(1, (len(t.leaves()) + 1)):
-                    p = str(int(parent_dic[str(ind)]) - 1)
-                    parent_list.append(p)
-                # print " ".join(parent_list)
-                for ind in xrange(1, (len(t.leaves()) + 1)):
-                    l = dep_label_set[str(ind)]
-                    label_list.append(l)
-                # print " ".join(label_list)
+        print len([item for item in parts if item != None])
+        parent_list = []
+        label_list = []
+        for ind in xrange(1, (len(t.leaves()) + 1)):
+            p = str(int(parent_dic[str(ind)]) - 1)
+            parent_list.append(p)
+        for ind in xrange(1, (len(t.leaves()) + 1)):
+            l = dep_label_set[str(ind)]
+            label_list.append(l)
+        for p in parts:
+            if p != None:
+                print " ".join(p)
             else:
-                dep_sentence = corpus[s_ind]
-                if language_setting == "chn":
-                    dep_sentence = dep_sentence.decode('utf-8')
-                pos_list = [line[4] for line in dep_sentence]
-                parent_list = [str(int(line[6])-1) for line in dep_sentence]
-                label_list = [line[7] for line in dep_sentence]
-                # print " ".join(word_list)
-
-                print " ".join(pos_list)
-                print " ".join(parent_list)
-                print " ".join(label_list)
-            for p in parts:
-                if p != None:
-                    print " ".join(p)
-                else:
-                    pass
+                pass
     f.close()
 
 def read_rule_file(rulef):
@@ -215,20 +177,6 @@ def read_corpus(filename):
     f.close()
     return corpus
 
-def generate_from_conll(inputf):
-    corpus = read_corpus(inputf)
-    for sentence in corpus:
-        word_list = [line[1] for line in sentence]
-        pos_list = [line[4] for line in sentence]
-        parent_list = [str(int(line[6])-1) for line in sentence]
-        label_list = [line[7] for line in sentence]
-        # print " ".join(word_list)
-        print len(word_list), '0'
-        print " ".join(word_list)
-        print " ".join(pos_list)
-        print " ".join(parent_list)
-        print " ".join(label_list)
-
 def generate_conll(inputf):
     f = open(inputf, "r")
     s_ind = 0
@@ -246,12 +194,6 @@ def generate_conll(inputf):
 
 
 if __name__ == '__main__':
-    # sentence = """(S (NP (NP (JJ Influential) (NNS members)) (PP (IN of) (NP (DT the) (NNP House) (NNP Ways) (CC and) (NNP Means) (NNP Committee)))) (VP (VBD introduced) (NP (NP (NN legislation)) (SBAR (WHNP (WDT that)) (S (VP (MD would) (VP (VB restrict) (SBAR (WHADVP (WRB how)) (S (NP (DT the) (JJ new) (NN savings-and-loan) (NN bailout) (NN agency)) (VP (MD can) (VP (VB raise) (NP (NN capital)))))) (, ,) (S (VP (VBG creating) (NP (NP (DT another) (JJ potential) (NN obstacle)) (PP (TO to) (NP (NP (NP (DT the) (NN government) (POS 's)) (NN sale)) (PP (IN of) (NP (JJ sick) (NNS thrifts)))))))))))))) (. .))"""
-    # t = Tree.fromstring(sentence, remove_empty_top_bracketing=False)
-    # for pos in t.treepositions(order='postorder'):
-    #     print t[pos]
-
-
     NewTree.HORZMARKOV = A.hm
     NewTree.VERTMARKOV = A.vm
 
@@ -266,7 +208,5 @@ if __name__ == '__main__':
         generate_rule(A.inputf)
     elif A.gr_or_gp == 1:
         generate_part(A.inputf,A.rulef)
-    elif A.gr_or_gp == 2:
-        generate_from_conll(A.inputf)
     else:
         generate_conll(A.inputf)

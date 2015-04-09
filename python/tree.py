@@ -18,18 +18,13 @@ from __future__ import print_function, unicode_literals
 # TODO: add LabelledTree (can be used for dependency trees)
 
 import re
-
-from nltk.grammar import Production, Nonterminal
-from nltk.probability import ProbabilisticMixIn
-from nltk.util import slice_bounds
-from nltk.compat import string_types, python_2_unicode_compatible, unicode_repr
-from nltk.internals import raise_unorderable_types
+string_types = ()
 
 ######################################################################
 ## Trees
 ######################################################################
 
-@python_2_unicode_compatible
+
 class Tree(list):
     """
     A Tree represents a hierarchical grouping of leaves and subtrees.
@@ -591,8 +586,8 @@ class Tree(list):
             then it will return a tree of that type.
         :rtype: Tree
         """
-        if not isinstance(brackets, string_types) or len(brackets) != 2:
-            raise TypeError('brackets must be a length-2 string')
+        # if not isinstance(brackets, string_types) or len(brackets) != 2:
+        #     raise TypeError('brackets must be a length-2 string')
         if re.search('\s', brackets):
             raise TypeError('whitespace brackets not allowed')
         # Construct a regexp that will tokenize the string.
@@ -1375,78 +1370,6 @@ class ImmutableParentedTree(ImmutableTree, ParentedTree):
 class ImmutableMultiParentedTree(ImmutableTree, MultiParentedTree):
     pass
 
-
-######################################################################
-## Probabilistic trees
-######################################################################
-
-@python_2_unicode_compatible
-class ProbabilisticTree(Tree, ProbabilisticMixIn):
-    def __init__(self, node, children=None, **prob_kwargs):
-        Tree.__init__(self, node, children)
-        ProbabilisticMixIn.__init__(self, **prob_kwargs)
-
-    # We have to patch up these methods to make them work right:
-    def _frozen_class(self): return ImmutableProbabilisticTree
-    def __repr__(self):
-        return '%s (p=%r)' % (Tree.unicode_repr(self), self.prob())
-    def __str__(self):
-        return '%s (p=%.6g)' % (self.pprint(margin=60), self.prob())
-    def copy(self, deep=False):
-        if not deep: return type(self)(self._label, self, prob=self.prob())
-        else: return type(self).convert(self)
-    @classmethod
-    def convert(cls, val):
-        if isinstance(val, Tree):
-            children = [cls.convert(child) for child in val]
-            if isinstance(val, ProbabilisticMixIn):
-                return cls(val._label, children, prob=val.prob())
-            else:
-                return cls(val._label, children, prob=1.0)
-        else:
-            return val
-
-    def __eq__(self, other):
-        return (self.__class__ is other.__class__ and
-                (self._label, list(self), self.prob()) ==
-                (other._label, list(other), other.prob()))
-
-    def __lt__(self, other):
-        if not isinstance(other, Tree):
-            raise_unorderable_types("<", self, other)
-        if self.__class__ is other.__class__:
-            return ((self._label, list(self), self.prob()) <
-                    (other._label, list(other), other.prob()))
-        else:
-            return self.__class__.__name__ < other.__class__.__name__
-
-
-@python_2_unicode_compatible
-class ImmutableProbabilisticTree(ImmutableTree, ProbabilisticMixIn):
-    def __init__(self, node, children=None, **prob_kwargs):
-        ImmutableTree.__init__(self, node, children)
-        ProbabilisticMixIn.__init__(self, **prob_kwargs)
-        self._hash = hash((self._label, tuple(self), self.prob()))
-
-    # We have to patch up these methods to make them work right:
-    def _frozen_class(self): return ImmutableProbabilisticTree
-    def __repr__(self):
-        return '%s [%s]' % (Tree.unicode_repr(self), self.prob())
-    def __str__(self):
-        return '%s [%s]' % (self.pprint(margin=60), self.prob())
-    def copy(self, deep=False):
-        if not deep: return type(self)(self._label, self, prob=self.prob())
-        else: return type(self).convert(self)
-    @classmethod
-    def convert(cls, val):
-        if isinstance(val, Tree):
-            children = [cls.convert(child) for child in val]
-            if isinstance(val, ProbabilisticMixIn):
-                return cls(val._label, children, prob=val.prob())
-            else:
-                return cls(val._label, children, prob=1.0)
-        else:
-            return val
 
 
 def _child_names(tree):

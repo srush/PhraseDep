@@ -27,7 +27,11 @@ struct Index {
     }
 
     int index(string item) const {
-        return fmap.at(item);
+        if (fmap.find(item) != fmap.end()) {
+            return fmap.at(item);
+        } else {
+            return 0;
+        }
     }
 
     string get_string(int index) const {

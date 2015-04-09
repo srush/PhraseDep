@@ -66,6 +66,7 @@ int main(int argc, char* argv[]) {
 
     Pruning *pruner = new Pruning(&model.lexicon,
                                   &model.grammar);
+    const FullModel *cmodel = &model;
 
     if (options[LABEL_PRUNING]) {
         pruner->read_label_pruning(
@@ -92,18 +93,18 @@ int main(int argc, char* argv[]) {
     if (!options[ORACLE]) {
         while (cin.good()) {
             Sentence sentence;
-            read_sentence(*sentence_handle, &model.lexicon, &model.grammar, &sentence);
-            model.lexicon.process_sentence(&sentence, &model.grammar);
+            read_sentence(*sentence_handle, &cmodel->lexicon, &cmodel->grammar, &sentence);
+            cmodel->lexicon.process_test_sentence(&sentence, &model.grammar);
             model.scorer.set_sentence(&sentence);
-            Parser parser(&sentence, &model.grammar, &model.scorer, pruner);
-            parser.cky(true, false);
+            Parser parser(&sentence, &cmodel->grammar, &cmodel->scorer, pruner);
+            double score = parser.cky(true, false);
         }
     } else {
         cerr << "ORACLE mode";
         while (cin.good()) {
             Sentence sentence;
-            read_sentence(*sentence_handle, &model.lexicon, &model.grammar, &sentence);
-            model.lexicon.process_sentence(&sentence, &model.grammar);
+            read_sentence(*sentence_handle, &cmodel->lexicon, &cmodel->grammar, &sentence);
+            model.lexicon.process_test_sentence(&sentence, &cmodel->grammar);
             OracleScorer oracle(&sentence.gold_rules, &model.grammar);
             Parser parser(&sentence, &model.grammar, &oracle, pruner);
             parser.cky(true, false);

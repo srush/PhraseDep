@@ -81,7 +81,7 @@ int main(int argc, char* argv[]) {
     ifstream in_file(options[SENTENCES].arg);
     vector<Sentence> *sentences = read_sentences(in_file,
                                                  &model.lexicon, &model.grammar);
-
+    model.init();
     model.scorer.is_cost_augmented_ = true;
 
     assert(options[ANNOTATIONS]);
@@ -104,7 +104,7 @@ int main(int argc, char* argv[]) {
                                   &model.grammar);
 
     for (int epoch = 0; epoch < epochs; ++epoch) {
-        cout << "[Begining epoch " << epoch << "]" << endl;  
+        cout << "[Begining epoch " << epoch << "]" << endl;
         double total_score = 0.0;
         int total = 0;
         for (unsigned i = 0; i < (*sentences).size(); i++) {

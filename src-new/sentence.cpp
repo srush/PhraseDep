@@ -38,7 +38,7 @@ vector<Sentence> *read_sentences(istream &in_file,
     return sentences;
 }
 
-void read_sentence(istream &in_file, Lexicon *lexicon, Grammar *grammar,
+void read_sentence(istream &in_file, const Lexicon *lexicon, const Grammar *grammar,
                    Sentence *sentence) {
     string word, tag, deplabel, lemma, coarse_tag, blank;
     int position, dep;
@@ -72,7 +72,6 @@ void read_sentence(istream &in_file, Lexicon *lexicon, Grammar *grammar,
 }
 
 
-
 void Lexicon::process_sentence(Sentence *sentence, const Grammar *grammar) {
     for (unsigned j = 0; j < sentence->tags.size(); ++j) {
         sentence->int_tags.push_back(
@@ -83,5 +82,18 @@ void Lexicon::process_sentence(Sentence *sentence, const Grammar *grammar) {
             word_index.get_or_add(sentence->words[j]));
         sentence->int_deplabels.push_back(
             deplabel_index.get_or_add(sentence->deplabels[j]));
+    }
+}
+
+void Lexicon::process_test_sentence(Sentence *sentence, const Grammar *grammar) const {
+    for (unsigned j = 0; j < sentence->tags.size(); ++j) {
+        sentence->int_tags.push_back(
+            tag_index.index(sentence->tags[j]));
+        sentence->preterms.push_back(
+            grammar->nonterm_index.index(sentence->tags[j]));
+        sentence->int_words.push_back(
+            word_index.index(sentence->words[j]));
+        sentence->int_deplabels.push_back(
+            deplabel_index.index(sentence->deplabels[j]));
     }
 }

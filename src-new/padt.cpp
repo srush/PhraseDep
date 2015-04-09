@@ -83,6 +83,8 @@ int main(int argc, char* argv[]) {
                                                  &model.lexicon, &model.grammar);
     model.init();
     model.scorer.is_cost_augmented_ = true;
+    model.pruner.build_pruning(*sentences, &model.grammar);
+    model.pruner.build_dir_pruning(*sentences);
 
     assert(options[ANNOTATIONS]);
     annotate_gold(options[ANNOTATIONS].arg, sentences);

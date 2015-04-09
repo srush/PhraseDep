@@ -2,8 +2,8 @@
 #define PRUNING_H_
 
 #include <cereal/types/vector.hpp>
-//#include <cereal/types/map.hpp>
-#include <map>
+#include <cereal/types/map.hpp>
+// #include <map>
 
 #include "sentence.hpp"
 #include "grammar.hpp"
@@ -11,6 +11,7 @@
 using namespace std;
 
 struct DirPrune {
+    DirPrune() {}
     DirPrune(int head_, int left_, int right_,
              int left_first_, int right_first_)
             : head(head_), left(left_), right(right_),
@@ -71,39 +72,39 @@ class Pruning {
             const Grammar *grammar) : lexicon_(lexicon),
                                       grammar_(grammar) {
         pruning = false;
-        label_pruning = false;
+        dir_pruning = false;
+    }
+    Pruning() {
+        pruning = false;
         dir_pruning = false;
     }
 
-    void read_label_pruning(string file);
 
     bool prune(int rule_num, int preterm) const {
         return pruning && !rule_head_tags[rule_num][preterm];
     }
 
-    void set_pruning(const vector<Sentence> &sentences);
-
-    void set_dir_pruning(const vector<Sentence> &sentences);
-
     double dir_pick(const DirPrune &prune, bool *try_left,
                         bool *try_right) const;
 
+    void build_pruning(const vector<Sentence> &sentences,
+                       const Grammar *grammar);
+
+    void build_dir_pruning(const vector<Sentence> &sentences);
+
+
     template <class Archive>
     void serialize(Archive &ar) {
-        ar(rule_head_tags, label_rule_allowed, pruning,
-           label_pruning,
-           dir_pruner);
+        ar(rule_head_tags, dir_pruner);
     }
 
+    bool pruning;
     bool dir_pruning;
 
+    vector<vector<bool> > rule_head_tags;
   private:
 
-    vector<vector<bool> > rule_head_tags;
-    vector<vector<bool> > label_rule_allowed;
 
-    bool pruning;
-    bool label_pruning;
 
     map<DirPrune, Pair > dir_pruner;
 

@@ -3,45 +3,43 @@
 
 #include <fstream>
 
-void Pruning::read_label_pruning(string file) {
-    ifstream in_file;
-    label_pruning = true;
-    in_file.open(file.c_str());
+// void Pruning::read_label_pruning(string file) {
+//     ifstream in_file;
+//     label_pruning = true;
+//     in_file.open(file.c_str());
 
-    if (in_file.is_open()) {
-        string label;
-        while (in_file >> label) {
-            int label_id = lexicon_->deplabel_index.index(label);
-            int allowed_rules;
-            in_file >> allowed_rules;
-            for (int i = 0; i < allowed_rules; ++i) {
-                int rule_num;
-                in_file >> rule_num;
-                label_rule_allowed[label_id][rule_num] = 1;
-            }
-        }
+//     if (in_file.is_open()) {
+//         string label;
+//         while (in_file >> label) {
+//             int label_id = lexicon_->deplabel_index.index(label);
+//             int allowed_rules;
+//             in_file >> allowed_rules;
+//             for (int i = 0; i < allowed_rules; ++i) {
+//                 int rule_num;
+//                 in_file >> rule_num;
+//                 label_rule_allowed[label_id][rule_num] = 1;
+//             }
+//         }
+//     }
+// }
+
+void Pruning::build_pruning(const vector<Sentence> &sentences,
+                            const Grammar *grammar) {
+    rule_head_tags.resize(grammar->n_rules() + 1);
+    for (unsigned i = 0; i < grammar->n_rules(); ++i) {
+        rule_head_tags[i].resize(grammar->n_nonterms(), 0);
     }
-}
 
-void Pruning::set_pruning(const vector<Sentence> &sentences) {
-    cerr << "PRUNING" << endl;
-    pruning = true;
     for (auto sentence : sentences) {
         for (auto rule : sentence.gold_rules) {
             int head = sentence.preterms[rule.h];
             rule_head_tags[rule.rule][head] = 1;
         }
     }
-    // rule_head_tags.resize(n_rules + 1);
-    // for (unsigned i = 0; i < n_rules; ++i) {
-    //     rule_head_tags[i].resize(n_nonterms, 0);
-    // }
 }
 
 
-void Pruning::set_dir_pruning(const vector<Sentence> &sentences) {
-    cerr << "DIR PRUNING" << endl;
-    dir_pruning = true;
+void Pruning::build_dir_pruning(const vector<Sentence> &sentences) {
 
     for (auto sentence : sentences) {
         int n = sentence.words.size();

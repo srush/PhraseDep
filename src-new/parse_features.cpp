@@ -51,6 +51,7 @@ void FeatureGenBackoff::init(const Lexicon *lexicon,
     lexicon_ = lexicon;
     grammar_ = grammar;
 
+
     int n_tags = lexicon->tag_index.size();
     int n_nonterms = grammar->n_nonterms();
     int n_rules = grammar->n_rules();
@@ -196,6 +197,5 @@ double FeatureGenBackoff::generate(const Sentence &sentence,
     state.inc(m_tag, h_tag, rule.rule);
     state.inc(Y, 1);
     state.inc(Z, 1);
-
     return state.score;
 }

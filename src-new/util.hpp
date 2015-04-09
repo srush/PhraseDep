@@ -12,20 +12,24 @@ struct FullModel {
             : grammar(*read_rule_set(grammar_file)),
               lexicon(),
               feature_gen(simple_features),
-              scorer(simple_features) {
+              scorer(simple_features),
+              pruner(&lexicon, &grammar) {}
+
+    void init() {
         feature_gen.init(&lexicon, &grammar);
         scorer.set(&feature_gen);
     }
+
     FullModel() {}
 
     template <class Archive>
     void save(Archive &ar) const {
-        ar(grammar, lexicon, scorer, feature_gen);
+        ar(grammar, lexicon, scorer, pruner, feature_gen);
     }
 
     template <class Archive>
     void load(Archive &ar) {
-        ar(grammar, lexicon, scorer, feature_gen);
+        ar(grammar, lexicon, scorer, pruner, feature_gen);
         feature_gen.init(&lexicon, &grammar);
         scorer.set(&feature_gen);
     }
@@ -34,6 +38,7 @@ struct FullModel {
     Lexicon lexicon;
     FeatureGenBackoff feature_gen;
     Model scorer;
+    Pruning pruner;
 };
 
 

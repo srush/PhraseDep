@@ -130,11 +130,14 @@ bool Parser::to_tree(const Item &item,
 
     } else if (bp.single) {
         best_rules->push_back(bp.rule);
-        if (output) {
+        string nt_string = grammar_->nonterm_index.get_string(item.nt);
+        bool removable = nt_string.back() == '|';
+
+        if (output && !removable) {
             out << " (" << grammar_->nonterm_index.get_string(item.nt) << " ";
         }
         success &= to_tree(bp.item1, best_rules, output, out);
-        if (output) {
+        if (output && !removable) {
             out << ") ";
         }
     } else if (bp.promotion) {
@@ -281,10 +284,10 @@ double Parser::cky(bool output, bool no_prune) {
 
     int root_word = -1;
     for (unsigned i = 0; i < sentence_->deps.size(); ++i) {
-        if (sentence_->deps[i] == -1) {   
+        if (sentence_->deps[i] == -1) {
             root_word = i;
             find_spans(i);
-        }   
+        }
     }
     if (root_word == -1){
         cerr << "no root!" << endl;
@@ -382,11 +385,15 @@ double Parser::cky(bool output, bool no_prune) {
     success = to_tree(item, &best_rules, output, out);
 
     if (success && out) {
-        if(output){
+        if (output) {
             cout << out.str() << endl;
         }
     } else if (!no_prune) {
         cky(output, true);
+    } else {
+        if (output) {
+            cout << endl;
+        }
     }
 
     return chart_->score(item);

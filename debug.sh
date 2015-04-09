@@ -2,15 +2,15 @@
 
 work_dir="debug_exp"
 
-# mkdir ${work_dir}
+mkdir ${work_dir}
 
-# python python/Generator.py 0 --inputf db_dataset/train.withtop.jack.1000 --backoff_rule --hm 0 --vm 0 > ${work_dir}/rules
+python python/Generator.py 0 --inputf db_dataset/train.withtop.jack.1000 --backoff_rule --hm 0 --vm 0 > ${work_dir}/rules
 
-# python python/Generator.py 1 --inputf db_dataset/train.withtop.jack.1000 --hm 0 --vm 0 --rulef ${work_dir}/rules > ${work_dir}/parts
+python python/Generator.py 1 --inputf db_dataset/train.withtop.jack.1000 --hm 0 --vm 0 --rulef ${work_dir}/rules > ${work_dir}/parts
 
 cd src-new
 
-# ./padt --grammar ../${work_dir}/rules --model ../${work_dir}/model --annotations ../${work_dir}/parts --conll ../db_dataset/train_jack_2label.1000  --epochs 5 --simple_features 1
+./padt --grammar ../${work_dir}/rules --model ../${work_dir}/model --annotations ../${work_dir}/parts --conll ../db_dataset/train_jack_2label.1000  --epochs 5 --simple_features 1
 
 ./pad --model ../${work_dir}/model --sentences ../db_dataset/red_2labeled_model_k16_dev > ../${work_dir}/predict
 

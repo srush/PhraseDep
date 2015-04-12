@@ -143,13 +143,15 @@ bool Parser::to_tree(const Item &item,
     } else if (bp.promotion) {
         success &= to_tree(bp.item1, best_rules, output, out);
     } else {
+        string nt_string = grammar_->nonterm_index.get_string(item.nt);
         if (!item.used || !bp.item1.used) {
             cerr << "FAIL" << endl;
             return false;
         }
 
+
         best_rules->push_back(bp.rule);
-        string nt_string = grammar_->nonterm_index.get_string(item.nt);
+
         bool removable = nt_string.back() == '|';
         if (output && !removable) {
             out << " (" <<  nt_string << " ";
@@ -289,7 +291,7 @@ double Parser::cky(bool output, bool no_prune) {
             find_spans(i);
         }
     }
-    if (root_word == -1){
+    if (root_word == -1) {
         cerr << "no root!" << endl;
         exit(1);
     }
@@ -391,7 +393,10 @@ double Parser::cky(bool output, bool no_prune) {
     } else if (!no_prune) {
         cky(output, true);
     } else {
-        if (output) {
+        // Corner case. Length 1.
+        if (output && sentence_->words.size() == 1) {
+            cout << "(TOP (X "<< sentence_->words[0] << ") )" << endl;
+        } else if (output) {
             cout << endl;
         }
     }

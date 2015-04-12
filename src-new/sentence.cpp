@@ -44,6 +44,7 @@ void read_sentence(istream &in_file, const Lexicon *lexicon, const Grammar *gram
     int position, dep;
 
     string s;
+    int root_dep = -1;
     while (getline(in_file, s)) {
         if (s.empty()) {
             return;
@@ -56,15 +57,15 @@ void read_sentence(istream &in_file, const Lexicon *lexicon, const Grammar *gram
             sentence->words.push_back(word);
             sentence->tags.push_back(tag);
 
+
             dep -= 1;
-            // int root_dep = -1;
-            // if (dep == -1) {
-            //     if (root_dep == -1) {
-            //         root_dep = position - 1;
-            //     } else {
-            //         dep = root_dep;
-            //     }
-            // }
+            if (dep == -1) {
+                if (root_dep == -1) {
+                    root_dep = position - 1;
+                } else {
+                    dep = root_dep;
+                }
+            }
             sentence->deps.push_back(dep);
             sentence->deplabels.push_back(deplabel);
         }

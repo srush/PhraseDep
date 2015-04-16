@@ -129,9 +129,9 @@ int main(int argc, char* argv[]) {
              << total_score / (float)total
              << " ] " << endl;
 
-        ofstream os(string(options[MODEL].arg), std::ios::binary);
-        cereal::BinaryOutputArchive archive(os);
-        archive(model);
+        //ofstream os(string(options[MODEL].arg), std::ios::binary);
+        //cereal::BinaryOutputArchive archive(os);
+        //archive(model);
     }
 
     //Output the final model.

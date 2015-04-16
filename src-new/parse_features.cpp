@@ -3,28 +3,28 @@
 #include "sentence.hpp"
 #include "parse_features.hpp"
 
-inline long get_word_int(const Grammar* grammar,
+inline long get_word_int(const Lexicon *lexicon, 
                          const Sentence &sentence,
                          int index) {
     if (index >= 0 && index < (int)sentence.int_words.size()) {
         return sentence.int_words[index];
     } else if (index == -1) {
-        return 0;
+        return lexicon->word_index.index("#START#");
     } else {
-        return 1;
+        return lexicon->word_index.index("#END#");;
     }
 }
 
 
-inline long get_tag_int(const Grammar* grammar,
+inline long get_tag_int(const Lexicon *lexicon,
                         const Sentence &sentence,
                         int index) {
     if (index >= 0 && index < (int)sentence.int_tags.size()) {
         return sentence.int_tags[index];
     } else if (index == -1) {
-        return 0;
+        return lexicon->tag_index.index("#START#");
     } else {
-        return 1;
+        return lexicon->tag_index.index("#END#");
     }
 }
 
@@ -117,7 +117,7 @@ void FeatureGenBackoff::backed_off_features(const Sentence &sentence,
                                             int index,
                                             int extra,
                                             FeatureState *state) const {
-    int word = get_word_int(grammar_, sentence, index);
+    int word = get_word_int(lexicon_, sentence, index);
 
     int rule_ = rule.rule;
     int X = grammar_->head_symbol[rule.rule];
@@ -126,7 +126,7 @@ void FeatureGenBackoff::backed_off_features(const Sentence &sentence,
         state->inc(word, X, extra);
 
     if (!simple_) {
-        int tag = get_tag_int(grammar_, sentence, index);
+        int tag = get_tag_int(lexicon_, sentence, index);
         state->inc(tag, rule_, extra);
         state->inc(tag, X, extra);
     }

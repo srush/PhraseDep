@@ -37,7 +37,7 @@ class Lexicon {
     Lexicon() {
         word_index.get_or_add("#START#");
         word_index.get_or_add("#END#");
-
+	
         tag_index.get_or_add("#START#");
         tag_index.get_or_add("#END#");
     }

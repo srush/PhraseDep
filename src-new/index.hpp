@@ -13,7 +13,7 @@
 using namespace std;
 
 struct Index {
-    Index() : cur_index(0) {}
+    Index() : cur_index(1) {}
 
     int get_or_add(string item) {
         if (fmap.find(item) != fmap.end()) {

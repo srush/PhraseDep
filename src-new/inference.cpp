@@ -171,6 +171,7 @@ bool Parser::to_tree(const Item &item,
 
 void Parser::add_right(int i, int j, int k, int h, int m,
                       bool no_prune) {
+    
     have_nt.reset();
     for (int Z : chart_->span_nts(Item(j+1, k, m, 0, kLayer2))) {
         have_nt[Z] = 1;
@@ -193,9 +194,11 @@ void Parser::add_right(int i, int j, int k, int h, int m,
             }
         }
     }
+    
 }
 
 void Parser::add_left(int i, int j, int k, int h, int m,  bool no_prune) {
+    
     have_nt.reset();
     for (int Y : chart_->span_nts(Item(i, j, m, 0, kLayer2))) {
         have_nt[Y] = 1;
@@ -217,6 +220,7 @@ void Parser::add_left(int i, int j, int k, int h, int m,  bool no_prune) {
             }
         }
     }
+    
 }
 
 bool Parser::complete(int i, int k, int h,  bool no_prune) {

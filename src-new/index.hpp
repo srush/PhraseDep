@@ -13,7 +13,10 @@
 using namespace std;
 
 struct Index {
-    Index() : cur_index(1) {}
+    Index() : cur_index(0), p_cur_index(&cur_index) {
+        p_fmap = &fmap;
+        p_rmap = &rmap;
+    }
 
     int get_or_add(string item) {
         if (fmap.find(item) != fmap.end()) {
@@ -30,8 +33,21 @@ struct Index {
         if (fmap.find(item) != fmap.end()) {
             return fmap.at(item);
         } else {
-            return 0;
+            (*p_fmap)[item] = cur_index;
+            (*p_rmap)[cur_index] = item;
+            (*p_cur_index)++;
+            return (*p_cur_index) - 1;
         }
+
+        // if (fmap.find(item) != fmap.end()) {
+        //     return fmap.at(item);
+        // } else {
+        //     // Debug only, should never come here
+        //     cerr << "NOT HERE!" << endl;
+        //     exit(1);
+        //     // Debug only, should never come here
+        //     return -1;
+        // }
     }
 
     string get_string(int index) const {
@@ -49,8 +65,11 @@ struct Index {
 
   private:
     int cur_index;
+    int *p_cur_index;
     unordered_map<string, int> fmap;
+    unordered_map<string, int> *p_fmap;
     unordered_map<int, string> rmap;
+    unordered_map<int, string> *p_rmap;
 };
 
 #endif  // INDEX_H_

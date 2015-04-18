@@ -11,7 +11,7 @@ mkdir ${work_dir}
 
 cd src-new
 
-./padt --lambda ${lbd} --grammar ../${work_dir}/rules --model ../${work_dir}/model${lbd} --annotations ../${work_dir}/parts --conll ../db_dataset/train_jack_2label  --epochs 5 --simple_features 1
+#./padt --lambda ${lbd} --grammar ../${work_dir}/rules --model ../${work_dir}/model${lbd} --annotations ../${work_dir}/parts --conll ../db_dataset/train_jack_2label  --epochs 5 --simple_features 1
 
 ./pad --model ../${work_dir}/model${lbd} --sentences ../db_dataset/red_2labeled_model_k16_test > ../${work_dir}/predict_test${lbd}
 ./pad --model ../${work_dir}/model${lbd} --sentences ../db_dataset/red_2labeled_model_k16_dev > ../${work_dir}/predict_dev${lbd}

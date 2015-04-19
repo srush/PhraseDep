@@ -10,7 +10,7 @@ work_dir="debug_exp"
 
 cd src-new
 
-./padt --grammar ../${work_dir}/rules --model ../${work_dir}/model --annotations ../${work_dir}/parts --conll ../db_dataset/train_jack_2label.1000  --epochs 1 --simple_features 1
+./padt --grammar ../${work_dir}/rules --lambda $1 --model ../${work_dir}/model --annotations ../${work_dir}/parts --conll ../db_dataset/train_jack_2label.1000  --epochs 1 --simple_features 1
 
 ./pad --model ../${work_dir}/model --sentences ../db_dataset/red_2labeled_model_k16_dev > ../${work_dir}/predict
 

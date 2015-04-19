@@ -337,6 +337,7 @@ int main(int argc, char* argv[]) {
             double total_score2 = 0.0;
             int total = 0;
             for (int i = 0; i < sentences->size(); ++i) {
+                // cout << "sentence " << i << endl;
                 const Sentence *sentence = &(*sentences)[i];
                 if (sentence->words.size() <= 5) continue;
                 scorer.set_sentence(sentence);

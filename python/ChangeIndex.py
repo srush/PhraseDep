@@ -8,7 +8,7 @@ import codecs
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--redshift_file', type=str, metavar='', help='')
-parser.add_argument('--mode', type=str, metavar='', help='')
+parser.add_argument('--mode', type=int, metavar='', help='')
 
 A = parser.parse_args()
 
@@ -51,9 +51,16 @@ if __name__ == '__main__':
             for line in sen:
                 if int(line[6]) == (length + 1):
                     line[6] = '0'
-        else:
+        elif mode == 1:
             for line in sen:
                 if int(line[6]) == 0:
                     line[6] = str(length+1)
+        else:
+            # remove second label, which is the head NT
+            for line in sen:
+                if line[7] != 'ROOT':
+                    nts = line[7].split('+')
+                    line[7] = nts[0] + '+' + nts[2]
+
     for sen in corpus:
         print_sentence(sen, sys.stdout)

@@ -645,7 +645,8 @@ def getParentDic(lexTree, labelChar='^'):
                     if isinstance(c, Tree) and c.height()!=2:
                         dependent_label = remove_labelChar(c.label())
                     dep_set[ind_c] = ind_p
-                    label_set[ind_c] = phrase_label + "+" + head_label + "+" + dependent_label
+                    label_set[ind_c] = phrase_label + "+" + dependent_label
+                    # label_set[ind_c] = phrase_label + "+" + head_label  + "+" + dependent_label
     # print dep_set, label_set
     return dep_set, label_set
 

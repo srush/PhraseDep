@@ -15,14 +15,14 @@ double Model::score(const AppliedRule &rule) const {
     if (!is_cost_augmented_) {
         return score;
     } else {
-        double cost = 1;
+        double y = 0;
         for (unsigned j = 0; j < sentence_->gold_rules.size(); ++j) {
             if (rule.same(sentence_->gold_rules[j])) {
-                cost = 0;
+                y = 1;
                 break;
             }
         }
-        return score + cost;
+        return score + (1 - 2 * y);
     }
 }
 

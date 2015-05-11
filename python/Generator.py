@@ -9,27 +9,18 @@ import sys
 import codecs
 
 parser = argparse.ArgumentParser(description='')
-parser.add_argument('gr_or_gp', type=int, metavar='',help='Generate Rules -- 0, Generate Parts -- 1, generate from conll -- 2')
-parser.add_argument('--inputf', type=str, metavar='', help='')
-parser.add_argument('--rulef', type=str, metavar='', help='')
-parser.add_argument('--hm', type=int, metavar='', help='')
-parser.add_argument('--vm', type=int, metavar='', help='')
-parser.add_argument('--unary_collapse', action='store_true', help='')
-parser.add_argument('--language', type=str, metavar='', help='')
-parser.add_argument('--backoff_rule',action='store_true',help='')
-
-parser.add_argument('--dep_from_conll', action='store_true', help='')
-parser.add_argument('--conll_dep_file', type=str, metavar='', help='')
-
-# parser.add_argument('--rulef', required=False, type=str, metavar='', help='')
-# parser.add_argument('--rulef', action='store_true', help='')
+parser.add_argument('gr_or_gp', type=int, metavar='',help='Generate Rules -- 0, Generate Parts -- 1, Generate CONLL from Phrase Treebank -- 2.')
+parser.add_argument('--inputf', type=str, metavar='', help='The input file. For most of the time, the train set of the Treebank.')
+parser.add_argument('--rulef', type=str, metavar='', help='The output rule file in mode 0, the input rule file in mode 1.')
+parser.add_argument('--unary_collapse', action='store_true', help='Collapse the unary rules in the phrase structure tree, default not.')
+parser.add_argument('--language', type=str, metavar='', help='chn for Chinese, default English')
+parser.add_argument('--backoff_rule',action='store_true',help='Generate Backoff rules. Default True.')
 
 A = parser.parse_args()
 
 use_back_off_rule = A.backoff_rule
 unary_collapse = A.unary_collapse
 language_setting = A.language
-dep_from_conll = A.dep_from_conll
 
 def generate_rule(treebank_file):
     # if you use unicode here, there is a bug...
@@ -41,53 +32,36 @@ def generate_rule(treebank_file):
         if language_setting == "chn":
             sentence = sentence.decode('utf-8')
         s_ind += 1
-        if s_ind % 10 == 0:
-            sys.stderr.write("Sentence:\t" + str(s_ind) + "\n")
-            sys.stderr.write("Rule number:\t" + str(len(full_rule_set)) + "\n")
+        if s_ind % 100 == 0:
+            sys.stderr.write(str(s_ind) + "..")
         tree = Tree.fromstring(sentence, remove_empty_top_bracketing=False)
         preterminals = [t.label() for t in tree.subtrees(lambda t: t.height() == 2)]
         pos_set.update(preterminals)
 
-        # sys.stderr.write(t.pprint())
         # First, collapse the unary, notice that the POS tags should not be affected
         if unary_collapse:
             NewTree.collapse_unary(tree)
         bt = NewTree.get_binarize_lex(tree)
         # Extract rules from the tree
         rule_set = NewTree.generate_rules(bt)
-        #sys.stderr.write("1:\t" + str(len(rule_set)) + "\n")
 
         # Add them to the full set
-        #sys.stderr.write( "start adding\n")
         for sr in rule_set:
-            # sys.stderr.write(sr + "\n")
             full_rule_set.add(sr)
-        #sys.stderr.write("2:\t" + str(len(full_rule_set)) + "\n")
-        #sys.stderr.write( "finish adding\n")
-
+    sys.stderr.write("\n")
     f.close()
-    #core_pos_set = [pos for pos in pos_set if pos[0] <= 'Z' and pos[0] >= 'A']
 
     # print core_pos_set
     # Generate the back-off rules
     backoff_rule_set = set([])
     for r in full_rule_set:
         args = r.split(" ")
-    #   #print "___".join(args)
 
         for i in xrange(1, len(args)-1):
-    #        #sys.stdout.write("*" + args[i] + "*")
             if args[i] in pos_set:
-    #            # change the pos to others
-    #            #print "for rule " + " ".join(args)
-    #            for pos in core_pos_set:
                 args_copy = deepcopy(args)
                 args_copy[i] = "BPOS|"
-    #                if (" ".join(args_copy)) not in full_rule_set:
                 backoff_rule_set.add(" ".join(args_copy))
-    #                #print "\tadding: " + " ".join(args_copy)
-    #    #sys.stdout.write("\n")
-
 
     ind = 0
     for r in full_rule_set:
@@ -106,14 +80,14 @@ def generate_part(treebank_file, rule_file):
     # This generate the gold parts file for the use of C++
     rule_dic = read_rule_file(rule_file)
     f = open(treebank_file, "r")
-    s_ind = -1
+    s_ind = 0
 
     for sentence in f:
         if language_setting == "chn":
             sentence = sentence.decode('utf-8')
         s_ind += 1
-        if s_ind % 10 == 0:
-            sys.stderr.write(str(s_ind) + "\n")
+        if s_ind % 100 == 0:
+            sys.stderr.write(str(s_ind) + "..")
         parts = []
         t = Tree.fromstring(sentence, remove_empty_top_bracketing=False)
         if unary_collapse:
@@ -147,6 +121,7 @@ def generate_part(treebank_file, rule_file):
                 print " ".join(p)
             else:
                 pass
+    sys.stderr.write("\n")
     f.close()
 
 def read_rule_file(rulef):
@@ -154,7 +129,6 @@ def read_rule_file(rulef):
     f = open(rulef, "r")
     for line in f:
         l = line.split(' ', 1)
-        #print l[1].strip()
         rule_dic[l[1].strip()] = l[0]
     f.close()
     return rule_dic
@@ -184,8 +158,8 @@ def generate_conll(inputf):
         if language_setting == "chn":
             sentence = sentence.decode('utf-8')
         s_ind += 1
-        if s_ind % 10 == 0:
-            sys.stderr.write("Sentence:\t" + str(s_ind) + "\n")
+        if s_ind % 100 == 0:
+            sys.stderr.write(str(s_ind) + "..")
         t = Tree.fromstring(sentence, remove_empty_top_bracketing=False)
         deps = NewTree.generateDep(t)
         NewTree.print_conll_lines(deps,sys.stdout)
@@ -194,8 +168,9 @@ def generate_conll(inputf):
 
 
 if __name__ == '__main__':
-    NewTree.HORZMARKOV = A.hm
-    NewTree.VERTMARKOV = A.vm
+
+    NewTree.HORZMARKOV = 0
+    NewTree.VERTMARKOV = 0
 
     if A.language == "chn":
         NewTree.LANGUAGE = "chn"

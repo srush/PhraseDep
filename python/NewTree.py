@@ -14,14 +14,9 @@ def read_from_ptb(filename):
     ptb_file = open(filename, 'r')
     for l in ptb_file:
         tree = Tree.fromstring(l, remove_empty_top_bracketing=False)
-        # for st in tree.subtrees():
-        #     print "*" + st.pprint()
         original = deepcopy(tree)
-        #print tree.pprint()
         chomsky_normal_form(tree, horzMarkov=HORZMARKOV, vertMarkov=VERTMARKOV, childChar='|', parentChar='#')
-        #un_chomsky_normal_form(tree)
-        #print tree.pprint()
-        #print original.pprint() == tree.pprint()
+
     ptb_file.close()
 
 # Check the head rules to match in each case
@@ -31,8 +26,6 @@ def read_from_ptb(filename):
 PUNCTSET = set([".", ",", ":", "``", "''"])
 
 def remove_labelChar(n, labelChar = '^'):
-    # print n
-    # print type(n).__name__
     r_labelChar = labelChar
     if isinstance(n, str) or isinstance(n, unicode):
         if isinstance(n, unicode):
@@ -52,7 +45,6 @@ def findHead(parent,child_list, labelChar='^'):
         return findHeadChinses(x_parent,x_child_list, labelChar)
 
 def findHeadChinses(parent,child_list, labelChar='^'):
-    # print parent, child_list
     if len(child_list) == 1:
         #Unary Rule -> the head must be the only one
         return 0
@@ -577,19 +569,14 @@ def lexLabel(tree, labelChar="^"):
     preterminals = [t for t in tree.subtrees(lambda t: t.height() == 2)]
     for i in xrange(len(preterminals)):
         preterminals[i][0] = preterminals[i][0] + labelChar + str(i+1)
-    #     leaves[i] = leaves[i] + "-" + str(i+1)
-    # print leaves
 
     for pos in tree.treepositions(order='postorder'):
         st = tree[pos]
-        # print st
-        # print type(st).__name__
         if isinstance(st, str) or isinstance(st, unicode):
             continue
         else:
             # print "*" + str(st)
             if len(st) == 1:
-                # print st.label() + labelChar + findIndex(st[0])
                 st.set_label(st.label() + labelChar + findIndex(st[0]))
             else:
                 child_list_str = [n.label() if isinstance(n, Tree) else n for n in st]
@@ -610,11 +597,6 @@ def findIndex(s, labelChar='^'):
 
 def getParentDic(lexTree, labelChar='^'):
     lt = deepcopy(lexTree)
-    # remove the TOP label
-    #if lt.label().startswith('TOP'):
-        # print lt.label()
-    #    lt = lt[0]
-    # print lt.pprint()
 
     # build a parent set
     dep_set = {}
@@ -624,14 +606,11 @@ def getParentDic(lexTree, labelChar='^'):
     # label for the root is just ROOT
     label_set[findIndex(lt.label())] = 'ROOT'
     for pos in lt.treepositions(order='preorder'):
-        # print pos
         nt = lt[pos]
-        #print unicode(nt)
         if isinstance(nt, Tree) and nt.height() != 2 and len(nt) > 1:
             ind_p = findIndex(nt.label())
             phrase_label = remove_labelChar(nt.label())
-            #print nt.label()
-            #print phrase_label
+
             head_label = '*'
             for c in nt:
                 ind_c = findIndex(c.label() if isinstance(c, Tree) else c)
@@ -639,15 +618,13 @@ def getParentDic(lexTree, labelChar='^'):
                     head_label = remove_labelChar(c.label())
             for c in nt:
                 ind_c = findIndex(c.label() if isinstance(c, Tree) else c)
-                #print ind_c
                 if not ind_c == ind_p:
                     dependent_label = '*'
                     if isinstance(c, Tree) and c.height()!=2:
                         dependent_label = remove_labelChar(c.label())
                     dep_set[ind_c] = ind_p
                     label_set[ind_c] = phrase_label + "+" + dependent_label
-                    # label_set[ind_c] = phrase_label + "+" + head_label  + "+" + dependent_label
-    # print dep_set, label_set
+
     return dep_set, label_set
 
 def generateDep(ot, labelChar='^'):
@@ -667,7 +644,6 @@ def generateDep(ot, labelChar='^'):
     return conll_lines
 
 def print_conll_lines(clines, wt):
-    # 1 Influential _   JJ  JJ  _   2   _   _
     for l in clines:
         wt.write(l[0] + "\t" + l[1] + "\t_\t" + l[2] + "\t" + l[2] + "\t_\t" + l[3] + "\t"+ l[4] +"\t_\t_\n")
 
@@ -730,33 +706,16 @@ def chomsky_normal_form(tree, horzMarkov=None, vertMarkov=0, childChar="|", pare
                 numChildren = len(nodeCopy)
 
                 for i in range(1,numChildren - 1):
-                    #if factor == "right":
                     next_step_right = ((i+1) < head_postion)
                     if i < head_postion:
                         #every time we going to the right, the left context in are consumed by one
                         del childNodes[0]
-                        #newHead = "%s%s<%s>%s" % (originalNode, childChar, "-".join(childNodes[i:min([i+horzMarkov,numChildren])]),parentString) # create new head
-                        #if next_step_right:
-                        #    newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "l-") + "-".join(childNodes[:min(len(childNodes),horzMarkov)]),parentString) # create new head
-                        #else:
-                        #    newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "r-") + "-".join(childNodes[max(0,len(childNodes)-horzMarkov):]),parentString) # create new head
-                        #if LANGUAGE == "chn":
-                        #    newHead = "%s%s-%s" % (originalNode, childChar, head)
-                        #else:
                         newHead = "%s%s" % (originalNode, childChar)
                         newNode = Tree(newHead, [])
                         curNode[0:] = [nodeCopy.pop(0), newNode]
 
                     else:
                         del childNodes[-1]
-                        #newHead = "%s%s<%s>%s" % (originalNode, childChar, "-".join(childNodes[max([numChildren-i-horzMarkov,0]):-i]),parentString)
-                        #if next_step_right:
-                        #    newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "l-") + "-".join(childNodes[:min(len(childNodes),horzMarkov)]),parentString) # create new head
-                        #else:
-                        #    newHead = "%s%s<%s>%s" % (originalNode, childChar, ("" if len(childNodes)<=2 else "r-") + "-".join(childNodes[max(0,len(childNodes)-horzMarkov):]),parentString) # create new head
-                        #if LANGUAGE == "chn":
-                        #    newHead = "%s%s-%s" % (originalNode, childChar, head)
-                        #else:
                         newHead = "%s%s" % (originalNode, childChar)
                         newNode = Tree(newHead, [])
                         curNode[0:] = [newNode, nodeCopy.pop()]
